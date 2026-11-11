@@ -169,6 +169,13 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .modeseg{display:flex;gap:4px;padding:4px;margin:16px 0 0;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface)}
 .modeseg button{flex:1;border:0;background:none;border-radius:999px;padding:7px 10px;font-family:var(--f-head);font-size:.92rem;color:var(--muted)}
 .modeseg button[aria-pressed="true"]{background:var(--solid);color:var(--solid-ink)}
+.juzbox summary{cursor:pointer;list-style:none;padding-block:6px;-webkit-tap-highlight-color:transparent}
+.juzbox summary::-webkit-details-marker{display:none}
+.juzbox summary::after{order:1}
+.juzbox .chev{order:2;width:9px;height:9px;border-inline-start:1.8px solid var(--gold);border-bottom:1.8px solid var(--gold);transform:rotate(-45deg);transition:transform .2s;margin-inline-end:4px}
+.juzbox[open] .chev{transform:rotate(135deg)}
+.juzbox summary:focus-visible{outline:2px solid var(--gold);outline-offset:2px;border-radius:6px}
+.juzbox .juzs{padding-bottom:4px}
 .juzs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
 @media (min-width:640px){.juzs{grid-template-columns:repeat(10,minmax(0,1fr))}}
 .juzs button{border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:6px 0;font-family:var(--f-head);font-size:.95rem;font-variant-numeric:tabular-nums}
@@ -375,8 +382,8 @@ function renderHome(){
     <div class="wrap">
     <div class="modeseg" role="group" aria-label="طريقة القراءة"><button type="button" data-mode="ayat" aria-pressed="${mode==="ayat"}">آية بآية</button><button type="button" data-mode="pages" aria-pressed="${mode==="pages"}">صفحات المصحف</button></div>
     ${marksHtml}
-    <div class="seclabel">الأجزاء</div>
-    <div class="juzs">${JZ.slice(1).map((id,j)=>{const [s,v]=sv(id);return `<button type="button" data-go="${s}-${v}" title="الجزء ${an(j+1)}">${an(j+1)}</button>`}).join("")}</div>
+    <details class="juzbox" id="juzbox"><summary class="seclabel">الأجزاء<span class="chev" aria-hidden="true"></span></summary>
+    <div class="juzs">${JZ.slice(1).map((id,j)=>{const [s,v]=sv(id);return `<button type="button" data-go="${s}-${v}" title="الجزء ${an(j+1)}">${an(j+1)}</button>`}).join("")}</div></details>
     <input class="filter" id="filter" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off">
     <div class="seclabel">فهرس السور</div>
     <ul class="list" id="slist"></ul>
