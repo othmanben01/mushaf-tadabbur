@@ -7,7 +7,8 @@
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مصحف التدبر">
 <meta name="description" content="قراءة القرآن الكريم بالرسم العثماني مع تفسير الميسر والسعدي وابن كثير وتلاوة سعد الغامدي.">
-<style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<link rel="preload" href="fonts/amiri-quran.woff2" as="font" type="font/woff2" crossorigin>
+<style>@font-face{font-family:"Amiri Quran";src:url(fonts/amiri-quran.woff2) format("woff2");font-display:swap}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
 <title>مصحف التدبر</title>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Amiri+Quran&family=Noto+Naskh+Arabic:wght@400;600;700&family=Reem+Kufi:wght@500;700&display=swap">
@@ -164,6 +165,56 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .vb.playing{color:#111;background:var(--gold);border-color:var(--gold)}
 .vb.playing svg{fill:currentColor}
 .verse.reading{background:var(--hl)}
+/* Mode toggle */
+.modeseg{display:flex;gap:4px;padding:4px;margin:16px 0 0;border:1px solid var(--line-strong);border-radius:999px;background:var(--surface)}
+.modeseg button{flex:1;border:0;background:none;border-radius:999px;padding:7px 10px;font-family:var(--f-head);font-size:.92rem;color:var(--muted)}
+.modeseg button[aria-pressed="true"]{background:var(--solid);color:var(--solid-ink)}
+.juzs{display:grid;grid-template-columns:repeat(6,minmax(0,1fr));gap:6px}
+@media (min-width:640px){.juzs{grid-template-columns:repeat(10,minmax(0,1fr))}}
+.juzs button{border:1px solid var(--line-strong);background:var(--surface);border-radius:10px;padding:6px 0;font-family:var(--f-head);font-size:.95rem;font-variant-numeric:tabular-nums}
+.juzs button:hover{border-color:var(--gold);color:var(--gold-strong)}
+
+/* Page (mushaf) view */
+.pview{padding-block:14px 30px;touch-action:pan-y}
+.mpage{position:relative;background:var(--surface);border:1px solid var(--gold);border-radius:10px;padding:5px}
+.mpage-in{border:1px solid color-mix(in srgb,var(--gold) 45%,transparent);border-radius:7px;padding:10px 14px 8px;min-height:68vh;display:flex;flex-direction:column}
+.phead{display:flex;justify-content:space-between;align-items:baseline;gap:10px;padding-bottom:6px;border-bottom:1px solid var(--line);font-family:var(--f-head);font-size:.85rem;color:var(--muted)}
+.phead .ps{font-family:var(--f-quran);font-size:1.1rem;color:var(--ink)}
+.phead .pj{text-align:left}
+.phead .pj b{color:var(--gold-strong);font-weight:500}
+.pbody{flex:1;padding-block:8px}
+.ptext{font-family:var(--f-quran);font-size:var(--qsize);line-height:2.25;text-align:justify;text-align-last:center;margin:0}
+.pv{cursor:pointer;border-radius:6px;transition:background .2s;-webkit-tap-highlight-color:transparent}
+.pv:hover{background:color-mix(in srgb,var(--gold-soft) 70%,transparent)}
+.pv.sel,.pv.reading{background:var(--hl)}
+.pv.flash{background:var(--hl)}
+.rub{color:var(--gold);font-size:.9em;margin-inline:2px}
+.psura{text-align:center;margin:10px 0 2px}
+.psura .cartouche{font-size:1.4rem;padding:4px 22px}
+.psura .basmala{margin:10px 0 0;font-size:1.45rem}
+.pfoot{display:flex;align-items:center;justify-content:space-between;gap:10px;padding-top:6px;border-top:1px solid var(--line)}
+.pfoot .pnum{font-family:var(--f-head);color:var(--gold-strong);font-variant-numeric:tabular-nums;min-width:3ch;text-align:center}
+.parrow{width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:var(--surface);display:grid;place-items:center;color:var(--ink)}
+.parrow svg{width:16px;height:16px;stroke:currentColor;fill:none;stroke-width:2}
+.parrow:disabled{opacity:.3;cursor:default}
+.pctl{display:flex;justify-content:center;gap:8px;margin-top:12px}
+.pctl .vb{border-color:var(--line-strong);padding:6px 16px;font-size:.88rem}
+.pctl .vb.here{color:#111;background:var(--gold);border-color:var(--gold)}
+.swipehint{text-align:center;color:var(--muted);font-size:.78rem;margin-top:8px}
+@keyframes inNext{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
+@keyframes inPrev{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
+.mpage.in-next{animation:inNext .22s ease-out}.mpage.in-prev{animation:inPrev .22s ease-out}
+
+/* Verse sheet */
+.scrim{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.35)}
+.sheet{position:fixed;inset:auto 0 0 0;z-index:16;background:var(--surface);border-top:2px solid var(--gold);border-radius:18px 18px 0 0;max-height:78vh;overflow-y:auto;
+  padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18)}
+.sheet .wrap{padding-block:10px 0}
+.sgrip{width:40px;height:4px;border-radius:2px;background:var(--line-strong);margin:0 auto 8px}
+.shd{display:flex;align-items:center;gap:8px}
+.shd .ref{flex:1;font-family:var(--f-head);color:var(--gold-strong);font-size:.9rem}
+.sverse{font-family:var(--f-quran);font-size:1.35rem;line-height:2.1;margin:6px 0 8px;max-height:30vh;overflow-y:auto}
+.sheet .vbar{grid-template-columns:repeat(4,minmax(0,1fr));opacity:1}
 .src{color:var(--muted);font-size:.76rem;text-align:center;padding-block:10px 30px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
@@ -173,6 +224,7 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 <header class="bar"><div class="wrap">
   <button class="brand" id="home" type="button"><svg class="star" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z" fill="none" stroke="var(--gold)" stroke-width="2"/><circle cx="20" cy="20" r="5" fill="var(--gold)"/></svg>مصحف التدبر</button>
   <div class="title" id="title"></div>
+  <button class="ib" id="btnMode" type="button" aria-label="وضع الصفحات" aria-pressed="false"></button>
   <button class="ib" id="btnSearch" type="button" aria-label="بحث"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg></button>
   <button class="ib" id="btnTheme" type="button" aria-label="الوضع الليلي" aria-pressed="false"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg></button>
 </div><div class="progress" id="progress" hidden><i></i></div></header>
@@ -180,6 +232,8 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 <main id="view"></main>
 
 <button class="top" id="toTop" type="button" aria-label="العودة إلى الأعلى" hidden><svg viewBox="0 0 24 24"><path d="M6 14l6-6 6 6"/></svg></button>
+<div class="scrim" id="scrim" hidden></div>
+<section class="sheet" id="sheet" hidden aria-label="خيارات الآية"></section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <section class="panel" id="panel" hidden>
   <div class="wrap">
@@ -196,6 +250,16 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 <script>
 const META=[[1,"الفاتحة","Al-Fatihah","meccan",7],[2,"البقرة","Al-Baqarah","medinan",286],[3,"آل عمران","Ali 'Imran","medinan",200],[4,"النساء","An-Nisa","medinan",176],[5,"المائدة","Al-Ma'idah","medinan",120],[6,"الأنعام","Al-An'am","meccan",165],[7,"الأعراف","Al-A'raf","meccan",206],[8,"الأنفال","Al-Anfal","medinan",75],[9,"التوبة","At-Tawbah","medinan",129],[10,"يونس","Yunus","meccan",109],[11,"هود","Hud","meccan",123],[12,"يوسف","Yusuf","meccan",111],[13,"الرعد","Ar-Ra'd","medinan",43],[14,"ابراهيم","Ibrahim","meccan",52],[15,"الحجر","Al-Hijr","meccan",99],[16,"النحل","An-Nahl","meccan",128],[17,"الإسراء","Al-Isra","meccan",111],[18,"الكهف","Al-Kahf","meccan",110],[19,"مريم","Maryam","meccan",98],[20,"طه","Taha","meccan",135],[21,"الأنبياء","Al-Anbya","meccan",112],[22,"الحج","Al-Hajj","medinan",78],[23,"المؤمنون","Al-Mu'minun","meccan",118],[24,"النور","An-Nur","medinan",64],[25,"الفرقان","Al-Furqan","meccan",77],[26,"الشعراء","Ash-Shu'ara","meccan",227],[27,"النمل","An-Naml","meccan",93],[28,"القصص","Al-Qasas","meccan",88],[29,"العنكبوت","Al-'Ankabut","meccan",69],[30,"الروم","Ar-Rum","meccan",60],[31,"لقمان","Luqman","meccan",34],[32,"السجدة","As-Sajdah","meccan",30],[33,"الأحزاب","Al-Ahzab","medinan",73],[34,"سبإ","Saba","meccan",54],[35,"فاطر","Fatir","meccan",45],[36,"يس","Ya-Sin","meccan",83],[37,"الصافات","As-Saffat","meccan",182],[38,"ص","Sad","meccan",88],[39,"الزمر","Az-Zumar","meccan",75],[40,"غافر","Ghafir","meccan",85],[41,"فصلت","Fussilat","meccan",54],[42,"الشورى","Ash-Shuraa","meccan",53],[43,"الزخرف","Az-Zukhruf","meccan",89],[44,"الدخان","Ad-Dukhan","meccan",59],[45,"الجاثية","Al-Jathiyah","meccan",37],[46,"الأحقاف","Al-Ahqaf","meccan",35],[47,"محمد","Muhammad","medinan",38],[48,"الفتح","Al-Fath","medinan",29],[49,"الحجرات","Al-Hujurat","medinan",18],[50,"ق","Qaf","meccan",45],[51,"الذاريات","Adh-Dhariyat","meccan",60],[52,"الطور","At-Tur","meccan",49],[53,"النجم","An-Najm","meccan",62],[54,"القمر","Al-Qamar","meccan",55],[55,"الرحمن","Ar-Rahman","medinan",78],[56,"الواقعة","Al-Waqi'ah","meccan",96],[57,"الحديد","Al-Hadid","medinan",29],[58,"المجادلة","Al-Mujadila","medinan",22],[59,"الحشر","Al-Hashr","medinan",24],[60,"الممتحنة","Al-Mumtahanah","medinan",13],[61,"الصف","As-Saf","medinan",14],[62,"الجمعة","Al-Jumu'ah","medinan",11],[63,"المنافقون","Al-Munafiqun","medinan",11],[64,"التغابن","At-Taghabun","medinan",18],[65,"الطلاق","At-Talaq","medinan",12],[66,"التحريم","At-Tahrim","medinan",12],[67,"الملك","Al-Mulk","meccan",30],[68,"القلم","Al-Qalam","meccan",52],[69,"الحاقة","Al-Haqqah","meccan",52],[70,"المعارج","Al-Ma'arij","meccan",44],[71,"نوح","Nuh","meccan",28],[72,"الجن","Al-Jinn","meccan",28],[73,"المزمل","Al-Muzzammil","meccan",20],[74,"المدثر","Al-Muddaththir","meccan",56],[75,"القيامة","Al-Qiyamah","meccan",40],[76,"الانسان","Al-Insan","medinan",31],[77,"المرسلات","Al-Mursalat","meccan",50],[78,"النبإ","An-Naba","meccan",40],[79,"النازعات","An-Nazi'at","meccan",46],[80,"عبس","'Abasa","meccan",42],[81,"التكوير","At-Takwir","meccan",29],[82,"الإنفطار","Al-Infitar","meccan",19],[83,"المطففين","Al-Mutaffifin","meccan",36],[84,"الإنشقاق","Al-Inshiqaq","meccan",25],[85,"البروج","Al-Buruj","meccan",22],[86,"الطارق","At-Tariq","meccan",17],[87,"الأعلى","Al-A'la","meccan",19],[88,"الغاشية","Al-Ghashiyah","meccan",26],[89,"الفجر","Al-Fajr","meccan",30],[90,"البلد","Al-Balad","meccan",20],[91,"الشمس","Ash-Shams","meccan",15],[92,"الليل","Al-Layl","meccan",21],[93,"الضحى","Ad-Duhaa","meccan",11],[94,"الشرح","Ash-Sharh","meccan",8],[95,"التين","At-Tin","meccan",8],[96,"العلق","Al-'Alaq","meccan",19],[97,"القدر","Al-Qadr","meccan",5],[98,"البينة","Al-Bayyinah","medinan",8],[99,"الزلزلة","Az-Zalzalah","medinan",8],[100,"العاديات","Al-'Adiyat","meccan",11],[101,"القارعة","Al-Qari'ah","meccan",11],[102,"التكاثر","At-Takathur","meccan",8],[103,"العصر","Al-'Asr","meccan",3],[104,"الهمزة","Al-Humazah","meccan",9],[105,"الفيل","Al-Fil","meccan",5],[106,"قريش","Quraysh","meccan",4],[107,"الماعون","Al-Ma'un","meccan",7],[108,"الكوثر","Al-Kawthar","meccan",3],[109,"الكافرون","Al-Kafirun","meccan",6],[110,"النصر","An-Nasr","medinan",3],[111,"المسد","Al-Masad","meccan",5],[112,"الإخلاص","Al-Ikhlas","meccan",4],[113,"الفلق","Al-Falaq","meccan",5],[114,"الناس","An-Nas","meccan",6]];
 
+const PG=[0,1,8,13,24,32,37,45,56,65,69,77,84,91,96,101,109,113,120,127,134,142,149,153,161,171,177,184,189,194,198,204,210,218,223,227,232,238,241,245,253,256,260,264,267,272,277,282,289,290,294,303,309,316,323,331,339,346,355,364,371,377,385,394,402,409,415,426,434,442,447,451,459,467,474,480,488,494,500,505,508,513,517,520,527,531,538,545,553,559,568,573,580,585,588,595,599,607,615,621,628,634,641,648,656,664,669,672,675,679,683,687,693,701,706,711,715,720,727,734,740,746,752,759,765,773,778,783,790,798,808,817,825,834,842,849,858,863,871,880,884,891,900,908,914,921,927,932,936,941,947,955,966,977,985,992,998,1006,1012,1022,1028,1036,1042,1050,1059,1075,1085,1092,1098,1104,1110,1114,1118,1125,1133,1142,1150,1161,1169,1177,1186,1194,1201,1206,1213,1222,1230,1236,1242,1249,1256,1262,1267,1272,1276,1283,1290,1297,1304,1308,1315,1322,1329,1335,1342,1347,1353,1358,1365,1371,1379,1385,1390,1398,1407,1418,1426,1435,1443,1453,1462,1471,1479,1486,1493,1502,1511,1519,1527,1536,1545,1555,1562,1571,1582,1591,1601,1611,1619,1627,1634,1640,1649,1660,1666,1675,1683,1692,1700,1708,1713,1721,1726,1736,1742,1750,1756,1761,1769,1775,1784,1793,1803,1818,1834,1854,1873,1893,1908,1916,1928,1936,1944,1956,1966,1974,1981,1989,1995,2004,2012,2020,2030,2037,2047,2057,2068,2079,2088,2096,2105,2116,2126,2134,2145,2156,2161,2168,2175,2186,2194,2202,2215,2224,2238,2251,2262,2276,2289,2302,2315,2327,2346,2361,2386,2400,2413,2425,2436,2447,2462,2474,2484,2494,2508,2519,2528,2541,2556,2565,2574,2585,2596,2601,2611,2619,2626,2634,2642,2651,2660,2668,2674,2691,2701,2716,2733,2748,2763,2778,2792,2802,2812,2819,2823,2828,2835,2845,2850,2853,2858,2867,2876,2888,2899,2911,2923,2933,2952,2972,2993,3016,3044,3069,3092,3116,3139,3160,3173,3182,3195,3204,3215,3223,3236,3248,3258,3266,3274,3281,3288,3296,3303,3312,3323,3330,3337,3347,3355,3364,3371,3379,3386,3393,3404,3415,3425,3434,3442,3451,3460,3470,3481,3489,3498,3504,3515,3524,3534,3540,3549,3556,3564,3569,3577,3584,3588,3596,3607,3614,3621,3629,3638,3646,3655,3664,3672,3679,3691,3699,3705,3718,3733,3746,3760,3776,3789,3813,3840,3865,3891,3915,3942,3971,3987,3997,4013,4032,4054,4064,4069,4080,4090,4099,4106,4115,4126,4133,4141,4150,4159,4167,4174,4183,4192,4200,4211,4219,4230,4239,4248,4257,4265,4273,4283,4288,4295,4304,4317,4324,4336,4348,4359,4373,4386,4399,4415,4433,4454,4474,4487,4496,4506,4516,4525,4531,4539,4546,4557,4565,4575,4584,4593,4599,4607,4612,4617,4624,4631,4646,4666,4682,4706,4727,4750,4767,4785,4811,4829,4853,4874,4896,4918,4942,4969,4996,5030,5056,5079,5087,5094,5100,5105,5111,5116,5126,5130,5136,5143,5151,5156,5162,5169,5178,5186,5193,5200,5209,5218,5223,5230,5237,5242,5254,5268,5287,5314,5332,5358,5386,5415,5430,5448,5461,5476,5495,5513,5543,5571,5597,5617,5642,5673,5703,5728,5759,5801,5830,5855,5883,5910,5932,5964,5994,6017,6044,6073,6099,6126,6138,6156,6177,6194,6208,6222];
+PG.push(6237);
+const JZ=[0,1,149,260,386,517,641,751,900,1042,1201,1328,1479,1649,1803,2030,2215,2484,2674,2876,3215,3386,3564,3733,4090,4265,4511,4706,5105,5242,5673];
+const HQ=[0,1,33,51,67,82,99,113,131,149,165,184,196,210,226,240,250,260,270,279,290,308,326,345,368,386,406,426,446,464,479,494,505,517,529,551,567,581,593,607,628,641,656,670,681,696,710,720,736,751,766,778,802,825,848,863,884,900,916,930,940,955,985,1001,1019,1042,1071,1096,1110,1125,1143,1161,1182,1201,1221,1236,1254,1269,1281,1295,1310,1328,1346,1357,1375,1390,1417,1435,1454,1479,1497,1514,1534,1557,1581,1603,1626,1649,1673,1697,1712,1726,1742,1760,1778,1803,1852,1902,1931,1952,1976,1991,2012,2030,2052,2079,2099,2128,2157,2172,2191,2215,2239,2272,2309,2349,2403,2431,2459,2484,2512,2534,2566,2596,2614,2633,2655,2674,2709,2748,2792,2812,2826,2844,2856,2876,2908,2933,2984,3043,3113,3160,3186,3215,3241,3264,3281,3303,3328,3341,3366,3386,3410,3440,3463,3491,3514,3534,3551,3564,3584,3593,3616,3630,3652,3675,3701,3733,3765,3810,3871,3933,3991,4022,4066,4090,4111,4134,4154,4174,4199,4227,4243,4265,4285,4299,4323,4349,4382,4431,4485,4511,4531,4555,4578,4601,4613,4626,4657,4706,4759,4810,4855,4902,4980,5054,5091,5105,5118,5137,5157,5178,5192,5218,5230,5242,5272,5324,5394,5448,5495,5552,5610,5673,5759,5830,5885,5949,6024,6091,6155];
+const SOFF=[0];for(const m of META)SOFF.push(SOFF[SOFF.length-1]+m[4]);
+const aid=(s,v)=>SOFF[s-1]+v;
+function sv(id){let lo=1,hi=114;while(lo<hi){const mid=(lo+hi+1)>>1;if(SOFF[mid-1]<id)lo=mid;else hi=mid-1}return [lo,id-SOFF[lo-1]]}
+function idxLE(arr,id){let lo=1,hi=arr.length-1;while(lo<hi){const mid=(lo+hi+1)>>1;if(arr[mid]<=id)lo=mid;else hi=mid-1}return lo}
+const pageOf=(s,v)=>idxLE(PG,aid(s,v));
+const juzOf=id=>idxLE(JZ,id);
 const TAFS=[{k:"m",name:"الميسر",desc:"تفسير مختصر وسهل"},{k:"s",name:"السعدي",desc:"تفسير واضح متوسط"},{k:"k",name:"ابن كثير",desc:"تفسير مفصّل بالأثر"}];
 const $=s=>document.querySelector(s);
 const view=$("#view"), titleEl=$("#title");
@@ -213,23 +277,40 @@ const ICON={
   play:'<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>',
   stop:'<svg viewBox="0 0 24 24"><path d="M5 21V4"/><path d="M5 4h12l-2.5 4L17 12H5"/></svg>',
   pause:'<svg viewBox="0 0 24 24"><path d="M8 5v14M16 5v14"/></svg>',
+  book:'<svg viewBox="0 0 24 24"><path d="M12 6c-2-1.5-5-2-8-1.5V19c3-.5 6 0 8 1.5 2-1.5 5-2 8-1.5V4.5C17 4 14 4.5 12 6z"/><path d="M12 6v14.5"/></svg>',
+  list:'<svg viewBox="0 0 24 24"><path d="M9 6h11M9 12h11M9 18h11"/><circle cx="4.5" cy="6" r="1"/><circle cx="4.5" cy="12" r="1"/><circle cx="4.5" cy="18" r="1"/></svg>',
+  next:'<svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg>',
+  prev:'<svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg>',
+  close:'<svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg>',
   copy:'<svg viewBox="0 0 24 24"><rect x="8" y="8" width="12" height="12" rx="2"/><path d="M16 8V5a1 1 0 0 0-1-1H5a1 1 0 0 0-1 1v10a1 1 0 0 0 1 1h3"/></svg>'
 };
+
+/* ---------- Reading mode ---------- */
+let mode=store.get("mode","ayat")==="pages"?"pages":"ayat";
+let curPage=0,pendingFlash=null;
+function updateModeBtn(){const b=$("#btnMode");if(!b)return;const pg=mode==="pages";
+  b.innerHTML=pg?ICON.list:ICON.book;b.setAttribute("aria-pressed",String(pg));b.setAttribute("aria-label",pg?"عرض الآيات":"عرض الصفحات");b.title=pg?"عرض الآيات":"عرض الصفحات";
+  document.querySelectorAll(".modeseg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mode===mode)))}
+function setMode(m){if(m===mode)return;mode=m;save("mode",m);updateModeBtn();
+  if(curPage){const id=PG[curPage];const [s,v]=sv(id);location.hash="s"+s+"-"+v}
+  else if(current){const el=[...document.querySelectorAll(".verse")].find(x=>x.getBoundingClientRect().bottom>90);const v=el?+el.dataset.v:1;go(current,v)}
+}
 
 /* ---------- Save: device + account ---------- */
 const cloud={doc:null,busy:false,again:false,tm:null};
 function save(k,v){store.set(k,v);store.set("t",Date.now());if(cloud.doc){clearTimeout(cloud.tm);cloud.tm=setTimeout(push,600)}}
-function stateNow(){return {stop:stopAt||null,marks,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),t:store.get("t",0)}}
+function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),t:store.get("t",0)}}
 async function push(){if(!cloud.doc)return;if(cloud.busy){cloud.again=true;return}cloud.busy=true;
   try{await cloud.doc.set(stateNow())}catch(e){}
   cloud.busy=false;if(cloud.again){cloud.again=false;push()}}
 function applyRemote(d){
   if(!d||(+d.t||0)<=store.get("t",0))return;
   stopAt=Array.isArray(d.stop)?d.stop:null;marks=Array.isArray(d.marks)?d.marks:[];
-  store.set("stop",stopAt);store.set("marks",marks);store.set("theme",d.theme||null);store.set("tab",d.tab||"m");store.set("qsize",+d.qsize||1.75);store.set("t",+d.t);
+  store.set("stop",stopAt);store.set("marks",marks);if(d.mode==="pages"||d.mode==="ayat"){mode=d.mode;store.set("mode",mode);updateModeBtn()}store.set("theme",d.theme||null);store.set("tab",d.tab||"m");store.set("qsize",+d.qsize||1.75);store.set("t",+d.t);
   applyTheme(d.theme||null);applySize(d.qsize);refreshUI();
 }
 function refreshUI(){
+  if(curPage){updatePageStop();return}
   if(!current){if(document.activeElement&&document.activeElement.id==="filter")return;renderHome();return}
   document.querySelectorAll(".verse").forEach(li=>{const v=+li.dataset.v;
     const st=isStop(current,v),mk=isMarked(current,v);li.classList.toggle("stopped",st);
@@ -257,6 +338,7 @@ async function connectCloud(){
 function applyTheme(t){if(t)document.documentElement.setAttribute("data-theme",t);else document.documentElement.removeAttribute("data-theme");
   const dark=t?t==="dark":matchMedia("(prefers-color-scheme: dark)").matches;$("#btnTheme").setAttribute("aria-pressed",String(dark))}
 applyTheme(store.get("theme",null));
+$("#btnMode").onclick=()=>setMode(mode==="pages"?"ayat":"pages");
 $("#btnTheme").onclick=()=>{const dark=$("#btnTheme").getAttribute("aria-pressed")==="true";const t=dark?"light":"dark";save("theme",t);applyTheme(t)};
 
 /* ---------- Font size ---------- */
@@ -276,9 +358,11 @@ let tt=null;function toast(msg){const t=$("#toast");t.textContent=msg;t.classLis
 
 /* ---------- Home ---------- */
 function renderHome(){
-  titleEl.textContent="";document.title="مصحف التدبر";
+  titleEl.textContent="";document.title="مصحف التدبر";curPage=0;
   const last=stopAt;
-  const lastHtml=last?`<button class="continue" type="button" data-go="${last[0]}-${last[1]}">
+  const lastHtml=last&&last[0]===0?`<button class="continue" type="button" data-page="${last[1]}">
+      <div><b>أكمل من حيث توقفت</b><span>الصفحة ${an(last[1])} · سورة ${META[sv(PG[last[1]])[0]-1][1]}</span></div><span class="go">‹</span></button>`:
+    last?`<button class="continue" type="button" data-go="${last[0]}-${last[1]}">
       <div><b>أكمل من حيث توقفت</b><span>سورة ${META[last[0]-1][1]} · الآية ${an(last[1])}</span></div><span class="go">‹</span></button>`:
     `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة · الآية ١</span></div><span class="go">‹</span></button>`;
   const marksHtml=marks.length?`<div class="seclabel">العلامات المحفوظة</div><div class="marks">${marks.map(m=>`<button class="chip" type="button" data-go="${m[0]}-${m[1]}">${META[m[0]-1][1]} ${an(m[1])}</button>`).join("")}</div>`:"";
@@ -289,7 +373,10 @@ function renderHome(){
       <div class="stats"><div><b>${an(114)}</b>سورة</div><div><b>${an(6236)}</b>آية</div><div><b>${an(3)}</b>تفاسير</div></div>
     </div></div></div></section>
     <div class="wrap">
+    <div class="modeseg" role="group" aria-label="طريقة القراءة"><button type="button" data-mode="ayat" aria-pressed="${mode==="ayat"}">آية بآية</button><button type="button" data-mode="pages" aria-pressed="${mode==="pages"}">صفحات المصحف</button></div>
     ${marksHtml}
+    <div class="seclabel">الأجزاء</div>
+    <div class="juzs">${JZ.slice(1).map((id,j)=>{const [s,v]=sv(id);return `<button type="button" data-go="${s}-${v}" title="الجزء ${an(j+1)}">${an(j+1)}</button>`}).join("")}</div>
     <input class="filter" id="filter" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off">
     <div class="seclabel">فهرس السور</div>
     <ul class="list" id="slist"></ul>
@@ -302,6 +389,7 @@ function renderHome(){
       <span class="lat">${m[2]}</span></button></li>`).join("")};
   draw("");
   $("#filter").addEventListener("input",e=>draw(e.target.value));
+  document.querySelectorAll(".modeseg button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
   window.scrollTo(0,0);
 }
 
@@ -312,10 +400,15 @@ const pad3=x=>String(x).padStart(3,"0");
 const player={a:null,s:0,v:0};
 function clearPlayingUI(){
   document.querySelectorAll(".vb.playing").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-pressed","false");b.innerHTML=ICON.play+"<span>استماع</span>"});
-  document.querySelectorAll(".verse.reading").forEach(x=>x.classList.remove("reading"));
+  document.querySelectorAll(".verse.reading,.pv.reading").forEach(x=>x.classList.remove("reading"));
 }
 function markPlaying(){
-  clearPlayingUI();if(!player.s||current!==player.s)return;
+  clearPlayingUI();if(!player.s)return;
+  if(curPage){const el=document.querySelector(`.pv[data-sv="${player.s}:${player.v}"]`);if(el){el.classList.add("reading");
+      const r=el.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight)el.scrollIntoView({block:"center",behavior:"smooth"})}
+    const sb=document.querySelector('#sheet [data-act="play"]');if(sb&&sheetAt&&sheetAt[0]===player.s&&sheetAt[1]===player.v){sb.classList.add("playing");sb.setAttribute("aria-pressed","true");sb.innerHTML=ICON.pause+"<span>إيقاف</span>"}
+    return}
+  if(current!==player.s)return;
   const li=document.getElementById("v"+player.v);if(!li)return;
   li.classList.add("reading");
   const b=li.querySelector('[data-act="play"]');if(b){b.classList.add("playing");b.setAttribute("aria-pressed","true");b.innerHTML=ICON.pause+"<span>إيقاف</span>"}
@@ -325,7 +418,10 @@ function stopAudio(){player.s=0;player.v=0;if(player.a){player.a.pause();player.
 function playVerse(s,v){
   if(!player.a){
     player.a=new Audio();player.a.preload="auto";
-    player.a.addEventListener("ended",()=>{const s=player.s,v=player.v;if(s&&v<META[s-1][4]&&current===s)playVerse(s,v+1);else stopAudio()});
+    player.a.addEventListener("ended",()=>{const s=player.s,v=player.v;
+      if(s&&v<META[s-1][4]&&(current===s||curPage)){
+        if(curPage){const np=pageOf(s,v+1);if(np!==curPage){player.v=v+1;location.hash="p"+np;playVerse(s,v+1);return}}
+        playVerse(s,v+1)}else stopAudio()});
     player.a.addEventListener("error",()=>{if(!player.s)return;toast("تعذّر تشغيل التلاوة. تحقّق من الاتصال.");stopAudio()});
   }
   player.s=s;player.v=v;
@@ -336,6 +432,21 @@ function playVerse(s,v){
 
 /* ---------- Reader ---------- */
 let current=0, observer=null;
+function mountTafsir(box,n,i){
+    box.className="tafsir";
+    const cur="m";
+    box.innerHTML=`<div class="tabs" role="tablist">${TAFS.map(t=>`<button class="tab" role="tab" type="button" data-k="${t.k}" aria-selected="${t.k===cur}" title="${t.desc}">${t.name}</button>`).join("")}</div><div class="tbody"></div>`;
+    let req=0;
+    const show=async k=>{box.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.k===k));
+      const body=box.querySelector(".tbody"),d=TAFS.find(t=>t.k===k),my=++req;
+      if(!tcache[k+n])body.innerHTML=`<div class="loading" style="padding:20px 0">جارٍ تحميل تفسير ${d.name}…</div>`;
+      let arr;try{arr=await loadTafsir(n,k)}catch(e){if(my===req)body.innerHTML=`<div class="note">تعذّر تحميل التفسير. تحقّق من الاتصال ثم أعد المحاولة.</div>`;return}
+      if(my!==req)return;
+      const {v:txt,note}=getTafsir(arr,k,i);
+      body.innerHTML=`<div class="note">${d.name}: ${d.desc}.${note?" "+note:""}</div>`+fmtTafsir(txt);body.scrollTop=0};
+    box.querySelector(".tabs").onclick=e2=>{const t=e2.target.closest(".tab");if(t)show(t.dataset.k)};
+    show(cur);
+}
 function fmtTafsir(t){
   let h=esc(t);
   h=h.replace(/\[\[(.*?)\]\]/gs,'<span class="fn">[$1]</span>');
@@ -353,6 +464,7 @@ function getTafsir(arr,key,i){
 async function renderSurah(n,target){
   if(current!==n||!$("#verses")){
     if(player.s&&player.s!==n)stopAudio();
+    curPage=0;closeSheet();
     current=n;const m=META[n-1];titleEl.textContent="سورة "+m[1];document.title="سورة "+m[1]+" · مصحف التدبر";
     view.innerHTML=`<div class="wrap"><div class="loading">جارٍ تحميل السورة…</div></div>`;
     let data;try{data=await loadSurah(n)}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر تحميل السورة. تحقّق من الاتصال ثم أعد المحاولة.</div></div>`;return}
@@ -403,22 +515,98 @@ function onVerseClick(e,n,data){
     let box=li.querySelector(".tafsir");
     if(box){box.remove();b.setAttribute("aria-expanded","false");return}
     b.setAttribute("aria-expanded","true");
-    box=document.createElement("div");box.className="tafsir";
-    const cur="m";
-    box.innerHTML=`<div class="tabs" role="tablist">${TAFS.map(t=>`<button class="tab" role="tab" type="button" data-k="${t.k}" aria-selected="${t.k===cur}" title="${t.desc}">${t.name}</button>`).join("")}</div><div class="tbody"></div>`;
-    li.appendChild(box);
-    let req=0;
-    const show=async k=>{box.querySelectorAll(".tab").forEach(x=>x.setAttribute("aria-selected",x.dataset.k===k));
-      const body=box.querySelector(".tbody"),d=TAFS.find(t=>t.k===k),my=++req;
-      if(!tcache[k+n])body.innerHTML=`<div class="loading" style="padding:20px 0">جارٍ تحميل تفسير ${d.name}…</div>`;
-      let arr;try{arr=await loadTafsir(n,k)}catch(e){if(my===req)body.innerHTML=`<div class="note">تعذّر تحميل التفسير. تحقّق من الاتصال ثم أعد المحاولة.</div>`;return}
-      if(my!==req)return;
-      const {v:txt,note}=getTafsir(arr,k,i);
-      body.innerHTML=`<div class="note">${d.name}: ${d.desc}.${note?" "+note:""}</div>`+fmtTafsir(txt);body.scrollTop=0};
-    box.querySelector(".tabs").onclick=e2=>{const t=e2.target.closest(".tab");if(t)show(t.dataset.k)};
-    show(cur);
+    box=document.createElement("div");li.appendChild(box);mountTafsir(box,n,i);
   }
 }
+
+/* ---------- Page (mushaf) view ---------- */
+let swipeDir=0;
+const QL=["","ربع الحزب","نصف الحزب","ثلاثة أرباع الحزب"];
+async function renderPage(p){
+  p=Math.max(1,Math.min(604,p));
+  if(current)current=0;
+  const first=PG[p],last=PG[p+1]-1;const [s1]=sv(first),[s2]=sv(last);
+  curPage=p;
+  titleEl.textContent="الصفحة "+an(p);document.title="الصفحة "+p+" · مصحف التدبر";
+  if(!$("#mpage"))view.innerHTML=`<div class="wrap"><div class="loading">جارٍ تحميل الصفحة…</div></div>`;
+  const need=[];for(let s=s1;s<=s2;s++)need.push(s);
+  let datas;try{datas=await Promise.all(need.map(loadSurah))}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر تحميل الصفحة. تحقّق من الاتصال ثم أعد المحاولة.</div></div>`;return}
+  if(curPage!==p)return;
+  const juz=juzOf(first),q=idxLE(HQ,first),hizb=Math.ceil(q/4);
+  let qMark="";for(let k=q;k<HQ.length&&HQ[k]<=last;k++){if(HQ[k]>=first&&HQ[k]>1&&(k-1)%4){qMark=QL[(k-1)%4];}}
+  let html="",open=false;
+  for(let id=first;id<=last;id++){
+    const [s,v]=sv(id);const data=datas[s-s1];
+    if(v===1){if(open){html+="</p>";open=false}
+      html+=`<div class="psura"><div class="cartouche"><i></i>سورة ${META[s-1][1]}<i></i></div>${(s!==1&&s!==9)?'<div class="basmala">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>':""}</div>`}
+    if(!open){html+='<p class="ptext">';open=true}
+    const k=HQ.indexOf(id);const rub=(k>1)?'<span class="rub" aria-label="'+(QL[(k-1)%4]||"بداية الحزب")+'">۞</span>':"";
+    html+=`${rub}<span class="pv" data-sv="${s}:${v}" tabindex="0" role="button">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></span> `;
+  }
+  if(open)html+="</p>";
+  view.innerHTML=`<div class="wrap pview">
+    <article class="mpage${swipeDir>0?" in-next":swipeDir<0?" in-prev":""}" id="mpage"><div class="mpage-in">
+      <header class="phead"><span class="ps">سورة ${META[s1-1][1]}</span><span class="pj">الجزء <b>${an(juz)}</b> · الحزب <b>${an(hizb)}</b>${qMark?` · <b>۞ ${qMark}</b>`:""}</span></header>
+      <div class="pbody" id="pbody">${html}</div>
+      <footer class="pfoot">
+        <button class="parrow" type="button" data-page="${p+1}" aria-label="الصفحة التالية" ${p>=604?"disabled":""}>${ICON.prev}</button>
+        <span class="pnum">${an(p)}</span>
+        <button class="parrow" type="button" data-page="${p-1}" aria-label="الصفحة السابقة" ${p<=1?"disabled":""}>${ICON.next}</button>
+      </footer>
+    </div></article>
+    <div class="pctl"><button class="vb" type="button" id="pstop">${ICON.stop}<span>توقفت هنا</span></button>
+      <button class="vb" type="button" id="pminus" aria-label="تصغير الخط">أ−</button><button class="vb" type="button" id="pplus" aria-label="تكبير الخط">أ+</button></div>
+    <p class="swipehint">اسحب يمينًا للصفحة التالية، ويسارًا للسابقة. المس أي آية لخياراتها.</p>
+  </div>`;
+  swipeDir=0;updatePageStop();markPlaying();
+  $("#pminus").onclick=()=>setSize(-.15);$("#pplus").onclick=()=>setSize(.15);
+  $("#pstop").onclick=()=>{
+    document.querySelectorAll(".verse.stopped").forEach(x=>x.classList.remove("stopped"));
+    if(stopAt&&stopAt[0]===0&&stopAt[1]===p){stopAt=null;save("stop",null);toast("تم حذف موضع التوقف")}
+    else{stopAt=[0,p];save("stop",stopAt);toast(`حُفظ موضع توقفك: الصفحة ${an(p)}`)}
+    updatePageStop()};
+  $("#pbody").addEventListener("click",e=>{const el=e.target.closest(".pv");if(el){const [s,v]=el.dataset.sv.split(":").map(Number);openSheet(s,v)}});
+  $("#pbody").addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("pv")){e.preventDefault();const [s,v]=e.target.dataset.sv.split(":").map(Number);openSheet(s,v)}});
+  const mp=$("#mpage");let x0=null,y0=0,t0=0;
+  mp.addEventListener("touchstart",e=>{if(e.touches.length!==1){x0=null;return}x0=e.touches[0].clientX;y0=e.touches[0].clientY;t0=Date.now()},{passive:true});
+  mp.addEventListener("touchend",e=>{if(x0===null)return;const t=e.changedTouches[0],dx=t.clientX-x0,dy=t.clientY-y0;x0=null;
+    if(Math.abs(dx)>60&&Math.abs(dx)>Math.abs(dy)*1.5&&Date.now()-t0<800)turnPage(dx>0?1:-1)},{passive:true});
+  if(pendingFlash){const el=document.querySelector(`.pv[data-sv="${pendingFlash[0]}:${pendingFlash[1]}"]`);pendingFlash=null;
+    if(el){el.scrollIntoView({block:"center"});el.classList.add("flash");setTimeout(()=>el.classList.remove("flash"),1600)}}
+  else window.scrollTo(0,0);
+}
+function updatePageStop(){const b=$("#pstop");if(!b)return;const on=!!stopAt&&stopAt[0]===0&&stopAt[1]===curPage;b.classList.toggle("here",on);b.setAttribute("aria-pressed",String(on))}
+function turnPage(d){const np=curPage+d;if(np<1||np>604)return;swipeDir=d;closeSheet();location.hash="p"+np}
+document.addEventListener("keydown",e=>{if(!curPage||!$("#panel").hidden||!$("#sheet").hidden)return;if(e.target.matches("input"))return;
+  if(e.key==="ArrowLeft")turnPage(1);else if(e.key==="ArrowRight")turnPage(-1)});
+
+let sheetAt=null;
+function closeSheet(){const sh=$("#sheet");if(!sh||sh.hidden)return;sh.hidden=true;$("#scrim").hidden=true;sheetAt=null;document.querySelectorAll(".pv.sel").forEach(x=>x.classList.remove("sel"))}
+async function openSheet(s,v){
+  document.querySelectorAll(".pv.sel").forEach(x=>x.classList.remove("sel"));
+  const el=document.querySelector(`.pv[data-sv="${s}:${v}"]`);if(el)el.classList.add("sel");
+  sheetAt=[s,v];const data=await loadSurah(s);const sh=$("#sheet");const mk=isMarked(s,v);
+  sh.innerHTML=`<div class="wrap"><div class="sgrip"></div>
+    <div class="shd"><span class="ref">سورة ${META[s-1][1]} · الآية ${an(v)}</span><button class="ib" type="button" id="sclose" aria-label="إغلاق">${ICON.close}</button></div>
+    <p class="sverse">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></p>
+    <div class="vbar">
+      <button class="vb" type="button" data-act="tafsir" aria-expanded="false">${ICON.tafsir}تفسير</button>
+      <button class="vb${mk?" saved":""}" type="button" data-act="mark" aria-pressed="${mk}">${ICON.mark}<span>${mk?"محفوظة":"علامة"}</span></button>
+      ${STANDALONE?`<button class="vb" type="button" data-act="play" aria-pressed="false">${ICON.play}<span>استماع</span></button>`:`<a class="vb" href="https://quran.com/${s}/${v}" target="_blank" rel="noopener">${ICON.play}استماع</a>`}
+      <button class="vb" type="button" data-act="copy">${ICON.copy}نسخ</button>
+    </div><div id="stafsir"></div></div>`;
+  sh.hidden=false;$("#scrim").hidden=false;markPlaying();
+  $("#sclose").onclick=closeSheet;
+  sh.querySelector(".vbar").onclick=e=>{const b=e.target.closest("[data-act]");if(!b)return;const act=b.dataset.act;
+    if(act==="mark"){toggleMark(s,v);const on=isMarked(s,v);b.classList.toggle("saved",on);b.setAttribute("aria-pressed",on);b.querySelector("span").textContent=on?"محفوظة":"علامة"}
+    if(act==="play"){if(player.s===s&&player.v===v)stopAudio();else playVerse(s,v)}
+    if(act==="copy"){const txt=`${data.v[v-1]} ﴿${an(v)}﴾ [${META[s-1][1]}: ${an(v)}]`;const lbl=b.lastChild;
+      try{navigator.clipboard.writeText(txt).then(()=>{lbl.textContent="نُسخت";setTimeout(()=>lbl.textContent="نسخ",1400)},()=>{})}catch(err){}}
+    if(act==="tafsir"){const host=$("#stafsir");if(host.firstChild){host.innerHTML="";b.setAttribute("aria-expanded","false");return}
+      b.setAttribute("aria-expanded","true");mountTafsir(host,s,v-1)}};
+}
+$("#scrim").onclick=closeSheet;
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 
 /* ---------- Search ---------- */
 function norm(s){return s.replace(/[ؐ-ًؚ-ٰٟۖ-ۭ࣓-ࣿـ]/g,"")
@@ -455,19 +643,25 @@ $("#closeSearch").onclick=()=>{$("#panel").hidden=true};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#panel").hidden=true});
 
 /* ---------- Routing ---------- */
-function go(s,v){$("#panel").hidden=true;const h="s"+s+"-"+v;if(location.hash==="#"+h)route();else location.hash=h}
-document.addEventListener("click",e=>{const b=e.target.closest("[data-go]");if(!b)return;const [s,v]=b.dataset.go.split("-").map(Number);go(s,v)});
+function go(s,v){$("#panel").hidden=true;closeSheet();
+  if(mode==="pages"){const p=pageOf(s,v);pendingFlash=v>1?[s,v]:null;const h="p"+p;if(location.hash==="#"+h)route();else location.hash=h;return}
+  const h="s"+s+"-"+v;if(location.hash==="#"+h)route();else location.hash=h}
+document.addEventListener("click",e=>{const pb=e.target.closest("[data-page]");if(pb&&!pb.disabled){closeSheet();const np=+pb.dataset.page;if(curPage&&Math.abs(np-curPage)===1)swipeDir=np-curPage;location.hash="p"+np;return}
+  const b=e.target.closest("[data-go]");if(!b)return;const [s,v]=b.dataset.go.split("-").map(Number);go(s,v)});
 $("#home").onclick=()=>{if(location.hash){location.hash=""}else renderHome()};
-function route(){const m=location.hash.match(/^#s(\d{1,3})-(\d{1,3})$/);
+function route(){const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
+  closeSheet();const m=location.hash.match(/^#s(\d{1,3})-(\d{1,3})$/);
   if(m&&+m[1]>=1&&+m[1]<=114)renderSurah(+m[1],+m[2]);else{current=0;stopAudio();renderHome()}}
 window.addEventListener("hashchange",route);
 const prog=$("#progress"),toTop=$("#toTop");
-function onScroll(){const reading=!!current&&!!$("#verses");prog.hidden=!reading;
+function onScroll(){if(curPage){prog.hidden=false;prog.firstChild.style.width=(curPage/604*100)+"%";toTop.hidden=scrollY<900;return}
+  const reading=!!current&&!!$("#verses");prog.hidden=!reading;
   const h=document.documentElement.scrollHeight-innerHeight;const p=h>0?Math.min(1,scrollY/h):0;
   if(reading)prog.firstChild.style.width=(p*100)+"%";toTop.hidden=scrollY<900}
 addEventListener("scroll",onScroll,{passive:true});
 toTop.onclick=()=>scrollTo({top:0,behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 setInterval(onScroll,1000);
+updateModeBtn();
 route();
 connectCloud();
 </script>
