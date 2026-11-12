@@ -227,6 +227,23 @@ html.pagemode .top{display:none}
 .shd .ref{flex:1;font-family:var(--f-head);color:var(--gold-strong);font-size:.9rem}
 .sverse{font-family:var(--f-quran);font-size:1.35rem;line-height:2.1;margin:6px 0 8px;max-height:30vh;overflow-y:auto}
 .sheet .vbar{grid-template-columns:repeat(4,minmax(0,1fr));opacity:1}
+/* Mini player */
+:root{--pl:0px}
+.player{position:fixed;inset:auto 0 0 0;z-index:14;background:var(--solid);color:var(--solid-ink);border-top:1.5px solid var(--gold);
+  padding-bottom:env(safe-area-inset-bottom,0px)}
+.player .wrap{display:flex;align-items:center;gap:8px;padding-block:8px}
+.pbtn{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--gold);background:none;color:var(--solid-ink);display:grid;place-items:center}
+.pbtn.main{background:var(--gold);color:#111;border-color:var(--gold)}
+.pbtn svg{width:16px;height:16px;stroke:currentColor;fill:currentColor;stroke-width:1.8}
+.pbtn.x svg{fill:none}
+.pinfo{flex:1;min-width:0;line-height:1.3}
+.pinfo b{display:block;font-family:var(--f-head);font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pinfo small{color:var(--gold);font-size:.75rem}
+.rsel{flex:none;max-width:46%;appearance:none;-webkit-appearance:none;background:transparent;color:var(--solid-ink);border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);border-radius:999px;padding:7px 28px 7px 12px;font:inherit;font-size:.85rem;
+  background-image:linear-gradient(45deg,transparent 50%,var(--gold) 50%),linear-gradient(135deg,var(--gold) 50%,transparent 50%);background-position:14px 50%,19px 50%;background-size:5px 5px;background-repeat:no-repeat}
+.rsel option{color:#111;background:#fff}
+.toast{bottom:calc(22px + var(--pl) + env(safe-area-inset-bottom,0px))!important}
+.top{bottom:calc(18px + var(--pl) + env(safe-area-inset-bottom,0px))!important}
 .src{color:var(--muted);font-size:.76rem;text-align:center;padding-block:10px 30px}
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
@@ -246,6 +263,15 @@ html.pagemode .top{display:none}
 <button class="top" id="toTop" type="button" aria-label="العودة إلى الأعلى" hidden><svg viewBox="0 0 24 24"><path d="M6 14l6-6 6 6"/></svg></button>
 <div class="scrim" id="scrim" hidden></div>
 <section class="sheet" id="sheet" hidden aria-label="خيارات الآية"></section>
+<div class="player" id="player" hidden>
+  <div class="wrap">
+    <button class="pbtn main" type="button" id="plToggle" aria-label="إيقاف مؤقت"></button>
+    <div class="pinfo"><b id="plWhat"></b><small>تلاوة آية بآية</small></div>
+    <label class="sr" for="reciter" style="position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)">القارئ</label>
+    <select class="rsel" id="reciter"></select>
+    <button class="pbtn x" type="button" id="plStop" aria-label="إيقاف التلاوة"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
+  </div>
+</div>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <section class="panel" id="panel" hidden>
   <div class="wrap">
@@ -405,17 +431,41 @@ function renderHome(){
   window.scrollTo(0,0);
 }
 
-/* ---------- Audio (Saad Al-Ghamdi, verse by verse) ---------- */
+/* ---------- Audio (verse by verse, EveryAyah.com) ---------- */
 const STANDALONE=(()=>{try{return window.top===window}catch(e){return false}})();
-const AUDIO_BASE="https://everyayah.com/data/Ghamadi_40kbps/";
+const RECITERS=[
+  {id:"ghamdi",name:"سعد الغامدي",dir:"Ghamadi_40kbps"},
+  {id:"muaiqly",name:"ماهر المعيقلي",dir:"MaherAlMuaiqly128kbps"},
+  {id:"abdulbasit",name:"عبد الباسط عبد الصمد",dir:"Abdul_Basit_Murattal_192kbps"},
+  {id:"husary",name:"محمود خليل الحصري",dir:"Husary_128kbps"},
+  {id:"dossari",name:"ياسر الدوسري",dir:"Yasser_Ad-Dussary_128kbps"},
+  {id:"sudais",name:"عبد الرحمن السديس",dir:"Abdurrahmaan_As-Sudais_192kbps"}];
+let reciter=RECITERS.find(r=>r.id===store.get("reciter","ghamdi"))||RECITERS[0];
 const pad3=x=>String(x).padStart(3,"0");
-const player={a:null,s:0,v:0};
+const audioUrl=(s,v)=>"https://everyayah.com/data/"+reciter.dir+"/"+pad3(s)+pad3(v)+".mp3";
+const player={a:null,s:0,v:0,next:null};
+const PAUSE_I='<svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></svg>';
+const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
+(function initPlayerBar(){
+  const sel=$("#reciter");sel.innerHTML=RECITERS.map(r=>`<option value="${r.id}">${r.name}</option>`).join("");sel.value=reciter.id;
+  sel.onchange=()=>{reciter=RECITERS.find(r=>r.id===sel.value)||RECITERS[0];store.set("reciter",reciter.id);
+    toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)};
+  $("#plToggle").onclick=()=>{if(!player.a||!player.s)return;if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()};
+  $("#plStop").onclick=()=>stopAudio();
+})();
+function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
+  document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");if(curPage)fitPage()}
+function updatePlayerBar(){
+  if(!player.s){showPlayer(false);return}
+  showPlayer(true);$("#plWhat").textContent=`${META[player.s-1][1]} · ${an(player.v)}`;
+  const paused=!player.a||player.a.paused;$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
+}
 function clearPlayingUI(){
   document.querySelectorAll(".vb.playing").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-pressed","false");b.innerHTML=ICON.play+"<span>استماع</span>"});
   document.querySelectorAll(".verse.reading,.pv.reading").forEach(x=>x.classList.remove("reading"));
 }
 function markPlaying(){
-  clearPlayingUI();if(!player.s)return;
+  clearPlayingUI();updatePlayerBar();if(!player.s)return;
   if(curPage){const el=document.querySelector(`.pv[data-sv="${player.s}:${player.v}"]`);if(el)el.classList.add("reading");
     const sb=document.querySelector('#sheet [data-act="play"]');if(sb&&sheetAt&&sheetAt[0]===player.s&&sheetAt[1]===player.v){sb.classList.add("playing");sb.setAttribute("aria-pressed","true");sb.innerHTML=ICON.pause+"<span>إيقاف</span>"}
     return}
@@ -423,9 +473,9 @@ function markPlaying(){
   const li=document.getElementById("v"+player.v);if(!li)return;
   li.classList.add("reading");
   const b=li.querySelector('[data-act="play"]');if(b){b.classList.add("playing");b.setAttribute("aria-pressed","true");b.innerHTML=ICON.pause+"<span>إيقاف</span>"}
-  const r=li.getBoundingClientRect();if(r.top<70||r.bottom>innerHeight)li.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+  const r=li.getBoundingClientRect(),pl=$("#player").offsetHeight||0;if(r.top<70||r.bottom>innerHeight-pl)li.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
-function stopAudio(){player.s=0;player.v=0;if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.load()}clearPlayingUI()}
+function stopAudio(){player.s=0;player.v=0;player.next=null;if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.load()}clearPlayingUI();updatePlayerBar()}
 function playVerse(s,v){
   if(!player.a){
     player.a=new Audio();player.a.preload="auto";
@@ -433,11 +483,13 @@ function playVerse(s,v){
       if(s&&v<META[s-1][4]&&(current===s||curPage)){
         if(curPage){const np=pageOf(s,v+1);if(np!==curPage){player.v=v+1;location.hash="p"+np;playVerse(s,v+1);return}}
         playVerse(s,v+1)}else stopAudio()});
-    player.a.addEventListener("error",()=>{if(!player.s)return;toast("تعذّر تشغيل التلاوة. تحقّق من الاتصال.");stopAudio()});
+    player.a.addEventListener("error",()=>{if(!player.s)return;toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
+    player.a.addEventListener("play",updatePlayerBar);player.a.addEventListener("pause",updatePlayerBar);
   }
   player.s=s;player.v=v;
-  player.a.src=AUDIO_BASE+pad3(s)+pad3(v)+".mp3";
+  player.a.src=audioUrl(s,v);
   player.a.play().catch(()=>{});
+  if(v<META[s-1][4]){player.next=new Audio();player.next.preload="auto";player.next.src=audioUrl(s,v+1)}
   markPlaying();
 }
 
@@ -588,7 +640,8 @@ function fitPage(){
   const mp=$("#mpage"),body=$("#pbody");if(!mp||!body)return;
   const cs=getComputedStyle(document.documentElement);const padB=parseFloat(cs.paddingBottom)||0;
   const top=$(".bar").getBoundingClientRect().bottom;
-  const h=Math.max(360,Math.floor(window.innerHeight-top-padB-16));
+  const pl=$("#player").hidden?0:$("#player").offsetHeight;
+  const h=Math.max(360,Math.floor(window.innerHeight-top-padB-16-pl));
   mp.style.height=h+"px";mp.style.maxWidth=Math.round(Math.max(300,h*0.7))+"px";
   let lo=12,hi=34;
   for(let i=0;i<10;i++){const mid=(lo+hi)/2;body.style.fontSize=mid+"px";if(body.scrollHeight<=body.clientHeight+1)lo=mid;else hi=mid}

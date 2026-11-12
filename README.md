@@ -7,7 +7,7 @@ Application web simple pour **lire le Coran** (texte arabe en rasm uthmani) et *
 - Les 114 sourates en écriture uthmani
 - Deux modes de lecture : **verset par verset** ou **pages du Mushaf** (604 pages du Mushaf de Médine, avec juz', hizb et quarts de hizb ; glisser du doigt pour tourner les pages)
 - Tafsir sous chaque verset : **Al-Muyassar** (par défaut), **As-Sa'di**, **Ibn Kathir**
-- Récitation verset par verset de **Saad Al-Ghamdi**, avec enchaînement automatique
+- Récitation verset par verset avec enchaînement automatique et choix du récitateur : **Saad Al-Ghamdi, Maher Al-Muaiqly, Abdul Basit, Al-Husary, Yasser Ad-Dossari, As-Sudais**
 - **توقفت هنا** : marque le verset où tu t'es arrêté (un seul à la fois)
 - Marque-pages multiples (**علامة**)
 - Recherche par mot ou par référence (ex. `2:255`)
@@ -36,4 +36,4 @@ Ouvre l'adresse GitHub Pages du projet. Sur téléphone, ajoute-la à l'écran d
 - Tafsirs : [spa5k/tafsir_api](https://github.com/spa5k/tafsir_api)
 - Pages, juz' et hizb : paquet npm [`quran-meta`](https://www.npmjs.com/package/quran-meta)
 - Police : Amiri Quran (licence SIL OFL, voir `fonts/`)
-- Audio : [EveryAyah.com](https://everyayah.com) (Saad Al-Ghamdi, 40 kbps)
+- Audio : [EveryAyah.com](https://everyayah.com) (fichiers verset par verset)
