@@ -219,7 +219,7 @@ html.pagemode .top{display:none}
 
 /* Verse sheet */
 .scrim{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.35)}
-.sheet{position:fixed;inset:auto 0 0 0;z-index:16;background:var(--surface);border-top:2px solid var(--gold);border-radius:18px 18px 0 0;max-height:78vh;overflow-y:auto;
+.sheet{position:fixed;inset:auto 0 var(--pl) 0;z-index:16;background:var(--surface);border-top:2px solid var(--gold);border-radius:18px 18px 0 0;max-height:78vh;overflow-y:auto;
   padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18)}
 .sheet .wrap{padding-block:10px 0}
 .sgrip{width:40px;height:4px;border-radius:2px;background:var(--line-strong);margin:0 auto 8px}
@@ -229,7 +229,7 @@ html.pagemode .top{display:none}
 .sheet .vbar{grid-template-columns:repeat(4,minmax(0,1fr));opacity:1}
 /* Mini player */
 :root{--pl:0px}
-.player{position:fixed;inset:auto 0 0 0;z-index:14;background:var(--solid);color:var(--solid-ink);border-top:1.5px solid var(--gold);
+.player{position:fixed;inset:auto 0 0 0;z-index:18;background:var(--solid);color:var(--solid-ink);border-top:1.5px solid var(--gold);
   padding-bottom:env(safe-area-inset-bottom,0px)}
 .player .wrap{display:flex;align-items:center;gap:8px;padding-block:8px}
 .pbtn{flex:none;width:38px;height:38px;border-radius:50%;border:1px solid var(--gold);background:none;color:var(--solid-ink);display:grid;place-items:center}
@@ -239,9 +239,13 @@ html.pagemode .top{display:none}
 .pinfo{flex:1;min-width:0;line-height:1.3}
 .pinfo b{display:block;font-family:var(--f-head);font-weight:500;font-size:.9rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
 .pinfo small{color:var(--gold);font-size:.75rem}
-.rsel{flex:none;max-width:46%;appearance:none;-webkit-appearance:none;background:transparent;color:var(--solid-ink);border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);border-radius:999px;padding:7px 28px 7px 12px;font:inherit;font-size:.85rem;
+.rsel{flex:none;max-width:46%;appearance:none;-webkit-appearance:none;background:transparent;color:var(--solid-ink);border:1px solid color-mix(in srgb,var(--gold) 60%,transparent);border-radius:999px;padding:7px 12px 7px 30px;font:inherit;font-size:.85rem;
   background-image:linear-gradient(45deg,transparent 50%,var(--gold) 50%),linear-gradient(135deg,var(--gold) 50%,transparent 50%);background-position:14px 50%,19px 50%;background-size:5px 5px;background-repeat:no-repeat}
 .rsel option{color:#111;background:#fff}
+.srec{display:flex;align-items:center;gap:10px;margin:10px 0 2px;padding:8px 12px;border:1px solid var(--line-strong);border-radius:12px;background:var(--bg)}
+.srec span{font-family:var(--f-head);font-size:.85rem;color:var(--muted)}
+.srec select{flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:transparent;color:var(--ink);border:0;font:inherit;font-size:.95rem;padding:2px 22px 2px 0;
+  background-image:linear-gradient(45deg,transparent 50%,var(--gold) 50%),linear-gradient(135deg,var(--gold) 50%,transparent 50%);background-position:6px 55%,11px 55%;background-size:5px 5px;background-repeat:no-repeat}
 .toast{bottom:calc(22px + var(--pl) + env(safe-area-inset-bottom,0px))!important}
 .top{bottom:calc(18px + var(--pl) + env(safe-area-inset-bottom,0px))!important}
 .src{color:var(--muted);font-size:.76rem;text-align:center;padding-block:10px 30px}
@@ -399,10 +403,10 @@ function renderHome(){
   titleEl.textContent="";document.title="مصحف التدبر";curPage=0;
   const last=stopAt;
   const lastHtml=last&&last[0]===0?`<button class="continue" type="button" data-page="${last[1]}">
-      <div><b>أكمل من حيث توقفت</b><span>الصفحة ${an(last[1])} · سورة ${META[sv(PG[last[1]])[0]-1][1]}</span></div><span class="go">‹</span></button>`:
+      <div><b>أكمل من حيث توقفت</b><span>الصفحة ${an(last[1])}، سورة ${META[sv(PG[last[1]])[0]-1][1]}</span></div><span class="go">‹</span></button>`:
     last?`<button class="continue" type="button" data-go="${last[0]}-${last[1]}">
-      <div><b>أكمل من حيث توقفت</b><span>سورة ${META[last[0]-1][1]} · الآية ${an(last[1])}</span></div><span class="go">‹</span></button>`:
-    `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة · الآية ١</span></div><span class="go">‹</span></button>`;
+      <div><b>أكمل من حيث توقفت</b><span>سورة ${META[last[0]-1][1]}، الآية ${an(last[1])}</span></div><span class="go">‹</span></button>`:
+    `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة، الآية ١</span></div><span class="go">‹</span></button>`;
   const marksHtml=marks.length?`<div class="seclabel">العلامات المحفوظة</div><div class="marks">${marks.map(m=>`<button class="chip" type="button" data-go="${m[0]}-${m[1]}">${META[m[0]-1][1]} ${an(m[1])}</button>`).join("")}</div>`:"";
   const ORN='<svg class="orn" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><path d="M20 9l3 4.3 5 1-3.4 4 .6 5.2L20 21.4l-5.2 2.1.6-5.2-3.4-4 5-1z" fill="var(--gold)"/></svg>';
   view.innerHTML=`<section class="cover"><div class="wrap"><div class="frame"><div class="frame-in">
@@ -418,12 +422,12 @@ function renderHome(){
     <input class="filter" id="filter" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off">
     <div class="seclabel">فهرس السور</div>
     <ul class="list" id="slist"></ul>
-    <p class="src">النص: الرسم العثماني من موسوعة القرآن الكريم (quranenc.com) · التفاسير: الميسر، السعدي، ابن كثير</p>
+    <p class="src">النص: الرسم العثماني من موسوعة القرآن الكريم (quranenc.com)، التفاسير: الميسر، السعدي، ابن كثير</p>
   </div>`;
   const ul=$("#slist");
   const draw=f=>{const nf=norm(f||"");ul.innerHTML=META.filter(m=>!f||String(m[0])===f.trim()||norm(m[1]).includes(nf)||m[2].toLowerCase().includes(f.toLowerCase())).map(m=>
     `<li><button class="srow" type="button" data-go="${m[0]}-1"><span class="num"><svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z"/></svg><b>${an(m[0])}</b></span>
-      <span><span class="sname">سورة ${m[1]}</span><br><span class="smeta">${m[3]==="meccan"?"مكية":"مدنية"} · ${an(m[4])} آية</span></span>
+      <span><span class="sname">سورة ${m[1]}</span><br><span class="smeta">${m[3]==="meccan"?"مكية":"مدنية"}، ${an(m[4])} آية</span></span>
       <span class="lat">${m[2]}</span></button></li>`).join("")};
   draw("");
   $("#filter").addEventListener("input",e=>draw(e.target.value));
@@ -448,16 +452,19 @@ const PAUSE_I='<svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="
 const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 (function initPlayerBar(){
   const sel=$("#reciter");sel.innerHTML=RECITERS.map(r=>`<option value="${r.id}">${r.name}</option>`).join("");sel.value=reciter.id;
-  sel.onchange=()=>{reciter=RECITERS.find(r=>r.id===sel.value)||RECITERS[0];store.set("reciter",reciter.id);
-    toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)};
+  sel.onchange=()=>setReciter(sel.value);
   $("#plToggle").onclick=()=>{if(!player.a||!player.s)return;if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()};
   $("#plStop").onclick=()=>stopAudio();
 })();
+function reciterOptions(){return RECITERS.map(r=>`<option value="${r.id}"${r.id===reciter.id?" selected":""}>${r.name}</option>`).join("")}
+function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.set("reciter",reciter.id);
+  document.querySelectorAll("#reciter,#sreciter").forEach(x=>x.value=reciter.id);
+  toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)}
 function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
   document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");if(curPage)fitPage()}
 function updatePlayerBar(){
   if(!player.s){showPlayer(false);return}
-  showPlayer(true);$("#plWhat").textContent=`${META[player.s-1][1]} · ${an(player.v)}`;
+  showPlayer(true);$("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
   const paused=!player.a||player.a.paused;$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
 }
 function clearPlayingUI(){
@@ -534,9 +541,9 @@ async function renderSurah(n,target){
     if(current!==n)return;
     const bas=(n!==1&&n!==9)?`<div class="basmala">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>`:"";
     view.innerHTML=`<div class="wrap">
-      <div class="shead"><div class="cartouche"><i></i>سورة ${m[1]}<i></i></div><div class="smeta">${m[3]==="meccan"?"مكية":"مدنية"} · ${an(m[4])} آية · ترتيبها ${an(n)}</div></div>
+      <div class="shead"><div class="cartouche"><i></i>سورة ${m[1]}<i></i></div><div class="smeta">${m[3]==="meccan"?"مكية":"مدنية"}، ${an(m[4])} آية، ترتيبها ${an(n)}</div></div>
       <div class="tools"><button class="vb" type="button" id="fminus" aria-label="تصغير الخط">أ−</button><button class="vb" type="button" id="fplus" aria-label="تكبير الخط">أ+</button></div>
-      ${stopAt&&stopAt[0]===n&&stopAt[1]>1?`<div class="jump"><button class="vb" type="button" data-go="${n}-${stopAt[1]}">${ICON.stop}انتقل إلى موضع توقفك · الآية ${an(stopAt[1])}</button></div>`:""}
+      ${stopAt&&stopAt[0]===n&&stopAt[1]>1?`<div class="jump"><button class="vb" type="button" data-go="${n}-${stopAt[1]}">${ICON.stop}انتقل إلى موضع توقفك، الآية ${an(stopAt[1])}</button></div>`:""}
       ${bas}
       <ol class="verses" id="verses">${data.v.map((t,i)=>`<li class="verse${isStop(n,i+1)?" stopped":""}" id="v${i+1}" data-v="${i+1}">
         <span class="stoptag">${ICON.stop.replace('<svg','<svg width="12" height="12" stroke="currentColor" fill="currentColor"')}توقفت هنا</span>
@@ -609,7 +616,7 @@ async function renderPage(p){
   if(open)html+="</p>";
   view.innerHTML=`<div class="wrap pview">
     <article class="mpage${swipeDir>0?" in-next":swipeDir<0?" in-prev":""}" id="mpage"><div class="mpage-in">
-      <header class="phead"><span class="ps">سورة ${META[s1-1][1]}</span><span class="pj">الجزء <b>${an(juz)}</b> · الحزب <b>${an(hizb)}</b>${qMark?` · <b>۞ ${qMark}</b>`:""}</span></header>
+      <header class="phead"><span class="ps">سورة ${META[s1-1][1]}</span><span class="pj">الجزء <b>${an(juz)}</b>، الحزب <b>${an(hizb)}</b>${qMark?`، <b>۞ ${qMark}</b>`:""}</span></header>
       <div class="pbody" id="pbody"><div class="pinner">${html}</div></div>
       <footer class="pfoot">
         <button class="parrow" type="button" data-page="${p-1}" aria-label="الصفحة السابقة" ${p<=1?"disabled":""}>${ICON.prev}</button>
@@ -673,16 +680,19 @@ async function openSheet(s,v){
   const el=document.querySelector(`.pv[data-sv="${s}:${v}"]`);if(el)el.classList.add("sel");
   sheetAt=[s,v];const data=await loadSurah(s);const sh=$("#sheet");const mk=isMarked(s,v);
   sh.innerHTML=`<div class="wrap"><div class="sgrip"></div>
-    <div class="shd"><span class="ref">سورة ${META[s-1][1]} · الآية ${an(v)}</span><button class="ib" type="button" id="sclose" aria-label="إغلاق">${ICON.close}</button></div>
+    <div class="shd"><span class="ref">سورة ${META[s-1][1]}، الآية ${an(v)}</span><button class="ib" type="button" id="sclose" aria-label="إغلاق">${ICON.close}</button></div>
     <p class="sverse">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></p>
     <div class="vbar">
       <button class="vb" type="button" data-act="tafsir" aria-expanded="false">${ICON.tafsir}تفسير</button>
       <button class="vb${mk?" saved":""}" type="button" data-act="mark" aria-pressed="${mk}">${ICON.mark}<span>${mk?"محفوظة":"علامة"}</span></button>
       ${STANDALONE?`<button class="vb" type="button" data-act="play" aria-pressed="false">${ICON.play}<span>استماع</span></button>`:`<a class="vb" href="https://quran.com/${s}/${v}" target="_blank" rel="noopener">${ICON.play}استماع</a>`}
       <button class="vb" type="button" data-act="copy">${ICON.copy}نسخ</button>
-    </div><div id="stafsir"></div></div>`;
+    </div>
+    ${STANDALONE?`<label class="srec" for="sreciter"><span>القارئ</span><select id="sreciter">${reciterOptions()}</select></label>`:""}
+    <div id="stafsir"></div></div>`;
   sheetOpenedAt=Date.now();sh.hidden=false;$("#scrim").hidden=false;markPlaying();
   $("#sclose").onclick=closeSheet;
+  const sr=$("#sreciter");if(sr)sr.onchange=()=>setReciter(sr.value);
   sh.querySelector(".vbar").onclick=e=>{const b=e.target.closest("[data-act]");if(!b)return;const act=b.dataset.act;
     if(act==="mark"){toggleMark(s,v);const on=isMarked(s,v);b.classList.toggle("saved",on);b.setAttribute("aria-pressed",on);b.querySelector("span").textContent=on?"محفوظة":"علامة"}
     if(act==="play"){if(player.s===s&&player.v===v)stopAudio();else playVerse(s,v)}
@@ -714,7 +724,7 @@ async function runSearch(q){
   if(!q){res.innerHTML="";hint.textContent="اكتب كلمة دون تشكيل، مثل: الصبر، أو رقم السورة والآية مثل 2:255.";return}
   const ref=toLatin(q).match(/^(\d{1,3})\s*[:：.\/\-]\s*(\d{1,3})$/);
   if(ref){const s=+ref[1],v=+ref[2];if(s>=1&&s<=114&&v>=1&&v<=META[s-1][4]){hint.textContent="انتقال مباشر:";
-      res.innerHTML=`<li><button type="button" data-go="${s}-${v}"><div class="ref">سورة ${META[s-1][1]} · الآية ${an(v)}</div><div class="t">اضغط للانتقال إلى الآية</div></button></li>`}
+      res.innerHTML=`<li><button type="button" data-go="${s}-${v}"><div class="ref">سورة ${META[s-1][1]}، الآية ${an(v)}</div><div class="t">اضغط للانتقال إلى الآية</div></button></li>`}
     else{res.innerHTML="";hint.textContent="هذا الرقم غير موجود. السور من ١ إلى ١١٤."}return}
   if(norm(q).length<2){res.innerHTML="";hint.textContent="اكتب حرفين على الأقل.";return}
   hint.textContent="جارٍ البحث…";
@@ -722,7 +732,7 @@ async function runSearch(q){
   const nq=norm(q),out=[];let total=0;
   for(let s=0;s<114;s++)for(let v=0;v<QN[s].length;v++)if(QN[s][v].includes(nq)){total++;if(out.length<60)out.push([s+1,v+1])}
   hint.textContent=total?`${an(total)} نتيجة${total>60?" (تُعرض أول ٦٠)":""}`:"لا توجد نتائج. جرّب كلمة أقصر أو بدون "+"ال"+".";
-  res.innerHTML=out.map(([s,v])=>`<li><button type="button" data-go="${s}-${v}"><div class="ref">${META[s-1][1]} · ${an(v)}</div><div class="t">${highlight(QURAN[s-1][v-1],nq)}</div></button></li>`).join("");
+  res.innerHTML=out.map(([s,v])=>`<li><button type="button" data-go="${s}-${v}"><div class="ref">${META[s-1][1]}، ${an(v)}</div><div class="t">${highlight(QURAN[s-1][v-1],nq)}</div></button></li>`).join("");
 }
 let st=null;$("#q").addEventListener("input",e=>{clearTimeout(st);st=setTimeout(()=>runSearch(e.target.value),250)});
 $("#btnSearch").onclick=()=>{$("#panel").hidden=false;$("#q").focus();ensureIndex().catch(()=>{})};
