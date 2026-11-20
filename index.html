@@ -466,15 +466,24 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .atrow .btn{margin-inline-start:auto}
 
 /* ===== v6: recitation layout ===== */
-.recinfo{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+.hzsettings>summary,.recinfo>summary{cursor:pointer;font-family:var(--f-head);font-size:.9rem;color:var(--muted)}
+.hzsettings[open]>summary,.recinfo[open]>summary{margin-bottom:8px}
+.recinfo{margin-bottom:6px}
+.recinfo .note2{margin-top:6px}
+.hzpage:has(#recText){gap:12px}
+.hzpage:has(#recText) .hzname{display:none}
+.hzsettings>.seg,.hzsettings>.duecard{margin-bottom:8px}
 .recbar{position:sticky;bottom:calc(10px + var(--pl) + env(safe-area-inset-bottom,0px));z-index:4;display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 8px 8px 14px;border-radius:999px;background:var(--solid);color:var(--solid-ink);border:1px solid var(--gold);box-shadow:0 10px 30px -12px rgba(0,0,0,.4)}
 .recstat{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
 .recstat b{font-family:var(--f-head);font-weight:500;color:var(--gold);font-size:.95rem}
-.recbar .heard{text-align:right;color:color-mix(in srgb,var(--solid-ink) 70%,transparent);font-size:.82rem;min-height:1.2em}
+.recbar .recHint{flex:none;color:var(--solid-ink);border-color:color-mix(in srgb,var(--solid-ink) 35%,transparent);background:transparent;padding:10px 12px}
 .recbar .btn.mic{flex:none;padding:10px 18px}
 .recbar .btn.mic.live{background:var(--gold);border-color:var(--gold);color:#111}
-#recText .hzv{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 70px);transition:background .3s,border-color .3s,opacity .4s,font-size .4s}
-#recText .hzv.done{opacity:.4;font-size:calc(var(--qsize)*.72)}
+#recText .hzv{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 70px);transition:background .3s,border-color .3s}
+.rw.hint{color:var(--gold-strong);--hwc:var(--gold-soft)}
+.rw.hint.ok,.rw.hint.miss{--hwc:transparent}
+.rw.hint.ok{color:inherit}
+.rw.hint.miss{color:#b3261e}
 body.reclive .recinfo,body.reclive .hzpage>*:not(#hzBody):not(.hzhead){display:none}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
@@ -1208,42 +1217,67 @@ function drawRec(data,a,b){
   const words=[];let html="";
   for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
     html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
-  body.innerHTML=`<div class="card recinfo">
-      <p class="note2">اقرأ المقطع من حفظك بصوت واضح. تظهر كل كلمة حين يُتعرَّف عليها، وما تجاوزته يُعلَّم بالأحمر. إن أخطأ التطبيق في موضعك، المس الآية التي تقرؤها.</p>
+  body.innerHTML=`<details class="recinfo"><summary>خيارات التسميع</summary>
       <button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>إظهار النص باهتًا أثناء القراءة</span><i class="sw"></i></button>
       <p class="note2" style="font-size:.76rem">تقريبي: يتحقق من الكلمات وترتيبها فقط، لا من الحركات أو التجويد. يمرّ الصوت عبر خدمة التعرّف على الكلام في متصفحك.</p>
-    </div>
+      <p class="note2">لتغيير موضع التسميع، المس الآية التي تريد البدء منها.</p>
+    </details>
     <div id="recText">${html}</div>
-    <div class="recbar"><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
+    <div class="recbar"><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b></div>
+      <button class="btn recHint" type="button" id="recHint" aria-label="تلميح: إظهار الكلمة التالية">تلميح</button>
       <button class="btn gold mic" type="button" id="recBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ</span></button></div>`;
   const spans=[...document.querySelectorAll("#recText .rw")],vEls=[...document.querySelectorAll("#recText .hzv")];
-  const vStart={},vEnd={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k;vEnd[v]=k});
-  let startIdx=0,fixed=new Array(words.length).fill(0),finals=[],last={st:fixed.slice(),pos:0},lastV=0,running=false;
+  const vStart={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k});
+  const hintBtn=$("#recHint"),recBar=hintBtn.closest(".recbar");
+  const hints=new Set();
+  let startIdx=0,fixed=new Array(words.length).fill(0),last={st:fixed.slice(),pos:0},lastPos=-1;
   const merged=al=>{const st=fixed.slice();for(let k=startIdx;k<st.length;k++)st[k]=al.st[k];return {st,pos:al.pos}};
   const score=al=>al.st.filter(x=>x===1).length*2+al.pos;
-  const paint=(st,pos,done)=>{spans.forEach((s,k)=>{s.classList.toggle("ok",st[k]===1);s.classList.toggle("miss",st[k]===2||(done&&st[k]===0))});
-    const curV=pos<spans.length?vOf[pos]:0;
-    vEls.forEach(e=>{const v=+e.dataset.sv.split(":")[1];e.classList.toggle("cur",!done&&v===curV);
-      let full=true;for(let k=vStart[v];k<=vEnd[v];k++)if(st[k]!==1){full=false;break}e.classList.toggle("done",!done&&running&&full&&v!==curV)});
-    const ok=st.filter(x=>x===1).length,miss=st.filter(x=>x===2).length;
-    $("#recStat").textContent=done?`${an(ok)} من ${an(words.length)} صحيحة`:`${an(ok)} / ${an(words.length)}${miss?`، ${an(miss)} فاتتك`:""}`;
-    if(!done&&curV&&curV!==lastV){lastV=curV;const el=vEls.find(e=>+e.dataset.sv.split(":")[1]===curV);if(el)el.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}};
+  const followWord=pos=>{
+    const current=spans[pos].getBoundingClientRect();
+    let top=current.top;
+    // Find the preceding rendered line, including when an ayah wraps.
+    for(let k=pos-1;k>=0;k--){
+      const prior=spans[k].getBoundingClientRect();
+      if(prior.top<current.top-1){top=prior.top;break}
+    }
+    const upper=$(".bar").getBoundingClientRect().bottom+8;
+    const recBounds=recBar.getBoundingClientRect();
+    const lower=Math.min(innerHeight,recBounds.top)-8;
+    const delta=top<upper?top-upper:current.bottom>lower?Math.min(top-upper,current.bottom-lower):0;
+    if(delta)window.scrollBy({top:delta,behavior:"instant"});
+  };
+  const nextHint=()=>spans.findIndex((_,k)=>k>=last.pos&&!hints.has(k));
+  const paint=(st,pos,done)=>{spans.forEach((s,k)=>{s.classList.toggle("ok",st[k]===1);s.classList.toggle("miss",st[k]===2||(done&&st[k]===0));s.classList.toggle("hint",hints.has(k))});
+    vEls.forEach(e=>e.classList.toggle("cur",!done&&+e.dataset.sv.split(":")[1]===vOf[pos]));
+    const ok=st.filter(x=>x===1).length;
+    $("#recStat").textContent=done?`${an(ok)} من ${an(words.length)} صحيحة`:`${an(ok)} / ${an(words.length)}`;
+    hintBtn.disabled=done||nextHint()<0;
+    if(!done&&pos<spans.length&&pos!==lastPos){lastPos=pos;followWord(pos)}
+  };
+  hintBtn.onclick=()=>{
+    const k=nextHint();if(k<0)return;
+    hints.add(k);spans[k].classList.add("hint");hintBtn.disabled=nextHint()<0;followWord(k);
+  };
   const btnLabel=t=>{$("#recBtn span").textContent=t};
-  const setLive=on=>{running=on;document.body.classList.toggle("reclive",on);$("#recBtn").classList.toggle("live",on)};
+  const setLive=on=>{document.body.classList.toggle("reclive",on);$("#recBtn").classList.toggle("live",on)};
   const finish=()=>{stopRec();rec=null;setLive(false);btnLabel("أعد");paint(last.st,last.pos,true);
-    const ok=last.st.filter(x=>x===1).length;$("#recHeard").textContent=ok===words.length?"ما شاء الله، تسميع متقن":ok/words.length>=.8?"أحسنت، راجع الكلمات الحمراء":"كرّر المقطع ثم أعد المحاولة";
-    if(ok===words.length)toast("ما شاء الله، تسميع متقن")};
+    if(last.st.every(x=>x===1))toast("ما شاء الله، تسميع متقن")};
   $("#recText").onclick=e=>{const p=e.target.closest(".hzv");if(!p)return;const v=+p.dataset.sv.split(":")[1];if(vStart[v]===undefined)return;
-    startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;finals=[];lastV=0;
-    last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);$("#recHeard").textContent="";
+    startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;hints.clear();lastPos=-1;
+    last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);
     if(rec){try{rec.r.abort()}catch(x){}}
     toast(`أتابع معك من الآية ${an(v)}`)};
-  $("#recShow").onclick=()=>{store.set("recshow",!show);drawRec(data,a,b)};
+  $("#recShow").onclick=e=>{
+    const on=e.currentTarget.getAttribute("aria-checked")!=="true";
+    store.set("recshow",on);e.currentTarget.setAttribute("aria-checked",String(on));
+    spans.forEach(s=>s.classList.toggle("peek",on));
+  };
   $("#recBtn").onclick=()=>{
     if(rec){finish();return}
     if(player.s)stopAudio();
-    if(last.pos>=words.length||$("#recBtn span").textContent==="أعد"){startIdx=0;fixed=new Array(words.length).fill(0)}
-    finals=[];lastV=0;last={st:fixed.slice(),pos:startIdx};setLive(true);paint(last.st,startIdx,false);$("#recHeard").textContent="أستمع إليك…";
+    if(last.pos>=words.length||$("#recBtn span").textContent==="أعد"){startIdx=0;fixed=new Array(words.length).fill(0);hints.clear()}
+    lastPos=-1;last={st:fixed.slice(),pos:startIdx};setLive(true);paint(last.st,startIdx,false);
     const r=new SRC();r.lang="ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=3;
     rec={r,want:true};btnLabel("إنهاء");
     const toWords=t=>t.split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
@@ -1251,20 +1285,19 @@ function drawRec(data,a,b){
        compared with the rest of the passage. used[i] = words of result i already consumed. */
     const used={};
     const commit=(ws,final)=>{const al=alignRec(ws,words,startIdx,final);for(let k=startIdx;k<al.pos;k++)fixed[k]=al.st[k];startIdx=al.pos;return final?ws.length:al.used};
-    r.onresult=e=>{let pending=[],raw=[];
+    r.onresult=e=>{if(rec?.r!==r)return;let pending=[];
       for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i],u=used[i]||0;
         /* among the recogniser's alternatives, keep the one that fits what remains best */
         let best=res[0].transcript,bs=-1;for(let j=0;j<res.length;j++){const t=res[j].transcript;const sc=score(alignRec(toWords(t).slice(u),words,startIdx,res.isFinal));if(sc>bs){bs=sc;best=t}}
         const ws=toWords(best),rest=ws.slice(Math.min(u,ws.length));
         if(res.isFinal){commit(rest,true);used[i]=ws.length}
-        else{const n=rest.length>1?commit(rest.slice(0,-1),false):0;used[i]=Math.min(u,ws.length)+n;pending.push(...rest.slice(n));raw.push(...best.split(/\s+/).filter(Boolean).slice(used[i]))}}
+        else{const n=rest.length>1?commit(rest.slice(0,-1),false):0;used[i]=Math.min(u,ws.length)+n;pending.push(...rest.slice(n))}}
       last=merged(alignRec(pending,words,startIdx,false));paint(last.st,last.pos,false);
-      $("#recHeard").textContent=raw.join(" ");
-      if(last.pos>=words.length||startIdx>=words.length)setTimeout(()=>{if(rec)finish()},350)};
-    r.onerror=e=>{if(e.error==="no-speech"||e.error==="aborted")return;rec&&(rec.want=false);
+      if(last.pos>=words.length||startIdx>=words.length)setTimeout(()=>{if(rec?.r===r)finish()},350)};
+    r.onerror=e=>{if(rec?.r!==r||e.error==="no-speech"||e.error==="aborted")return;rec&&(rec.want=false);
       toast(e.error==="not-allowed"||e.error==="service-not-allowed"?"اسمح للمتصفح باستعمال الميكروفون والتعرّف على الكلام، ثم أعد المحاولة":"تعذّر التعرّف على الصوت. تحقّق من الاتصال وأعد المحاولة");
       btnLabel("ابدأ");setLive(false);rec=null};
-    r.onend=()=>{for(const k in used)delete used[k];if(rec&&rec.want){try{r.start()}catch(e){setTimeout(()=>{if(rec&&rec.want)try{r.start()}catch(x){}},250)}}};
+    r.onend=()=>{for(const k in used)delete used[k];if(rec?.r===r&&rec.want){try{r.start()}catch(e){setTimeout(()=>{if(rec?.r===r&&rec.want)try{r.start()}catch(x){}},250)}}};
     try{r.start()}catch(e){toast("تعذّر تشغيل الميكروفون");rec=null;setLive(false);btnLabel("ابدأ")}
   };
 }
@@ -1444,6 +1477,7 @@ async function renderHifzSurah(n){
       <a class="back" href="#hifz">→ الحفظ</a>
       <div class="hzname"><span class="sname">سورة ${m[1]}</span><small>${an(N)} آية${st===1?"، سورتك الحالية":""}${nextTxt?`، ${nextTxt}`:""}</small></div>
     </div>
+    <details class="hzsettings" ${tab==="rec"?"":"open"}><summary id="hzSettingsSummary">المقطع ${an(a)}–${an(b)} · الإعدادات</summary>
     ${due?`<section class="card duecard"><h2>حان وقت المراجعة</h2><p class="note2" style="margin-bottom:10px">راجع السورة بإحدى الأدوات أدناه، ثم قيّم حفظك:</p><div class="btns"><button class="btn gold" type="button" id="rvOk">أتقنتها</button><button class="btn" type="button" id="rvNo">أحتاج مراجعة</button></div></section>`:""}
     <div class="seg" id="hzSt"><button type="button" data-st="0" aria-pressed="${st===0}">لم أبدأ</button><button type="button" data-st="1" aria-pressed="${st===1}">أحفظها الآن</button><button type="button" data-st="2" aria-pressed="${st===2}">حفظتها</button></div>
     <section class="card tight">
@@ -1451,6 +1485,7 @@ async function renderHifzSurah(n){
       ${st===1?`<div class="atrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><label for="hzAt">وصلتُ إلى الآية</label><input id="hzAt" type="number" inputmode="numeric" min="1" max="${N}" value="${Math.min(N,h.at||1)}"><button class="btn gold sm" type="button" id="hzAtSave">حفظ موضعي</button></div>`:""}
       <div class="chips" id="hzPre"><button type="button" data-p="prev" ${a<=1?"disabled":""}>→ السابق</button><button type="button" data-p="next" ${b>=N?"disabled":""}>التالي ←</button><button type="button" data-p="all" aria-pressed="${a===1&&b===N}">كل السورة</button></div>
     </section>
+    </details>
     <div class="tooltabs" id="hzTab" role="tablist">
       ${[["mask","إخفاء"],["rep","تكرار"],["quiz","اختبار"],["rec","تسميع"]].map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-pressed="${tab===k}">${ICO[k]}<span>${l}</span></button>`).join("")}
     </div>
@@ -1461,12 +1496,13 @@ async function renderHifzSurah(n){
   const atS=$("#hzAtSave");if(atS)atS.onclick=()=>{const v=Math.max(1,Math.min(N,+$("#hzAt").value||1));$("#hzAt").value=v;HZ[n].at=v;hzSave();toast(`حُفظ موضعك: الآية ${an(v)}`)};
   if($("#rvOk")){$("#rvOk").onclick=()=>{hzReview(n,true);toast("أحسنت، بارك الله فيك");renderHifzSurah(n)};$("#rvNo").onclick=()=>{hzReview(n,false);toast("سنذكّرك بمراجعتها غدًا");renderHifzSurah(n)}}
   const setR=(x,y)=>{x=Math.max(1,Math.min(N,x));y=Math.max(x,Math.min(N,y));$("#hzFrom").value=x;$("#hzTo").value=y;store.set("hzr"+n,[x,y]);hzQuiz=null;stopRec();rec=null;if(player.queue)stopAudio();
+    $("#hzSettingsSummary").textContent=`المقطع ${an(x)}–${an(y)} · الإعدادات`;
     const pre=$("#hzPre");pre.querySelector('[data-p="prev"]').disabled=x<=1;pre.querySelector('[data-p="next"]').disabled=y>=N;pre.querySelector('[data-p="all"]').setAttribute("aria-pressed",String(x===1&&y===N));drawHz(data)};
   const onR=()=>setR(+$("#hzFrom").value||1,+$("#hzTo").value||+$("#hzFrom").value||1);
   $("#hzFrom").onchange=onR;$("#hzTo").onchange=onR;
   $("#hzPre").onclick=e=>{const x=e.target.closest("[data-p]");if(!x||x.disabled)return;const [c,d]=hzRange(N),len=d-c+1;
     if(x.dataset.p==="all")setR(1,N);else if(x.dataset.p==="next")setR(d+1,Math.min(N,d+len));else setR(Math.max(1,c-len),c-1)};
-  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab",x.dataset.t);$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
+  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab",x.dataset.t);$(".hzsettings").open=x.dataset.t!=="rec";$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
   drawHz(data);window.scrollTo(0,0);
 }
 
