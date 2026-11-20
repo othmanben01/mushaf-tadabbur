@@ -431,6 +431,37 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .tooltabs button[aria-pressed="true"] svg{stroke:var(--gold)}
 .preview{font-family:var(--f-quran);font-size:var(--qsize);line-height:2;margin:0;padding:4px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
 
+/* ===== v5: current surah, memorized list, pickers ===== */
+.chead2{display:flex;align-items:center;justify-content:space-between;gap:8px;margin-bottom:8px}
+.chead2 h2{margin:0}
+.curcard{display:flex;flex-direction:column;gap:10px;border-color:var(--gold)}
+.curcard.empty h2{margin:0}
+.currow{display:flex;flex-direction:column;color:var(--ink);text-decoration:none}
+.currow .sname{font-size:1.6rem;line-height:1.5}
+.currow small{color:var(--muted);font-family:var(--f-head);font-size:.85rem}
+.btn.wide{width:100%;padding:11px 16px;font-size:.98rem}
+.hzlist li{display:flex;align-items:center;gap:6px}
+.hzlist li .hzrow{flex:1;min-width:0}
+.xbtn{flex:none;width:34px;height:34px;border-radius:50%;border:1px solid var(--line-strong);background:var(--surface);color:var(--muted);font-size:1.15rem;line-height:1}
+.xbtn:hover{color:#b3261e;border-color:color-mix(in srgb,#b3261e 50%,transparent)}
+.rmask{flex:1;display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:10px 2px;font-family:var(--f-head);font-size:.9rem}
+.rmask span{flex:1;min-width:150px}
+.picker{max-height:86vh;display:flex;flex-direction:column}
+.picker .wrap{display:flex;flex-direction:column;min-height:0;flex:1}
+.pklist{list-style:none;margin:6px 0 0;padding:0;overflow-y:auto;flex:1;min-height:120px}
+.pkrow{display:flex;align-items:center;gap:12px;width:100%;padding:9px 4px;border:0;border-bottom:1px solid var(--line);background:none;text-align:right;color:var(--ink)}
+.pkrow .meta{flex:1;min-width:0}
+.pkrow .sname{font-size:1.2rem;display:block;line-height:1.5}
+.pkrow small{color:var(--muted);font-size:.75rem}
+.ck{flex:none;width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line-strong);display:grid;place-items:center;transition:background .15s,border-color .15s}
+.pkrow.on .ck{background:var(--gold);border-color:var(--gold)}
+.pkrow.on .ck::after{content:"";width:9px;height:5px;border-left:2px solid #111;border-bottom:2px solid #111;transform:rotate(-45deg) translateY(-1px)}
+.pkfoot{padding-top:10px}
+.atrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:12px;background:var(--gold-soft);font-family:var(--f-head);font-size:.88rem}
+.atrow svg{width:16px;height:16px;fill:var(--gold);stroke:none;flex:none}
+.atrow input{width:64px;padding:5px 8px;border-radius:10px;border:1px solid var(--gold);background:var(--surface);color:var(--ink);font:inherit;text-align:center}
+.atrow .btn{margin-inline-start:auto}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -463,6 +494,8 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
     <button class="pbtn x" type="button" id="plStop" aria-label="إيقاف التلاوة"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </div>
 </div>
+<div class="scrim" id="pscrim" hidden></div>
+<section class="sheet picker" id="picker" hidden aria-label="اختيار السور"></section>
 <div class="toast" id="toast" role="status" aria-live="polite"></div>
 <section class="panel" id="panel" hidden>
   <div class="wrap">
@@ -492,7 +525,8 @@ const juzOf=id=>idxLE(JZ,id);
 const TAFS=[{k:"m",name:"الميسر",desc:"تفسير مختصر وسهل"},{k:"s",name:"السعدي",desc:"تفسير واضح متوسط"},{k:"k",name:"ابن كثير",desc:"تفسير مفصّل بالأثر"}];
 const $=s=>document.querySelector(s);
 const view=$("#view"), titleEl=$("#title");
-const AR="٠١٢٣٤٥٦٧٨٩"; const an=n=>String(n).replace(/\d/g,d=>AR[d]);
+const AR="٠١٢٣٤٥٦٧٨٩";let DIGW=(()=>{try{return JSON.parse(localStorage.getItem("mt_digits"))==="west"}catch(e){return false}})();
+const an=n=>DIGW?String(n):String(n).replace(/\d/g,d=>AR[d]);
 const esc=s=>s.replace(/[&<>"]/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;"}[c]));
 const store={get(k,d){try{const v=localStorage.getItem("mt_"+k);return v==null?d:JSON.parse(v)}catch(e){return d}},set(k,v){try{localStorage.setItem("mt_"+k,JSON.stringify(v))}catch(e){}}};
 const cache={};
@@ -528,7 +562,7 @@ function setMode(m){if(m===mode)return;mode=m;save("mode",m);updateModeBtn();
 /* ---------- Save: device + account ---------- */
 const cloud={doc:null,busy:false,again:false,tm:null};
 function save(k,v){store.set(k,v);store.set("t",Date.now());if(cloud.doc){clearTimeout(cloud.tm);cloud.tm=setTimeout(push,600)}}
-function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),order:store.get("order","asc"),pagesound:store.get("pagesound",true),goal:store.get("goal",2),hifz:HZ,stats:{days:ST.days,seen:ST.seen},t:store.get("t",0)}}
+function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),order:store.get("order","asc"),pagesound:store.get("pagesound",true),digits:store.get("digits","east"),goal:store.get("goal",2),hifz:HZ,stats:{days:ST.days,seen:ST.seen},t:store.get("t",0)}}
 async function push(){if(!cloud.doc)return;if(cloud.busy){cloud.again=true;return}cloud.busy=true;
   try{await cloud.doc.set(stateNow())}catch(e){}
   cloud.busy=false;if(cloud.again){cloud.again=false;push()}}
@@ -536,7 +570,7 @@ function applyRemote(d){
   if(!d||(+d.t||0)<=store.get("t",0))return;
   stopAt=Array.isArray(d.stop)?d.stop:null;marks=Array.isArray(d.marks)?d.marks:[];
   store.set("stop",stopAt);store.set("marks",marks);if(d.mode==="pages"||d.mode==="ayat"){mode=d.mode;store.set("mode",mode);updateModeBtn()}store.set("theme",d.theme||null);store.set("tab",d.tab||"m");store.set("qsize",+d.qsize||1.75);store.set("t",+d.t);
-  if(d.order)store.set("order",d.order);if(typeof d.pagesound==="boolean")store.set("pagesound",d.pagesound);if(+d.goal)store.set("goal",+d.goal);
+  if(d.order)store.set("order",d.order);if(typeof d.pagesound==="boolean")store.set("pagesound",d.pagesound);if(+d.goal)store.set("goal",+d.goal);if(d.digits){store.set("digits",d.digits);DIGW=d.digits==="west"}
   if(d.hifz&&typeof d.hifz==="object"){HZ=d.hifz;store.set("hifz",HZ)}
   if(d.stats&&d.stats.days){ST.days=d.stats.days;ST.seen=d.stats.seen||"";SEEN=decodeSeen(ST.seen);store.set("stats",ST)}
   applyTheme(d.theme||null);applySize(d.qsize);refreshUI();
@@ -917,6 +951,8 @@ async function openSheet(s,v){
       b.setAttribute("aria-expanded","true");mountTafsir(host,s,v-1)}};
 }
 let sheetOpenedAt=0;
+$("#pscrim").onclick=()=>closePicker();
+document.addEventListener("keydown",e=>{if(e.key==="Escape")closePicker()});
 $("#scrim").onclick=()=>{if(Date.now()-sheetOpenedAt>500)closeSheet()};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")closeSheet()});
 
@@ -958,8 +994,8 @@ document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#panel").hidden=t
 const ymd=d=>d.getFullYear()+"-"+String(d.getMonth()+1).padStart(2,"0")+"-"+String(d.getDate()).padStart(2,"0");
 const today=()=>ymd(new Date());
 function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
-const anD=x=>an(x).replace(".","٫");
-const fmtN=n=>an(String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,"٬"));
+const anD=x=>DIGW?String(x):an(x).replace(".","٫");
+const fmtN=n=>an(String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,DIGW?",":"٬"));
 function fmtDur(sec){const m=Math.floor(sec/60);if(m<1)return sec>0?"أقل من دقيقة":"٠ د";const h=Math.floor(m/60),r=m%60;return h?`${an(h)} س${r?" "+an(r)+" د":""}`:`${an(m)} د`}
 const LETTER=/[ء-غف-يٱ-ۓ]/g;
 const letters=t=>(t.match(LETTER)||[]).length;
@@ -1031,7 +1067,7 @@ function streak(){let c=0;const d=new Date();const ok=k=>{const x=ST.days[k];ret
 let HZ=store.get("hifz",null)||{};
 const BOX=[1,3,7,14,30,60];
 function hzSave(){save("hifz",HZ)}
-function setHzStatus(s,st){if(!st){delete HZ[s]}else if(st===2){HZ[s]={st:2,box:0,due:addDays(BOX[0])}}else{HZ[s]={st:1}}hzSave()}
+function setHzStatus(s,st){if(st===1)return setCurrent(s);if(!st){delete HZ[s]}else{HZ[s]={st:2,box:0,due:addDays(BOX[0])}}hzSave();return 0}
 function hzReview(s,ok){const h=HZ[s];if(!h)return;const box=ok?Math.min(BOX.length-1,(h.box||0)+1):0;HZ[s]={st:2,box,due:addDays(BOX[box])};hzSave()}
 const hzDue=()=>Object.keys(HZ).map(Number).filter(s=>HZ[s].st===2&&HZ[s].due<=today()).sort((a,b)=>a-b);
 function daysUntil(k){return Math.round((new Date(k+"T00:00:00")-new Date(today()+"T00:00:00"))/864e5)}
@@ -1039,7 +1075,7 @@ function hzPill(s){const h=HZ[s];if(!h)return "";if(h.st===2)return h.due<=today
 const STARP='<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z"/></svg>';
 function hzRow(s){const m=META[s-1];return `<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${m[1]}</span><br><span class="smeta">${an(m[4])} آية</span></span>${hzPill(s)}</a></li>`}
 let hzS=0,hzQuiz=null;
-function hzRange(N){const r=store.get("hzr"+hzS,null);let a=r?r[0]:1,b=r?r[1]:Math.min(N,7);a=Math.max(1,Math.min(N,a|0||1));b=Math.max(a,Math.min(N,b|0||a));return [a,b]}
+function hzRange(N){const r=store.get("hzr"+hzS,null),h=HZ[hzS],at=h&&h.st===1&&h.at?h.at:1;let a=r?r[0]:at,b=r?r[1]:Math.min(N,at+6);a=Math.max(1,Math.min(N,a|0||1));b=Math.max(a,Math.min(N,b|0||a));return [a,b]}
 const isMark=w=>!/[ء-يٱ-ۓ]/.test(w);
 function drawHz(data){
   const N=data.v.length,[a,b]=hzRange(N),tab=store.get("hztab","mask"),body=$("#hzBody"),n=hzS;
@@ -1265,7 +1301,7 @@ function renderStats(){
   $("#stDays").onclick=e=>{const x=e.target.closest("[data-n]");if(x){store.set("stdays",+x.dataset.n);renderStats()}};
   $("#chartBox").onclick=e=>{const h=e.target.closest(".hit");if(!h)return;const L=chartSVG.last,i=+h.dataset.i,d=new Date(L.ds[i].k+"T12:00:00"),v=L.vals[i];
     document.querySelectorAll("#chartBox .hit.sel").forEach(z=>z.classList.remove("sel"));h.classList.add("sel");
-    let dl;try{dl=d.toLocaleDateString("ar-u-nu-arab",{weekday:"long",day:"numeric",month:"long"})}catch(x){dl=L.ds[i].k}
+    let dl;try{dl=d.toLocaleDateString(DIGW?"ar-u-nu-latn":"ar-u-nu-arab",{weekday:"long",day:"numeric",month:"long"})}catch(x){dl=L.ds[i].k}
     $("#chTip").textContent=`${dl}: ${L.metric==="p"?fmtP(v)+" صفحة":L.metric==="sec"?an(v)+" دقيقة":an(v)+" آية"}`};
   window.scrollTo(0,0);
 }
@@ -1277,41 +1313,73 @@ const ICO={
   rep:'<svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>',
   quiz:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6"/></svg>',
   rec:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'};
+/* ---------- Memorization home (v5: one current surah + saved position, my memorized list, pickers) ---------- */
+const hzCur=()=>{const k=Object.keys(HZ).find(s=>HZ[s].st===1);return k?+k:0};
+function setCurrent(s){const prev=hzCur();Object.keys(HZ).forEach(k=>{if(HZ[k].st===1&&+k!==s)delete HZ[k]});
+  HZ[s]={st:1,at:(HZ[s]&&HZ[s].st===1&&HZ[s].at)||1};hzSave();return prev&&prev!==s?prev:0}
+function hzContinue(s){const h=HZ[s],N=META[s-1][4],at=Math.min(N,(h&&h.at)||1);store.set("hzr"+s,[at,Math.min(N,at+6)]);location.hash="hifz-"+s}
 function renderHifzHome(){
   current=0;curPage=0;titleEl.textContent="الحفظ";document.title="الحفظ والمراجعة · مصحف التدبر";
-  const ids=Object.keys(HZ).map(Number),mem=ids.filter(s=>HZ[s].st===2),learn=ids.filter(s=>HZ[s].st===1).sort((a,b)=>a-b),due=hzDue();
+  const ids=Object.keys(HZ).map(Number),mem=ids.filter(s=>HZ[s].st===2).sort((a,b)=>a-b),due=hzDue(),cur=hzCur();
   const mv=mem.reduce((a,s)=>a+META[s-1][4],0),pct=mv/6236;
+  let curHtml;
+  if(cur){const N=META[cur-1][4],at=Math.min(N,HZ[cur].at||1),done=(at-1)/N;
+    curHtml=`<section class="card curcard">
+      <div class="chead2"><h2>سورتي الحالية</h2><button class="btn sm" type="button" id="chgCur">تغيير</button></div>
+      <a class="currow" href="#hifz-${cur}"><span class="sname">سورة ${META[cur-1][1]}</span><small>${at>1?`وصلتَ إلى الآية ${an(at)} من ${an(N)}`:`${an(N)} آية، من البداية`}</small></a>
+      <div class="khat"><i style="width:${(done*100).toFixed(1)}%"></i></div>
+      <button class="btn gold wide" type="button" id="contCur">تابع الحفظ من الآية ${an(at)}</button>
+    </section>`}
+  else curHtml=`<section class="card curcard empty"><h2>سورتي الحالية</h2><p class="note2">اختر السورة التي تحفظها الآن، وسيحفظ التطبيق موضعك فيها.</p><button class="btn gold wide" type="button" id="chgCur">اختر سورة لحفظها</button></section>`;
   view.innerHTML=`<div class="wrap pgx">
     <div class="pgx-h"><h1>الحفظ والمراجعة</h1><a class="back" href="#">→ الرئيسية</a></div>
-    <section class="card ringbox">
-      ${ringSVG(pct,84,anD((pct*100).toFixed(pct>0&&pct<.01?1:0))+"٪","")}
-      <div><b class="lead">${an(mem.length)} سورة محفوظة</b><p class="note2">${fmtN(mv)} آية من ${fmtN(6236)}${learn.length?`، و${an(learn.length)} قيد الحفظ`:""}</p></div>
-    </section>
-    ${due.length?`<section class="card duecard"><h2>للمراجعة اليوم <span class="pill due">${an(due.length)}</span></h2><ul class="hzlist">${due.map(s=>`<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${META[s-1][1]}</span></span><span class="btn gold sm">راجِع</span></a></li>`).join("")}</ul></section>`
-      :mem.length?`<p class="note2 okline">لا مراجعة مستحقة اليوم، بارك الله فيك.</p>`:""}
-    ${learn.length?`<section><h2 class="h2x">تابع الحفظ</h2><div class="hscroll">${learn.map(s=>{const r=store.get("hzr"+s,null);return `<a class="lcard" href="#hifz-${s}"><span class="sname">${META[s-1][1]}</span><small>${r?`الآيات ${an(r[0])}–${an(r[1])}`:`${an(META[s-1][4])} آية`}</small></a>`}).join("")}</div></section>`:""}
+    ${curHtml}
+    ${due.length?`<section class="card duecard"><h2>للمراجعة اليوم <span class="pill due">${an(due.length)}</span></h2><ul class="hzlist">${due.map(s=>`<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${META[s-1][1]}</span></span><span class="btn gold sm">راجِع</span></a></li>`).join("")}</ul></section>`:""}
     <section class="card">
-      <h2>كل السور</h2>
-      <input class="filter" id="hzSearch" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off" value="${esc(hzQ)}">
-      <div class="chips" id="hzFilter" style="margin:8px 0 4px">
-        <button type="button" data-f="all" aria-pressed="${hzF==="all"}">الكل</button>
-        <button type="button" data-f="learn" aria-pressed="${hzF==="learn"}">قيد الحفظ ${an(learn.length)}</button>
-        <button type="button" data-f="mem" aria-pressed="${hzF==="mem"}">محفوظة ${an(mem.length)}</button>
-        <button type="button" data-f="new" aria-pressed="${hzF==="new"}">لم أبدأ</button>
-      </div>
-      <ul class="hzlist" id="hzList"></ul>
+      <div class="chead2"><h2>محفوظاتي <span class="pill">${an(mem.length)}</span></h2><button class="btn sm" type="button" id="addMem">+ إضافة سور</button></div>
+      <div class="ringbox" style="margin:2px 0 6px">${ringSVG(pct,64,anD((pct*100).toFixed(pct>0&&pct<.01?1:0))+"٪","")}<p class="note2">${fmtN(mv)} آية محفوظة من ${fmtN(6236)}</p></div>
+      ${mem.length?`<ul class="hzlist" id="memList">${mem.map(s=>`<li data-s="${s}"><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${META[s-1][1]}</span><br><span class="smeta">${HZ[s].due<=today()?"للمراجعة اليوم":`المراجعة بعد ${an(daysUntil(HZ[s].due))} يوم`}</span></span></a><button class="xbtn" type="button" data-rm="${s}" aria-label="إزالة سورة ${META[s-1][1]} من المحفوظات">×</button></li>`).join("")}</ul>`
+        :`<p class="note2">أضف السور التي تحفظها مسبقًا، وسيذكّرك التطبيق بمراجعتها في الوقت المناسب.</p>`}
     </section>
   </div>`;
-  const drawList=()=>{const order=store.get("order","asc"),list=order==="desc"?META.slice().reverse():META,nq=norm(hzQ);
-    const out=list.filter(m=>{const h=HZ[m[0]];const st=h?h.st:0;
-      if(hzF==="learn"&&st!==1)return false;if(hzF==="mem"&&st!==2)return false;if(hzF==="new"&&st!==0)return false;
-      return !hzQ||String(m[0])===hzQ.trim()||norm(m[1]).includes(nq)||m[2].toLowerCase().includes(hzQ.toLowerCase())}).map(m=>hzRow(m[0]));
-    $("#hzList").innerHTML=out.length?out.join(""):`<li class="note2" style="padding:12px 2px">لا توجد سور في هذا التصنيف.</li>`};
-  drawList();
-  $("#hzSearch").oninput=e=>{hzQ=e.target.value;drawList()};
-  $("#hzFilter").onclick=e=>{const x=e.target.closest("[data-f]");if(!x)return;hzF=x.dataset.f;store.set("hzf",hzF);
-    $("#hzFilter").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));drawList()};
+  $("#chgCur").onclick=()=>openPicker("one");
+  if($("#contCur"))$("#contCur").onclick=()=>hzContinue(cur);
+  $("#addMem").onclick=()=>openPicker("many");
+  const ml=$("#memList");if(ml)ml.onclick=e=>{const x=e.target.closest("button");if(!x)return;const li=x.closest("li"),s=+li.dataset.s;
+    if(x.dataset.rm){e.preventDefault();li.innerHTML=`<div class="rmask"><span>إزالة سورة ${META[s-1][1]} من المحفوظات؟</span><button class="btn danger sm" type="button" data-yes>إزالة</button><button class="btn sm" type="button" data-no>إلغاء</button></div>`;return}
+    if(x.hasAttribute("data-yes")){delete HZ[s];hzSave();toast("أُزيلت من المحفوظات")}
+    renderHifzHome()};
   window.scrollTo(0,0);
+}
+/* Surah picker: "one" = choose the surah being memorized, "many" = tick the surahs already memorized */
+function closePicker(){$("#picker").hidden=true;$("#pscrim").hidden=true}
+function openPicker(modeP){
+  const pk=$("#picker"),cur=hzCur();
+  const sel=new Set(modeP==="many"?Object.keys(HZ).map(Number).filter(s=>HZ[s].st===2):[]);
+  let q="";
+  pk.innerHTML=`<div class="wrap"><div class="sgrip"></div>
+    <div class="shd"><span class="ref">${modeP==="one"?"اختر السورة التي تحفظها الآن":"حدّد السور التي تحفظها"}</span><button class="ib" type="button" id="pkClose" aria-label="إغلاق">${ICON.close}</button></div>
+    <input class="filter" id="pkSearch" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off">
+    ${modeP==="many"?`<div class="chips" id="pkQuick" style="margin:8px 0"><button type="button" data-r="78-114">جزء عمّ</button><button type="button" data-r="67-77">جزء تبارك</button><button type="button" data-r="clear">إلغاء التحديد</button></div>`:""}
+    <ul class="pklist" id="pkList"></ul>
+    ${modeP==="many"?`<div class="pkfoot"><button class="btn gold wide" type="button" id="pkSave"></button></div>`:""}
+  </div>`;
+  const draw=()=>{const nq=norm(q),order=store.get("order","asc"),list=order==="desc"?META.slice().reverse():META;
+    $("#pkList").innerHTML=list.filter(m=>!q||String(m[0])===q.trim()||norm(m[1]).includes(nq)||m[2].toLowerCase().includes(q.toLowerCase())).map(m=>{
+      const s=m[0],on=modeP==="many"?sel.has(s):s===cur,tag=modeP==="one"&&HZ[s]&&HZ[s].st===2?'<span class="pill mem">محفوظة</span>':"";
+      return `<li><button type="button" class="pkrow${on?" on":""}" data-s="${s}" aria-pressed="${on}"><span class="ck" aria-hidden="true"></span><span class="meta"><span class="sname">${an(s)}. ${m[1]}</span><small>${an(m[4])} آية</small></span>${tag}</button></li>`}).join("");
+    const sv=$("#pkSave");if(sv)sv.textContent=`حفظ (${an(sel.size)} سورة)`};
+  draw();pk.hidden=false;$("#pscrim").hidden=false;
+  $("#pkClose").onclick=closePicker;
+  $("#pkSearch").oninput=e=>{q=e.target.value;draw()};
+  $("#pkList").onclick=e=>{const x=e.target.closest(".pkrow");if(!x)return;const s=+x.dataset.s;
+    if(modeP==="one"){const prev=setCurrent(s);closePicker();toast(prev?`سورتك الحالية الآن: ${META[s-1][1]} (أُزيلت ${META[prev-1][1]})`:`سورتك الحالية: ${META[s-1][1]}`);renderHifzHome();return}
+    if(sel.has(s))sel.delete(s);else sel.add(s);x.classList.toggle("on");x.setAttribute("aria-pressed",String(sel.has(s)));$("#pkSave").textContent=`حفظ (${an(sel.size)} سورة)`};
+  const qk=$("#pkQuick");if(qk)qk.onclick=e=>{const x=e.target.closest("[data-r]");if(!x)return;if(x.dataset.r==="clear")sel.clear();else{const [a,b]=x.dataset.r.split("-").map(Number);for(let s=a;s<=b;s++)sel.add(s)}draw()};
+  const sv=$("#pkSave");if(sv)sv.onclick=()=>{let i=0,added=0,removed=0;
+    Object.keys(HZ).map(Number).forEach(s=>{if(HZ[s].st===2&&!sel.has(s)){delete HZ[s];removed++}});
+    [...sel].sort((a,b)=>a-b).forEach(s=>{if(!HZ[s]||HZ[s].st!==2){HZ[s]={st:2,box:0,due:addDays(1+(i++%7))};added++}});
+    hzSave();closePicker();toast(added||removed?`تم: ${added?`أُضيفت ${an(added)}`:""}${added&&removed?"، ":""}${removed?`أُزيلت ${an(removed)}`:""}`:"لم يتغيّر شيء");renderHifzHome()};
 }
 
 /* ---------- Memorization surah page (v4: compact head, range presets, icon tools) ---------- */
@@ -1326,12 +1394,13 @@ async function renderHifzSurah(n){
   view.innerHTML=`<div class="wrap pgx hzpage">
     <div class="hzhead">
       <a class="back" href="#hifz">→ الحفظ</a>
-      <div class="hzname"><span class="sname">سورة ${m[1]}</span><small>${an(N)} آية${nextTxt?`، ${nextTxt}`:""}</small></div>
+      <div class="hzname"><span class="sname">سورة ${m[1]}</span><small>${an(N)} آية${st===1?"، سورتك الحالية":""}${nextTxt?`، ${nextTxt}`:""}</small></div>
     </div>
     ${due?`<section class="card duecard"><h2>حان وقت المراجعة</h2><p class="note2" style="margin-bottom:10px">راجع السورة بإحدى الأدوات أدناه، ثم قيّم حفظك:</p><div class="btns"><button class="btn gold" type="button" id="rvOk">أتقنتها</button><button class="btn" type="button" id="rvNo">أحتاج مراجعة</button></div></section>`:""}
     <div class="seg" id="hzSt"><button type="button" data-st="0" aria-pressed="${st===0}">لم أبدأ</button><button type="button" data-st="1" aria-pressed="${st===1}">أحفظها الآن</button><button type="button" data-st="2" aria-pressed="${st===2}">حفظتها</button></div>
     <section class="card tight">
       <div class="range"><span>المقطع</span><label class="sr" for="hzFrom">من الآية</label><input id="hzFrom" type="number" inputmode="numeric" min="1" max="${N}" value="${a}"><span>إلى</span><label class="sr" for="hzTo">إلى الآية</label><input id="hzTo" type="number" inputmode="numeric" min="1" max="${N}" value="${b}"></div>
+      ${st===1?`<div class="atrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><label for="hzAt">وصلتُ إلى الآية</label><input id="hzAt" type="number" inputmode="numeric" min="1" max="${N}" value="${Math.min(N,h.at||1)}"><button class="btn gold sm" type="button" id="hzAtSave">حفظ موضعي</button></div>`:""}
       <div class="chips" id="hzPre"><button type="button" data-p="prev" ${a<=1?"disabled":""}>→ السابق</button><button type="button" data-p="next" ${b>=N?"disabled":""}>التالي ←</button><button type="button" data-p="all" aria-pressed="${a===1&&b===N}">كل السورة</button></div>
     </section>
     <div class="tooltabs" id="hzTab" role="tablist">
@@ -1339,7 +1408,9 @@ async function renderHifzSurah(n){
     </div>
     <div id="hzBody"></div>
   </div>`;
-  $("#hzSt").onclick=e=>{const x=e.target.closest("[data-st]");if(!x)return;setHzStatus(n,+x.dataset.st);toast(["أُزيلت من الحفظ","بالتوفيق في حفظها","ما شاء الله، أُضيفت إلى المحفوظات"][+x.dataset.st]);renderHifzSurah(n)};
+  $("#hzSt").onclick=e=>{const x=e.target.closest("[data-st]");if(!x)return;const v=+x.dataset.st,prev=setHzStatus(n,v);
+    toast(v===1?(prev?`أصبحت سورتك الحالية (أُزيلت ${META[prev-1][1]})`:"أصبحت سورتك الحالية، بالتوفيق"):["أُزيلت من الحفظ","","ما شاء الله، أُضيفت إلى المحفوظات"][v]);renderHifzSurah(n)};
+  const atS=$("#hzAtSave");if(atS)atS.onclick=()=>{const v=Math.max(1,Math.min(N,+$("#hzAt").value||1));$("#hzAt").value=v;HZ[n].at=v;hzSave();toast(`حُفظ موضعك: الآية ${an(v)}`)};
   if($("#rvOk")){$("#rvOk").onclick=()=>{hzReview(n,true);toast("أحسنت، بارك الله فيك");renderHifzSurah(n)};$("#rvNo").onclick=()=>{hzReview(n,false);toast("سنذكّرك بمراجعتها غدًا");renderHifzSurah(n)}}
   const setR=(x,y)=>{x=Math.max(1,Math.min(N,x));y=Math.max(x,Math.min(N,y));$("#hzFrom").value=x;$("#hzTo").value=y;store.set("hzr"+n,[x,y]);hzQuiz=null;stopRec();rec=null;if(player.queue)stopAudio();
     const pre=$("#hzPre");pre.querySelector('[data-p="prev"]').disabled=x<=1;pre.querySelector('[data-p="next"]').disabled=y>=N;pre.querySelector('[data-p="all"]').setAttribute("aria-pressed",String(x===1&&y===N));drawHz(data)};
@@ -1364,6 +1435,7 @@ function renderPrefs(){
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
+      <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
       <div class="row"><span>ترتيب السور</span><div class="seg sm" id="pfOrd"><button type="button" data-o="asc" aria-pressed="${ord==="asc"}">من الفاتحة</button><button type="button" data-o="desc" aria-pressed="${ord==="desc"}">من الناس</button></div></div>
       <div class="row"><span>الورد اليومي<small>يظهر في الإحصائيات</small></span><div class="stepper"><button type="button" id="pfGm" aria-label="إنقاص">−</button><span id="pfGoal">${an(goal)} ص</span><button type="button" id="pfGp" aria-label="زيادة">+</button></div></div>
     </section>
@@ -1377,6 +1449,7 @@ function renderPrefs(){
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
   $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  $("#pfDig").onclick=e=>{const x=e.target.closest("[data-d]");if(!x)return;save("digits",x.dataset.d);DIGW=x.dataset.d==="west";renderPrefs()};
   const sz=d=>{setSize(d);$("#pfSize").textContent=an(Math.round(qsize/1.75*100))+"٪"};
   $("#pfMinus").onclick=()=>sz(-.15);$("#pfPlus").onclick=()=>sz(.15);
   const gl=d=>{const g=Math.max(1,Math.min(40,goalPages()+d));save("goal",g);$("#pfGoal").textContent=an(g)+" ص"};
@@ -1405,7 +1478,7 @@ function go(s,v){$("#panel").hidden=true;closeSheet();
 document.addEventListener("click",e=>{const pb=e.target.closest("[data-page]");if(pb&&!pb.disabled){closeSheet();const np=+pb.dataset.page;if(curPage&&Math.abs(np-curPage)===1){swipeDir=np-curPage;pageSound()}location.hash="p"+np;return}
   const b=e.target.closest("[data-go]");if(!b)return;const [s,v]=b.dataset.go.split("-").map(Number);go(s,v)});
 $("#home").onclick=()=>{if(location.hash){location.hash=""}else renderHome()};
-function route(){closeMenu();stopRec();rec=null;const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
+function route(){closeMenu();closePicker();stopRec();rec=null;const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
   curPage=0;document.documentElement.classList.remove("pagemode");
   const h=location.hash;
   if(h==="#stats"||h==="#hifz"||h==="#prefs"){closeSheet();stopAudio();current=0;({"#stats":renderStats,"#hifz":renderHifzHome,"#prefs":renderPrefs})[h]();return}
