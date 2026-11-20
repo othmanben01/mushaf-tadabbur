@@ -465,6 +465,18 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .atrow input{width:64px;padding:5px 8px;border-radius:10px;border:1px solid var(--gold);background:var(--surface);color:var(--ink);font:inherit;text-align:center}
 .atrow .btn{margin-inline-start:auto}
 
+/* ===== v6: recitation layout ===== */
+.recinfo{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
+.recbar{position:sticky;bottom:calc(10px + var(--pl) + env(safe-area-inset-bottom,0px));z-index:4;display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 8px 8px 14px;border-radius:999px;background:var(--solid);color:var(--solid-ink);border:1px solid var(--gold);box-shadow:0 10px 30px -12px rgba(0,0,0,.4)}
+.recstat{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
+.recstat b{font-family:var(--f-head);font-weight:500;color:var(--gold);font-size:.95rem}
+.recbar .heard{text-align:right;color:color-mix(in srgb,var(--solid-ink) 70%,transparent);font-size:.82rem;min-height:1.2em}
+.recbar .btn.mic{flex:none;padding:10px 18px}
+.recbar .btn.mic.live{background:var(--gold);border-color:var(--gold);color:#111}
+#recText .hzv{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 70px);transition:background .3s,border-color .3s,opacity .4s,font-size .4s}
+#recText .hzv.done{opacity:.4;font-size:calc(var(--qsize)*.72)}
+body.reclive .recinfo,body.reclive .hzpage>*:not(#hzBody):not(.hzhead){display:none}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -1162,72 +1174,89 @@ function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;i
   for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
 const wordMatch=(a,b)=>a===b||(a.length>1&&b.length>1&&lev(a,b)<=Math.max(1,Math.floor(Math.max(a.length,b.length)*.4)));
 /* "almost right": looser similarity, and very short words (لا / ما / من / إن) are easily confused by the recogniser */
+/* strict match for two words heard as one, or one word heard as two */
+const joinMatch=(a,b)=>a===b||(Math.min(a.length,b.length)>=Math.max(a.length,b.length)*.8&&lev(a,b)<=Math.floor(Math.max(a.length,b.length)*.2));
 const nearMatch=(a,b)=>(a.length<=2&&b.length<=2)||lev(a,b)<=Math.ceil(Math.max(a.length,b.length)*.6);
-function alignRec(spoken,target,start){const st=new Array(target.length).fill(0);let i=start||0;
-  for(let q=0;q<spoken.length;q++){const w=spoken[q];if(i>=target.length)break;let hit=-1;
-    /* substitution: this word is close to the expected one and the next spoken word confirms the position */
-    if(!wordMatch(w,target[i])&&nearMatch(w,target[i])&&(i+1>=target.length||(q+1<spoken.length&&wordMatch(spoken[q+1],target[i+1])))){st[i]=1;i++;continue}
-    for(let k=0;k<=2&&i+k<target.length;k++){if(!wordMatch(w,target[i+k]))continue;
-      if(k===0){hit=i;break}
-      /* a jump ahead must be confirmed by the next spoken word, and never on a very short word */
-      if(target[i+k].length>=3&&q+1<spoken.length&&i+k+1<target.length&&wordMatch(spoken[q+1],target[i+k+1])){hit=i+k;break}}
-    if(hit<0)continue;for(let j=i;j<hit;j++)st[j]=2;st[hit]=1;i=hit+1}
+function alignRec(spoken,target,start){const T=target.length,st=new Array(T).fill(0);let i=start||0;
+  const mark=(from,to)=>{for(let j=from;j<to;j++)st[j]=target[j].length<=2?1:2}; /* short words (لا، ما، من…) are often dropped by the recogniser: not counted as errors */
+  for(let q=0;q<spoken.length;q++){const w=spoken[q];if(i>=T)break;
+    if(wordMatch(w,target[i])){st[i]=1;i++;continue}
+    /* two words heard as one ("ماعبد" for «ما أعبد», "وليدين" for «ولي دين») */
+    if(i+1<T&&joinMatch(w,target[i]+target[i+1])){st[i]=st[i+1]=1;i+=2;continue}
+    if(i+2<T&&target[i].length<=2&&joinMatch(w,target[i+1]+target[i+2])){mark(i,i+1);st[i+1]=st[i+2]=1;i+=3;continue}
+    /* one word heard as two */
+    if(q+1<spoken.length&&joinMatch(w+spoken[q+1],target[i])){st[i]=1;i++;q++;continue}
+    /* almost right, and the next spoken word confirms the position */
+    if(nearMatch(w,target[i])&&(i+1>=T||(q+1<spoken.length&&wordMatch(spoken[q+1],target[i+1])))){st[i]=1;i++;continue}
+    /* a real skip: jump ahead only when the next spoken word confirms it (or it is the last word) */
+    let hit=-1;
+    for(let k=1;k<=2&&i+k<T;k++){if(!wordMatch(w,target[i+k]))continue;
+      if(target[i+k].length>=3&&(i+k+1>=T||(q+1<spoken.length&&wordMatch(spoken[q+1],target[i+k+1])))){hit=i+k;break}}
+    if(hit<0)continue;mark(i,hit);st[hit]=1;i=hit+1}
   return {st,pos:i}}
 let rec=null;
-function stopRec(){if(rec){rec.want=false;try{rec.r.stop()}catch(e){}}}
+function stopRec(){if(rec){rec.want=false;try{rec.r.stop()}catch(e){}}document.body.classList.remove("reclive")}
 function drawRec(data,a,b){
   const n=hzS,body=$("#hzBody");stopRec();
   if(!STANDALONE){body.innerHTML=`<div class="card"><p class="note2">التسميع بالميكروفون يعمل في نسخة التطبيق المنشورة على Vercel أو GitHub، لأن هذه الصفحة لا تستطيع استعمال الميكروفون.</p></div>`;return}
   if(!SRC){body.innerHTML=`<div class="card"><p class="note2">متصفحك لا يدعم التعرّف على الصوت. جرّب Safari على iPhone أو Chrome على Android أو الحاسوب.</p></div>`;return}
   const show=store.get("recshow",false);
-  const words=[],els=[];let html="";
+  const words=[];let html="";
   for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
     html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
-  body.innerHTML=`<div class="card" style="display:flex;flex-direction:column;gap:10px">
-      <p class="note2">اقرأ المقطع من حفظك بصوت واضح. تظهر كل كلمة حين يتعرّف عليها التطبيق، وتُعلَّم الكلمات التي تجاوزتها بالأحمر. إن أخطأ التطبيق في موضعك، المس الآية التي تقرؤها ليتابع معك من بدايتها.</p>
+  body.innerHTML=`<div class="card recinfo">
+      <p class="note2">اقرأ المقطع من حفظك بصوت واضح. تظهر كل كلمة حين يُتعرَّف عليها، وما تجاوزته يُعلَّم بالأحمر. إن أخطأ التطبيق في موضعك، المس الآية التي تقرؤها.</p>
       <button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>إظهار النص باهتًا أثناء القراءة</span><i class="sw"></i></button>
-      <div class="counter" id="recStat"></div>
-      <div class="heard" id="recHeard" aria-live="polite"></div>
-      <div class="btns" style="justify-content:center"><button class="btn gold mic" type="button" id="recBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ التسميع</span></button></div>
-      <p class="note2" style="font-size:.78rem">تقريبي: يتحقق من ترتيب الكلمات فقط، ولا يكشف أخطاء الحركات أو التجويد. يمرّ الصوت عبر خدمة التعرّف على الكلام في متصفحك (Apple أو Google).</p>
-    </div><div id="recText">${html}</div>`;
+      <p class="note2" style="font-size:.76rem">تقريبي: يتحقق من الكلمات وترتيبها فقط، لا من الحركات أو التجويد. يمرّ الصوت عبر خدمة التعرّف على الكلام في متصفحك.</p>
+    </div>
+    <div id="recText">${html}</div>
+    <div class="recbar"><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
+      <button class="btn gold mic" type="button" id="recBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ</span></button></div>`;
   const spans=[...document.querySelectorAll("#recText .rw")],vEls=[...document.querySelectorAll("#recText .hzv")];
-  const vStart={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k});
-  let startIdx=0,fixed=new Array(words.length).fill(0),finals=[],last={st:fixed.slice(),pos:0};
+  const vStart={},vEnd={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k;vEnd[v]=k});
+  let startIdx=0,fixed=new Array(words.length).fill(0),finals=[],last={st:fixed.slice(),pos:0},lastV=0,running=false;
   const merged=al=>{const st=fixed.slice();for(let k=startIdx;k<st.length;k++)st[k]=al.st[k];return {st,pos:al.pos}};
+  const score=al=>al.st.filter(x=>x===1).length*2+al.pos;
   const paint=(st,pos,done)=>{spans.forEach((s,k)=>{s.classList.toggle("ok",st[k]===1);s.classList.toggle("miss",st[k]===2||(done&&st[k]===0))});
-    const curV=pos<spans.length?vOf[pos]:0;vEls.forEach(e=>e.classList.toggle("cur",!done&&+e.dataset.sv.split(":")[1]===curV));
+    const curV=pos<spans.length?vOf[pos]:0;
+    vEls.forEach(e=>{const v=+e.dataset.sv.split(":")[1];e.classList.toggle("cur",!done&&v===curV);
+      let full=true;for(let k=vStart[v];k<=vEnd[v];k++)if(st[k]!==1){full=false;break}e.classList.toggle("done",!done&&running&&full&&v!==curV)});
     const ok=st.filter(x=>x===1).length,miss=st.filter(x=>x===2).length;
-    $("#recStat").textContent=done?`${an(ok)} من ${an(words.length)} كلمة صحيحة${words.length-ok?`، ${an(words.length-ok)} لم تُقرأ أو فاتتك`:""}`:`${an(ok)} / ${an(words.length)}${miss?`، ${an(miss)} فاتتك`:""}`;
-    const cur=spans[Math.min(pos,spans.length-1)];if(cur&&!done){const r=cur.getBoundingClientRect();if(r.bottom>innerHeight-110||r.top<80)cur.scrollIntoView({block:"center",behavior:"smooth"})}};
+    $("#recStat").textContent=done?`${an(ok)} من ${an(words.length)} صحيحة`:`${an(ok)} / ${an(words.length)}${miss?`، ${an(miss)} فاتتك`:""}`;
+    if(!done&&curV&&curV!==lastV){lastV=curV;const el=vEls.find(e=>+e.dataset.sv.split(":")[1]===curV);if(el)el.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}};
   const btnLabel=t=>{$("#recBtn span").textContent=t};
-  const finish=()=>{stopRec();rec=null;btnLabel("أعد المحاولة");$("#recBtn").classList.remove("live");paint(last.st,last.pos,true);
-    const ok=last.st.filter(x=>x===1).length;if(ok===words.length)toast("ما شاء الله، تسميع متقن")};
-  /* Tap a verse to tell the app where you are: it continues from the start of that verse */
+  const setLive=on=>{running=on;document.body.classList.toggle("reclive",on);$("#recBtn").classList.toggle("live",on)};
+  const finish=()=>{stopRec();rec=null;setLive(false);btnLabel("أعد");paint(last.st,last.pos,true);
+    const ok=last.st.filter(x=>x===1).length;$("#recHeard").textContent=ok===words.length?"ما شاء الله، تسميع متقن":ok/words.length>=.8?"أحسنت، راجع الكلمات الحمراء":"كرّر المقطع ثم أعد المحاولة";
+    if(ok===words.length)toast("ما شاء الله، تسميع متقن")};
   $("#recText").onclick=e=>{const p=e.target.closest(".hzv");if(!p)return;const v=+p.dataset.sv.split(":")[1];if(vStart[v]===undefined)return;
-    startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;finals=[];
+    startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;finals=[];lastV=0;
     last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);$("#recHeard").textContent="";
     if(rec){try{rec.r.abort()}catch(x){}}
     toast(`أتابع معك من الآية ${an(v)}`)};
-  paint(last.st,0,false);$("#recStat").textContent="";
   $("#recShow").onclick=()=>{store.set("recshow",!show);drawRec(data,a,b)};
   $("#recBtn").onclick=()=>{
     if(rec){finish();return}
     if(player.s)stopAudio();
-    if(last.pos>=words.length||$("#recBtn span").textContent==="أعد المحاولة"){startIdx=0;fixed=new Array(words.length).fill(0)}
-    finals=[];last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);$("#recHeard").textContent="";
-    const r=new SRC();r.lang="ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=1;
-    rec={r,want:true};btnLabel("إنهاء التسميع");$("#recBtn").classList.add("live");$("#recStat").textContent="أستمع إليك…";
-    r.onresult=e=>{let interim="";for(let i=e.resultIndex;i<e.results.length;i++){const t=e.results[i][0].transcript;if(e.results[i].isFinal)finals.push(t);else interim+=" "+t}
-      const spoken=(finals.join(" ")+" "+interim).split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
+    if(last.pos>=words.length||$("#recBtn span").textContent==="أعد"){startIdx=0;fixed=new Array(words.length).fill(0)}
+    finals=[];lastV=0;last={st:fixed.slice(),pos:startIdx};setLive(true);paint(last.st,startIdx,false);$("#recHeard").textContent="أستمع إليك…";
+    const r=new SRC();r.lang="ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=3;
+    rec={r,want:true};btnLabel("إنهاء");
+    const toWords=t=>t.split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
+    r.onresult=e=>{let interim=[];
+      for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i];
+        /* among the recogniser's alternatives, keep the one that fits the passage best */
+        let best=res[0].transcript,bs=-1;for(let j=0;j<res.length;j++){const t=res[j].transcript;const sc=score(alignRec([...finals.flatMap(toWords),...toWords(t)],words,startIdx));if(sc>bs){bs=sc;best=t}}
+        if(res.isFinal)finals.push(best);else interim.push(best)}
+      const spoken=[...finals.flatMap(toWords),...interim.flatMap(toWords)];
       last=merged(alignRec(spoken,words,startIdx));paint(last.st,last.pos,false);
-      $("#recHeard").textContent=(finals.slice(-1)[0]||"")+interim;
-      if(last.pos>=words.length)finish()};
+      $("#recHeard").textContent=(interim.join(" ")||finals.slice(-1)[0]||"").trim();
+      if(last.pos>=words.length)setTimeout(()=>{if(rec)finish()},350)};
     r.onerror=e=>{if(e.error==="no-speech"||e.error==="aborted")return;rec&&(rec.want=false);
       toast(e.error==="not-allowed"||e.error==="service-not-allowed"?"اسمح للمتصفح باستعمال الميكروفون والتعرّف على الكلام، ثم أعد المحاولة":"تعذّر التعرّف على الصوت. تحقّق من الاتصال وأعد المحاولة");
-      btnLabel("ابدأ التسميع");$("#recBtn").classList.remove("live");rec=null};
+      btnLabel("ابدأ");setLive(false);rec=null};
     r.onend=()=>{if(rec&&rec.want){try{r.start()}catch(e){setTimeout(()=>{if(rec&&rec.want)try{r.start()}catch(x){}},250)}}};
-    try{r.start()}catch(e){toast("تعذّر تشغيل الميكروفون");rec=null;btnLabel("ابدأ التسميع")}
+    try{r.start()}catch(e){toast("تعذّر تشغيل الميكروفون");rec=null;setLive(false);btnLabel("ابدأ")}
   };
 }
 
