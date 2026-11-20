@@ -379,6 +379,58 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 @keyframes pulse{0%,100%{box-shadow:0 0 0 0 color-mix(in srgb,var(--gold) 55%,transparent)}50%{box-shadow:0 0 0 10px transparent}}
 .big{font-family:var(--f-head);font-size:1.6rem;text-align:center;margin:4px 0;color:var(--gold-strong)}
 
+/* ===== v4: reorganised secondary pages ===== */
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.ring .rs{font-size:10px;fill:var(--muted)}
+.lead{font-family:var(--f-head);font-size:1.1rem;font-weight:700}
+.todaycard{display:flex;flex-direction:column;gap:14px}
+.todaytxt{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px}
+.todaytxt b{font-family:var(--f-head);font-size:1.15rem}
+.stepper{display:inline-flex;align-items:center;gap:4px;border:1px solid var(--line-strong);border-radius:999px;padding:3px;align-self:flex-start;background:var(--bg)}
+.stepper button{width:32px;height:32px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);font-size:1.1rem;line-height:1;font-family:var(--f-head)}
+.stepper button:hover{color:var(--gold-strong)}
+.stepper span{min-width:6ch;text-align:center;font-family:var(--f-head);font-size:.88rem;font-variant-numeric:tabular-nums}
+.mini3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));border-top:1px solid var(--line);padding-top:10px}
+.mini3 div{text-align:center;min-width:0}
+.mini3 div+div{border-inline-start:1px solid var(--line)}
+.mini3 b{display:block;font-family:var(--f-head);font-weight:500;font-size:1.1rem;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.mini3 small{color:var(--muted);font-size:.75rem}
+.chead{display:flex;justify-content:space-between;gap:8px;flex-wrap:wrap;margin-bottom:6px}
+.seg.sm button{padding:4px 10px;font-size:.8rem}
+.chart .goal{stroke:var(--gold-strong);stroke-width:1.2;stroke-dasharray:4 4}
+.chart .bar.met{fill:var(--gold)}
+.chart .hit{fill:transparent;cursor:pointer}
+.chart .hit.sel{fill:color-mix(in srgb,var(--gold) 12%,transparent)}
+.chtip{margin:4px 0 0;text-align:center;color:var(--muted);font-size:.82rem;min-height:1.5em}
+.khead{display:flex;justify-content:space-between;align-items:baseline;margin-bottom:8px;font-family:var(--f-head)}
+.khead span{color:var(--gold-strong)}
+.fold summary{cursor:pointer;font-family:var(--f-head);color:var(--muted);list-style:none;display:flex;align-items:center;gap:8px}
+.fold summary::-webkit-details-marker{display:none}
+.fold summary::after{content:"";margin-inline-start:auto;width:8px;height:8px;border-inline-start:1.6px solid var(--gold);border-bottom:1.6px solid var(--gold);transform:rotate(-45deg);transition:transform .2s}
+.fold[open] summary::after{transform:rotate(135deg)}
+.fold[open] summary{margin-bottom:10px}
+.h2x{margin:4px 2px -8px;font-family:var(--f-head);font-weight:500;font-size:.88rem;color:var(--muted)}
+.card.tight{padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.duecard{border-color:var(--gold)}
+.duecard h2 .pill{margin-inline-start:4px}
+.okline{text-align:center;margin:-4px 0}
+.btn.sm{padding:4px 12px;font-size:.82rem}
+.hscroll{display:flex;gap:8px;overflow-x:auto;padding:12px 2px 4px;scroll-snap-type:x mandatory}
+.lcard{flex:none;scroll-snap-align:start;display:flex;flex-direction:column;gap:2px;min-width:120px;padding:10px 14px;border:1px solid var(--gold);border-radius:14px;background:var(--gold-soft);color:var(--ink);text-decoration:none}
+.lcard .sname{font-size:1.2rem}
+.lcard small{color:var(--muted);font-size:.75rem}
+.chips button:disabled{opacity:.4;cursor:default}
+.hzhead{display:flex;align-items:center;gap:12px}
+.hzname{flex:1;min-width:0;text-align:left;display:flex;flex-direction:column}
+.hzname .sname{font-size:1.45rem;line-height:1.4}
+.hzname small{color:var(--muted);font-size:.78rem}
+.tooltabs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:6px}
+.tooltabs button{display:flex;flex-direction:column;align-items:center;gap:3px;padding:9px 4px;border:1px solid var(--line-strong);background:var(--surface);border-radius:14px;color:var(--muted);font-family:var(--f-head);font-size:.82rem}
+.tooltabs svg{width:20px;height:20px;stroke:currentColor;fill:none;stroke-width:1.7}
+.tooltabs button[aria-pressed="true"]{background:var(--solid);border-color:var(--solid);color:var(--solid-ink)}
+.tooltabs button[aria-pressed="true"] svg{stroke:var(--gold)}
+.preview{font-family:var(--f-quran);font-size:var(--qsize);line-height:2;margin:0;padding:4px 0 8px;text-align:center;border-bottom:1px solid var(--line)}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -476,7 +528,7 @@ function setMode(m){if(m===mode)return;mode=m;save("mode",m);updateModeBtn();
 /* ---------- Save: device + account ---------- */
 const cloud={doc:null,busy:false,again:false,tm:null};
 function save(k,v){store.set(k,v);store.set("t",Date.now());if(cloud.doc){clearTimeout(cloud.tm);cloud.tm=setTimeout(push,600)}}
-function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),order:store.get("order","asc"),pagesound:store.get("pagesound",true),hifz:HZ,stats:{days:ST.days,seen:ST.seen},t:store.get("t",0)}}
+function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),order:store.get("order","asc"),pagesound:store.get("pagesound",true),goal:store.get("goal",2),hifz:HZ,stats:{days:ST.days,seen:ST.seen},t:store.get("t",0)}}
 async function push(){if(!cloud.doc)return;if(cloud.busy){cloud.again=true;return}cloud.busy=true;
   try{await cloud.doc.set(stateNow())}catch(e){}
   cloud.busy=false;if(cloud.again){cloud.again=false;push()}}
@@ -484,7 +536,7 @@ function applyRemote(d){
   if(!d||(+d.t||0)<=store.get("t",0))return;
   stopAt=Array.isArray(d.stop)?d.stop:null;marks=Array.isArray(d.marks)?d.marks:[];
   store.set("stop",stopAt);store.set("marks",marks);if(d.mode==="pages"||d.mode==="ayat"){mode=d.mode;store.set("mode",mode);updateModeBtn()}store.set("theme",d.theme||null);store.set("tab",d.tab||"m");store.set("qsize",+d.qsize||1.75);store.set("t",+d.t);
-  if(d.order)store.set("order",d.order);if(typeof d.pagesound==="boolean")store.set("pagesound",d.pagesound);
+  if(d.order)store.set("order",d.order);if(typeof d.pagesound==="boolean")store.set("pagesound",d.pagesound);if(+d.goal)store.set("goal",+d.goal);
   if(d.hifz&&typeof d.hifz==="object"){HZ=d.hifz;store.set("hifz",HZ)}
   if(d.stats&&d.stats.days){ST.days=d.stats.days;ST.seen=d.stats.seen||"";SEEN=decodeSeen(ST.seen);store.set("stats",ST)}
   applyTheme(d.theme||null);applySize(d.qsize);refreshUI();
@@ -975,64 +1027,6 @@ document.addEventListener("visibilitychange",()=>{if(document.visibilityState===
 function lastDays(n){const out=[];for(let i=n-1;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);out.push({k:ymd(d),day:d.getDate()})}return out}
 function streak(){let c=0;const d=new Date();const ok=k=>{const x=ST.days[k];return x&&(x.r>0||x.sec>=120)};
   if(!ok(ymd(d)))d.setDate(d.getDate()-1);while(ok(ymd(d))){c++;d.setDate(d.getDate()-1)}return c}
-function chartSVG(metric,n){
-  const ds=lastDays(n);const vals=ds.map(x=>{const r=ST.days[x.k];return r?(metric==="sec"?Math.round(r.sec/60):r.r):0});
-  const mx=Math.max(...vals,metric==="sec"?10:10);const step=Math.pow(10,Math.floor(Math.log10(mx)));const top=Math.ceil(mx/step)*step;
-  const W=340,H=170,pr=30,pl=6,pt=18,pb=22,cw=W-pr-pl,ch=H-pt-pb,bw=cw/n;
-  let g="";[0,.5,1].forEach(f=>{const y=pt+ch-ch*f;g+=`<line class="gl" x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}"/><text x="${W-pr+4}" y="${y+3.5}" text-anchor="start">${an(Math.round(top*f))}</text>`});
-  let b="";vals.forEach((v,i)=>{const x=W-pr-(i+1)*bw+bw*.18,w=bw*.64,h=v?Math.max(2,ch*v/top):0,y=pt+ch-h;const now=i===n-1;
-    if(h)b+=`<rect class="bar${now?" now":""}" x="${x.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>`;
-    if(now&&v)b+=`<text class="val" x="${(x+w/2).toFixed(1)}" y="${(y-4).toFixed(1)}" text-anchor="middle">${an(v)}</text>`;
-    if((n-1-i)%(n>14?5:2)===0)b+=`<text x="${(x+w/2).toFixed(1)}" y="${H-6}" text-anchor="middle">${now?"اليوم":an(ds[i].day)}</text>`});
-  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="${metric==="sec"?"دقائق القراءة":"الآيات المقروءة"} خلال ${an(n)} يومًا">${g}${b}</svg>`;
-}
-function renderStats(){
-  flushStats(true);current=0;curPage=0;titleEl.textContent="الإحصائيات";document.title="الإحصائيات · مصحف التدبر";
-  const td=dayRec();const all=Object.values(ST.days);const sum=k=>all.reduce((a,x)=>a+(x[k]||0),0);
-  const week=lastDays(7).reduce((a,x)=>a+((ST.days[x.k]||{}).r||0),0);
-  const uniq=seenCount(),pct=uniq/6236*100;
-  const metric=store.get("stmetric","r"),n=store.get("stdays",14);
-  view.innerHTML=`<div class="wrap pgx">
-    <div class="pgx-h"><h1>إحصائياتي</h1><a class="back" href="#">→ الرئيسية</a></div>
-    <div class="tiles">
-      <div class="tile hero"><small>الحسنات المقدّرة (المجموع)</small><b>${fmtN(sum("h"))}</b><em>اليوم: ${fmtN(td.h)} — والله يضاعف لمن يشاء</em></div>
-      <div class="tile"><small>آيات اليوم</small><b>${fmtN(td.r)}</b></div>
-      <div class="tile"><small>آيات هذا الأسبوع</small><b>${fmtN(week)}</b></div>
-      <div class="tile"><small>مجموع الآيات المقروءة</small><b>${fmtN(sum("r"))}</b></div>
-      <div class="tile"><small>آيات مسموعة</small><b>${fmtN(sum("l"))}</b></div>
-      <div class="tile"><small>وقت القراءة اليوم</small><b>${fmtDur(td.sec)}</b></div>
-      <div class="tile"><small>الوقت الإجمالي</small><b>${fmtDur(sum("sec"))}</b></div>
-      <div class="tile"><small>أيام متتالية</small><b>${an(streak())}</b><em>يوم</em></div>
-      <div class="tile"><small>آيات مختلفة قرأتها</small><b>${fmtN(uniq)}</b><em>من ${fmtN(6236)}</em></div>
-    </div>
-    <div class="card">
-      <h2>نشاطك</h2>
-      <div class="btns" style="justify-content:space-between;margin-bottom:8px">
-        <div class="seg" id="stMetric"><button type="button" data-m="r" aria-pressed="${metric==="r"}">الآيات</button><button type="button" data-m="sec" aria-pressed="${metric==="sec"}">الدقائق</button></div>
-        <div class="seg" id="stDays"><button type="button" data-n="7" aria-pressed="${n===7}">٧ أيام</button><button type="button" data-n="14" aria-pressed="${n===14}">١٤ يومًا</button><button type="button" data-n="30" aria-pressed="${n===30}">٣٠ يومًا</button></div>
-      </div>
-      <div style="overflow-x:auto">${chartSVG(metric,n)}</div>
-    </div>
-    <div class="card">
-      <h2>تقدّم الختمة</h2>
-      <div class="khat" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(1)}"><i style="width:${Math.max(pct,uniq?1:0).toFixed(2)}%"></i></div>
-      <p class="note2" style="margin-top:8px">${anD(pct.toFixed(1))}٪ من آيات القرآن مرّت عليك قراءةً.</p>
-    </div>
-    <div class="card">
-      <h2>عن الحسنات</h2>
-      <p class="hadith">«مَن قرأ حرفًا من كتاب الله فله به حسنة، والحسنة بعشر أمثالها»</p>
-      <p class="note2">رواه الترمذي. الرقم المعروض تقدير تقريبي: عدد حروف الآيات المقروءة × ١٠. الأجر عند الله وحده، وهو يضاعف لمن يشاء.</p>
-    </div>
-    <div class="card">
-      <h2>كيف نحسب؟</h2>
-      <p class="note2">تُحتسب الآية مقروءة تلقائيًا حين تبقى أمامك مدة تكفي لقراءتها (نحو ١٥ حرفًا في الثانية)، بالترتيب من أعلى الصفحة. تُحسب كل آية مرة واحدة في اليوم. الآيات التي تستمع إليها حتى نهايتها تُحسب في «آيات مسموعة» فقط. الوقت يُحسب حين يكون التطبيق مفتوحًا وتستعمله، ويتوقف بعد ٣ دقائق دون نشاط. البيانات محفوظة على جهازك.</p>
-    </div>
-  </div>`;
-  $("#stMetric").onclick=e=>{const b=e.target.closest("[data-m]");if(b){store.set("stmetric",b.dataset.m);renderStats()}};
-  $("#stDays").onclick=e=>{const b=e.target.closest("[data-n]");if(b){store.set("stdays",+b.dataset.n);renderStats()}};
-  window.scrollTo(0,0);
-}
-
 /* ---------- Memorization (hifz) ---------- */
 let HZ=store.get("hifz",null)||{};
 const BOX=[1,3,7,14,30,60];
@@ -1044,53 +1038,9 @@ function daysUntil(k){return Math.round((new Date(k+"T00:00:00")-new Date(today(
 function hzPill(s){const h=HZ[s];if(!h)return "";if(h.st===2)return h.due<=today()?'<span class="pill due">للمراجعة</span>':'<span class="pill mem">محفوظة</span>';return '<span class="pill learn">قيد الحفظ</span>'}
 const STARP='<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z"/></svg>';
 function hzRow(s){const m=META[s-1];return `<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${m[1]}</span><br><span class="smeta">${an(m[4])} آية</span></span>${hzPill(s)}</a></li>`}
-function renderHifzHome(){
-  current=0;curPage=0;titleEl.textContent="الحفظ";document.title="الحفظ والمراجعة · مصحف التدبر";
-  const mem=Object.keys(HZ).map(Number).filter(s=>HZ[s].st===2),learn=Object.keys(HZ).map(Number).filter(s=>HZ[s].st===1);
-  const mv=mem.reduce((a,s)=>a+META[s-1][4],0),pct=mv/6236,C=2*Math.PI*36;
-  const due=hzDue();const order=store.get("order","asc");const list=order==="desc"?META.slice().reverse():META;
-  view.innerHTML=`<div class="wrap pgx">
-    <div class="pgx-h"><h1>الحفظ والمراجعة</h1><a class="back" href="#">→ الرئيسية</a></div>
-    <div class="card ringbox">
-      <svg class="ring" viewBox="0 0 84 84" aria-hidden="true"><circle class="bg" cx="42" cy="42" r="36"/><circle class="fg" cx="42" cy="42" r="36" stroke-dasharray="${(C*pct).toFixed(1)} ${C.toFixed(1)}"/><text x="42" y="47" text-anchor="middle">${anD((pct*100).toFixed(pct>0&&pct<.01?1:0))}٪</text></svg>
-      <div><b style="font-family:var(--f-head);font-size:1.1rem">${an(mem.length)} سورة محفوظة</b><p class="note2">${fmtN(mv)} آية من ${fmtN(6236)}${learn.length?`، و${an(learn.length)} قيد الحفظ`:""}</p></div>
-    </div>
-    ${due.length?`<div class="card"><h2>للمراجعة اليوم</h2><ul class="hzlist">${due.map(hzRow).join("")}</ul></div>`:mem.length?`<div class="card"><h2>المراجعة</h2><p class="note2">لا مراجعة مستحقة اليوم. أحسنت، بارك الله فيك.</p></div>`:""}
-    ${learn.length?`<div class="card"><h2>قيد الحفظ</h2><ul class="hzlist">${learn.sort((a,b)=>a-b).map(hzRow).join("")}</ul></div>`:""}
-    <div class="card"><h2>اختر سورة</h2>
-      <p class="note2" style="margin-bottom:6px">لكل سورة ثلاث أدوات: إخفاء الكلمات، التكرار الصوتي، واختبار قصير. حين تحفظ سورة، يذكّرك التطبيق بمراجعتها بعد يوم، ثم ٣، ثم ٧ أيام، وهكذا.</p>
-      <ul class="hzlist">${list.map(m=>hzRow(m[0])).join("")}</ul></div>
-  </div>`;
-  window.scrollTo(0,0);
-}
 let hzS=0,hzQuiz=null;
 function hzRange(N){const r=store.get("hzr"+hzS,null);let a=r?r[0]:1,b=r?r[1]:Math.min(N,7);a=Math.max(1,Math.min(N,a|0||1));b=Math.max(a,Math.min(N,b|0||a));return [a,b]}
 const isMark=w=>!/[ء-يٱ-ۓ]/.test(w);
-async function renderHifzSurah(n){
-  current=0;curPage=0;hzS=n;hzQuiz=null;const m=META[n-1];titleEl.textContent="حفظ "+m[1];document.title="حفظ سورة "+m[1]+" · مصحف التدبر";
-  view.innerHTML=`<div class="wrap"><div class="loading">جارٍ التحميل…</div></div>`;
-  let data;try{data=await loadSurah(n)}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر التحميل. تحقّق من الاتصال.</div></div>`;return}
-  if(hzS!==n)return;
-  const N=data.v.length,[a,b]=hzRange(N),h=HZ[n],st=h?h.st:0,tab=store.get("hztab","mask");
-  const dueTxt=h&&h.st===2?(h.due<=today()?"":`المراجعة القادمة بعد ${an(daysUntil(h.due))} يوم`):"";
-  view.innerHTML=`<div class="wrap pgx">
-    <div class="pgx-h"><a class="back" href="#hifz">→ الحفظ</a><span style="flex:1"></span></div>
-    <div class="shead" style="padding-block:0"><div class="cartouche"><i></i>سورة ${m[1]}<i></i></div><div class="smeta">${an(N)} آية</div></div>
-    <div class="seg" id="hzSt"><button type="button" data-st="0" aria-pressed="${st===0}">لم أبدأ</button><button type="button" data-st="1" aria-pressed="${st===1}">أحفظها الآن</button><button type="button" data-st="2" aria-pressed="${st===2}">حفظتها</button></div>
-    ${h&&h.st===2&&h.due<=today()?`<div class="card"><h2>حان وقت المراجعة</h2><p class="note2" style="margin-bottom:10px">راجع السورة بإخفاء الكلمات أو الاختبار، ثم قيّم حفظك:</p><div class="btns"><button class="btn gold" type="button" id="rvOk">أتقنتها</button><button class="btn" type="button" id="rvNo">أحتاج مراجعة</button></div></div>`:dueTxt?`<p class="note2" style="text-align:center">${dueTxt}</p>`:""}
-    <div class="range"><label for="hzFrom">من الآية</label><input id="hzFrom" type="number" inputmode="numeric" min="1" max="${N}" value="${a}"><label for="hzTo">إلى</label><input id="hzTo" type="number" inputmode="numeric" min="1" max="${N}" value="${b}"><button class="btn" type="button" id="hzAll" style="padding:5px 12px">كل السورة</button></div>
-    <div class="seg" id="hzTab"><button type="button" data-t="mask" aria-pressed="${tab==="mask"}">إخفاء الكلمات</button><button type="button" data-t="rep" aria-pressed="${tab==="rep"}">التكرار</button><button type="button" data-t="quiz" aria-pressed="${tab==="quiz"}">اختبار</button><button type="button" data-t="rec" aria-pressed="${tab==="rec"}">التسميع</button></div>
-    <div id="hzBody"></div>
-  </div>`;
-  $("#hzSt").onclick=e=>{const x=e.target.closest("[data-st]");if(!x)return;setHzStatus(n,+x.dataset.st);toast(["أُزيلت من الحفظ","بالتوفيق في حفظها","ما شاء الله، أُضيفت إلى المحفوظات"][+x.dataset.st]);renderHifzSurah(n)};
-  if($("#rvOk")){$("#rvOk").onclick=()=>{hzReview(n,true);toast("أحسنت، بارك الله فيك");renderHifzSurah(n)};$("#rvNo").onclick=()=>{hzReview(n,false);toast("سنذكّرك بمراجعتها غدًا");renderHifzSurah(n)}}
-  const setR=(x,y)=>{store.set("hzr"+n,[x,y]);hzQuiz=null;stopRec();rec=null;drawHz(data)};
-  const onR=()=>{let x=+$("#hzFrom").value||1,y=+$("#hzTo").value||x;x=Math.max(1,Math.min(N,x));y=Math.max(x,Math.min(N,y));$("#hzFrom").value=x;$("#hzTo").value=y;setR(x,y)};
-  $("#hzFrom").onchange=onR;$("#hzTo").onchange=onR;
-  $("#hzAll").onclick=()=>{$("#hzFrom").value=1;$("#hzTo").value=N;setR(1,N)};
-  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab",x.dataset.t);$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
-  drawHz(data);window.scrollTo(0,0);
-}
 function drawHz(data){
   const N=data.v.length,[a,b]=hzRange(N),tab=store.get("hztab","mask"),body=$("#hzBody"),n=hzS;
   if(tab==="mask"){
@@ -1239,30 +1189,201 @@ function drawRec(data,a,b){
 }
 
 /* ---------- Settings ---------- */
+/* ---------- Statistics page (v4: today first, daily goal in pages) ---------- */
+const LPP=538.7; /* average letters per mushaf page (325 386 letters / 604 pages) */
+const goalPages=()=>store.get("goal",2);
+const pagesOf=r=>r?(r.h||0)/10/LPP:0;
+const fmtP=x=>anD((Math.round(x*10)/10).toString());
+function ringSVG(frac,size,label,sub){const r=size/2-7,C=2*Math.PI*r;
+  return `<svg class="ring" viewBox="0 0 ${size} ${size}" style="width:${size}px;height:${size}px" aria-hidden="true"><circle class="bg" cx="${size/2}" cy="${size/2}" r="${r}"/><circle class="fg" cx="${size/2}" cy="${size/2}" r="${r}" stroke-dasharray="${(C*Math.min(1,frac)).toFixed(1)} ${C.toFixed(1)}"/><text x="${size/2}" y="${size/2+(sub?1:5)}" text-anchor="middle" style="font-size:${size/5}px">${label}</text>${sub?`<text x="${size/2}" y="${size/2+size/6}" text-anchor="middle" class="rs">${sub}</text>`:""}</svg>`}
+function chartSVG(metric,n){
+  const ds=lastDays(n),goal=goalPages();
+  const vals=ds.map(x=>{const r=ST.days[x.k];if(!r)return 0;return metric==="sec"?Math.round(r.sec/60):metric==="p"?Math.round(pagesOf(r)*10)/10:r.r});
+  const mx=Math.max(...vals,metric==="p"?goal:metric==="sec"?10:10);
+  const top=mx<=6?Math.ceil(mx):(()=>{const st=Math.pow(10,Math.floor(Math.log10(mx)));return Math.ceil(mx/st)*st})();
+  const W=340,H=170,pr=30,pl=6,pt=18,pb=22,cw=W-pr-pl,ch=H-pt-pb,bw=cw/n;
+  const fmt=v=>metric==="p"?fmtP(v):an(Math.round(v));
+  let g="";[0,.5,1].forEach(f=>{const y=pt+ch-ch*f;g+=`<line class="gl" x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}"/><text x="${W-pr+4}" y="${y+3.5}" text-anchor="start">${fmt(top*f)}</text>`});
+  if(metric==="p"){const y=pt+ch-ch*Math.min(1,goal/top);g+=`<line class="goal" x1="${pl}" x2="${W-pr}" y1="${y}" y2="${y}"/>`}
+  let b="";vals.forEach((v,i)=>{const x=W-pr-(i+1)*bw,w=bw*.64,bx=x+bw*.18,h=v?Math.max(2,ch*Math.min(1,v/top)):0,y=pt+ch-h;const now=i===n-1;
+    if(h)b+=`<rect class="bar${now?" now":""}${metric==="p"&&v>=goal?" met":""}" x="${bx.toFixed(1)}" y="${y.toFixed(1)}" width="${w.toFixed(1)}" height="${h.toFixed(1)}" rx="2"/>`;
+    if((n-1-i)%(n>14?5:2)===0)b+=`<text x="${(bx+w/2).toFixed(1)}" y="${H-6}" text-anchor="middle">${now?"اليوم":an(ds[i].day)}</text>`;
+    b+=`<rect class="hit" data-i="${i}" x="${x.toFixed(1)}" y="${pt}" width="${bw.toFixed(1)}" height="${ch}"/>`});
+  chartSVG.last={ds,vals,metric};
+  return `<svg class="chart" viewBox="0 0 ${W} ${H}" role="img" aria-label="نشاطك خلال ${an(n)} يومًا">${g}${b}</svg>`;
+}
+function renderStats(){
+  flushStats(true);current=0;curPage=0;titleEl.textContent="الإحصائيات";document.title="الإحصائيات · مصحف التدبر";
+  const td=dayRec(),all=Object.values(ST.days),sum=k=>all.reduce((a,x)=>a+(x[k]||0),0);
+  const goal=goalPages(),pt=pagesOf(td),frac=pt/goal,left=Math.max(0,goal-pt);
+  const uniq=seenCount(),pct=uniq/6236*100;
+  const metric=store.get("stmetric","p"),n=store.get("stdays",14);
+  view.innerHTML=`<div class="wrap pgx">
+    <div class="pgx-h"><h1>إحصائياتي</h1><a class="back" href="#">→ الرئيسية</a></div>
+    <section class="card todaycard">
+      <div class="ringbox">
+        ${ringSVG(frac,104,fmtP(pt),`من ${an(goal)} ${goal>2&&goal<11?"صفحات":"صفحة"}`)}
+        <div class="todaytxt">
+          <b>وِردك اليوم</b>
+          <p class="note2">${frac>=1?"ما شاء الله، أتممت وردك اليوم.":pt>0?`بقي ${fmtP(left)} صفحة لإتمام وردك.`:"لم تبدأ وردك اليوم بعد."}</p>
+          <div class="stepper" aria-label="الورد اليومي"><button type="button" id="gMinus" aria-label="إنقاص الورد">−</button><span>${an(goal)} ${goal>2&&goal<11?"صفحات":"صفحة"} يوميًا</span><button type="button" id="gPlus" aria-label="زيادة الورد">+</button></div>
+        </div>
+      </div>
+      <div class="mini3">
+        <div><b>${fmtN(td.r)}</b><small>آية اليوم</small></div>
+        <div><b>${fmtDur(td.sec)}</b><small>وقت القراءة</small></div>
+        <div><b>${an(streak())}</b><small>أيام متتالية</small></div>
+      </div>
+    </section>
+    <section class="card">
+      <div class="chead"><div class="seg sm" id="stMetric"><button type="button" data-m="p" aria-pressed="${metric==="p"}">صفحات</button><button type="button" data-m="r" aria-pressed="${metric==="r"}">آيات</button><button type="button" data-m="sec" aria-pressed="${metric==="sec"}">دقائق</button></div>
+        <div class="seg sm" id="stDays"><button type="button" data-n="7" aria-pressed="${n===7}">٧ أيام</button><button type="button" data-n="14" aria-pressed="${n===14}">١٤</button><button type="button" data-n="30" aria-pressed="${n===30}">٣٠</button></div></div>
+      <div id="chartBox">${chartSVG(metric,n)}</div>
+      <p class="chtip" id="chTip">المس عمودًا لرؤية تفاصيل اليوم${metric==="p"?"، والخط المنقّط هو وردك":""}.</p>
+    </section>
+    <div class="tiles">
+      <div class="tile hero"><small>الحسنات المقدّرة</small><b>${fmtN(sum("h"))}</b><em>اليوم ${fmtN(td.h)}، والله يضاعف لمن يشاء</em></div>
+      <div class="tile"><small>مجموع الآيات</small><b>${fmtN(sum("r"))}</b></div>
+      <div class="tile"><small>ما يعادل</small><b>${fmtP(all.reduce((a,x)=>a+pagesOf(x),0))}</b><em>صفحة</em></div>
+      <div class="tile"><small>الوقت الإجمالي</small><b>${fmtDur(sum("sec"))}</b></div>
+      <div class="tile"><small>آيات مسموعة</small><b>${fmtN(sum("l"))}</b></div>
+    </div>
+    <section class="card">
+      <div class="khead"><b>تقدّم الختمة</b><span>${anD(pct.toFixed(1))}٪</span></div>
+      <div class="khat" role="progressbar" aria-valuemin="0" aria-valuemax="100" aria-valuenow="${pct.toFixed(1)}"><i style="width:${Math.max(pct,uniq?1:0).toFixed(2)}%"></i></div>
+      <p class="note2" style="margin-top:6px">${fmtN(uniq)} آية مختلفة من ${fmtN(6236)}</p>
+    </section>
+    <details class="card fold"><summary>عن الحسنات وطريقة الحساب</summary>
+      <p class="hadith">«مَن قرأ حرفًا من كتاب الله فله به حسنة، والحسنة بعشر أمثالها»</p>
+      <p class="note2">رواه الترمذي. الرقم تقدير تقريبي: عدد حروف الآيات المقروءة × ١٠، والأجر عند الله وحده.</p>
+      <p class="note2">تُحتسب الآية مقروءة حين تبقى أمامك مدة تكفي لقراءتها (نحو ١٥ حرفًا في الثانية)، مرة واحدة في اليوم. الصفحة = ما يعادل حروف صفحة من مصحف المدينة. الوقت يتوقف بعد ٣ دقائق دون نشاط. البيانات على جهازك.</p>
+    </details>
+  </div>`;
+  const setGoal=d=>{const g=Math.max(1,Math.min(40,goalPages()+d));save("goal",g);renderStats()};
+  $("#gMinus").onclick=()=>setGoal(-1);$("#gPlus").onclick=()=>setGoal(1);
+  $("#stMetric").onclick=e=>{const x=e.target.closest("[data-m]");if(x){store.set("stmetric",x.dataset.m);renderStats()}};
+  $("#stDays").onclick=e=>{const x=e.target.closest("[data-n]");if(x){store.set("stdays",+x.dataset.n);renderStats()}};
+  $("#chartBox").onclick=e=>{const h=e.target.closest(".hit");if(!h)return;const L=chartSVG.last,i=+h.dataset.i,d=new Date(L.ds[i].k+"T12:00:00"),v=L.vals[i];
+    document.querySelectorAll("#chartBox .hit.sel").forEach(z=>z.classList.remove("sel"));h.classList.add("sel");
+    let dl;try{dl=d.toLocaleDateString("ar-u-nu-arab",{weekday:"long",day:"numeric",month:"long"})}catch(x){dl=L.ds[i].k}
+    $("#chTip").textContent=`${dl}: ${L.metric==="p"?fmtP(v)+" صفحة":L.metric==="sec"?an(v)+" دقيقة":an(v)+" آية"}`};
+  window.scrollTo(0,0);
+}
+
+/* ---------- Memorization home (v4: review first, filters, live search) ---------- */
+let hzF=store.get("hzf","all"),hzQ="";
+const ICO={
+  mask:'<svg viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 4l16 16"/></svg>',
+  rep:'<svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>',
+  quiz:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6"/></svg>',
+  rec:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>'};
+function renderHifzHome(){
+  current=0;curPage=0;titleEl.textContent="الحفظ";document.title="الحفظ والمراجعة · مصحف التدبر";
+  const ids=Object.keys(HZ).map(Number),mem=ids.filter(s=>HZ[s].st===2),learn=ids.filter(s=>HZ[s].st===1).sort((a,b)=>a-b),due=hzDue();
+  const mv=mem.reduce((a,s)=>a+META[s-1][4],0),pct=mv/6236;
+  view.innerHTML=`<div class="wrap pgx">
+    <div class="pgx-h"><h1>الحفظ والمراجعة</h1><a class="back" href="#">→ الرئيسية</a></div>
+    <section class="card ringbox">
+      ${ringSVG(pct,84,anD((pct*100).toFixed(pct>0&&pct<.01?1:0))+"٪","")}
+      <div><b class="lead">${an(mem.length)} سورة محفوظة</b><p class="note2">${fmtN(mv)} آية من ${fmtN(6236)}${learn.length?`، و${an(learn.length)} قيد الحفظ`:""}</p></div>
+    </section>
+    ${due.length?`<section class="card duecard"><h2>للمراجعة اليوم <span class="pill due">${an(due.length)}</span></h2><ul class="hzlist">${due.map(s=>`<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${META[s-1][1]}</span></span><span class="btn gold sm">راجِع</span></a></li>`).join("")}</ul></section>`
+      :mem.length?`<p class="note2 okline">لا مراجعة مستحقة اليوم، بارك الله فيك.</p>`:""}
+    ${learn.length?`<section><h2 class="h2x">تابع الحفظ</h2><div class="hscroll">${learn.map(s=>{const r=store.get("hzr"+s,null);return `<a class="lcard" href="#hifz-${s}"><span class="sname">${META[s-1][1]}</span><small>${r?`الآيات ${an(r[0])}–${an(r[1])}`:`${an(META[s-1][4])} آية`}</small></a>`}).join("")}</div></section>`:""}
+    <section class="card">
+      <h2>كل السور</h2>
+      <input class="filter" id="hzSearch" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off" value="${esc(hzQ)}">
+      <div class="chips" id="hzFilter" style="margin:8px 0 4px">
+        <button type="button" data-f="all" aria-pressed="${hzF==="all"}">الكل</button>
+        <button type="button" data-f="learn" aria-pressed="${hzF==="learn"}">قيد الحفظ ${an(learn.length)}</button>
+        <button type="button" data-f="mem" aria-pressed="${hzF==="mem"}">محفوظة ${an(mem.length)}</button>
+        <button type="button" data-f="new" aria-pressed="${hzF==="new"}">لم أبدأ</button>
+      </div>
+      <ul class="hzlist" id="hzList"></ul>
+    </section>
+  </div>`;
+  const drawList=()=>{const order=store.get("order","asc"),list=order==="desc"?META.slice().reverse():META,nq=norm(hzQ);
+    const out=list.filter(m=>{const h=HZ[m[0]];const st=h?h.st:0;
+      if(hzF==="learn"&&st!==1)return false;if(hzF==="mem"&&st!==2)return false;if(hzF==="new"&&st!==0)return false;
+      return !hzQ||String(m[0])===hzQ.trim()||norm(m[1]).includes(nq)||m[2].toLowerCase().includes(hzQ.toLowerCase())}).map(m=>hzRow(m[0]));
+    $("#hzList").innerHTML=out.length?out.join(""):`<li class="note2" style="padding:12px 2px">لا توجد سور في هذا التصنيف.</li>`};
+  drawList();
+  $("#hzSearch").oninput=e=>{hzQ=e.target.value;drawList()};
+  $("#hzFilter").onclick=e=>{const x=e.target.closest("[data-f]");if(!x)return;hzF=x.dataset.f;store.set("hzf",hzF);
+    $("#hzFilter").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));drawList()};
+  window.scrollTo(0,0);
+}
+
+/* ---------- Memorization surah page (v4: compact head, range presets, icon tools) ---------- */
+async function renderHifzSurah(n){
+  current=0;curPage=0;hzS=n;hzQuiz=null;const m=META[n-1];titleEl.textContent="حفظ "+m[1];document.title="حفظ سورة "+m[1]+" · مصحف التدبر";
+  view.innerHTML=`<div class="wrap"><div class="loading">جارٍ التحميل…</div></div>`;
+  let data;try{data=await loadSurah(n)}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر التحميل. تحقّق من الاتصال.</div></div>`;return}
+  if(hzS!==n)return;
+  const N=data.v.length,[a,b]=hzRange(N),h=HZ[n],st=h?h.st:0,tab=store.get("hztab","mask");
+  const due=h&&h.st===2&&h.due<=today();
+  const nextTxt=h&&h.st===2&&!due?`المراجعة القادمة بعد ${an(daysUntil(h.due))} يوم`:"";
+  view.innerHTML=`<div class="wrap pgx hzpage">
+    <div class="hzhead">
+      <a class="back" href="#hifz">→ الحفظ</a>
+      <div class="hzname"><span class="sname">سورة ${m[1]}</span><small>${an(N)} آية${nextTxt?`، ${nextTxt}`:""}</small></div>
+    </div>
+    ${due?`<section class="card duecard"><h2>حان وقت المراجعة</h2><p class="note2" style="margin-bottom:10px">راجع السورة بإحدى الأدوات أدناه، ثم قيّم حفظك:</p><div class="btns"><button class="btn gold" type="button" id="rvOk">أتقنتها</button><button class="btn" type="button" id="rvNo">أحتاج مراجعة</button></div></section>`:""}
+    <div class="seg" id="hzSt"><button type="button" data-st="0" aria-pressed="${st===0}">لم أبدأ</button><button type="button" data-st="1" aria-pressed="${st===1}">أحفظها الآن</button><button type="button" data-st="2" aria-pressed="${st===2}">حفظتها</button></div>
+    <section class="card tight">
+      <div class="range"><span>المقطع</span><label class="sr" for="hzFrom">من الآية</label><input id="hzFrom" type="number" inputmode="numeric" min="1" max="${N}" value="${a}"><span>إلى</span><label class="sr" for="hzTo">إلى الآية</label><input id="hzTo" type="number" inputmode="numeric" min="1" max="${N}" value="${b}"></div>
+      <div class="chips" id="hzPre"><button type="button" data-p="prev" ${a<=1?"disabled":""}>→ السابق</button><button type="button" data-p="next" ${b>=N?"disabled":""}>التالي ←</button><button type="button" data-p="all" aria-pressed="${a===1&&b===N}">كل السورة</button></div>
+    </section>
+    <div class="tooltabs" id="hzTab" role="tablist">
+      ${[["mask","إخفاء"],["rep","تكرار"],["quiz","اختبار"],["rec","تسميع"]].map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-pressed="${tab===k}">${ICO[k]}<span>${l}</span></button>`).join("")}
+    </div>
+    <div id="hzBody"></div>
+  </div>`;
+  $("#hzSt").onclick=e=>{const x=e.target.closest("[data-st]");if(!x)return;setHzStatus(n,+x.dataset.st);toast(["أُزيلت من الحفظ","بالتوفيق في حفظها","ما شاء الله، أُضيفت إلى المحفوظات"][+x.dataset.st]);renderHifzSurah(n)};
+  if($("#rvOk")){$("#rvOk").onclick=()=>{hzReview(n,true);toast("أحسنت، بارك الله فيك");renderHifzSurah(n)};$("#rvNo").onclick=()=>{hzReview(n,false);toast("سنذكّرك بمراجعتها غدًا");renderHifzSurah(n)}}
+  const setR=(x,y)=>{x=Math.max(1,Math.min(N,x));y=Math.max(x,Math.min(N,y));$("#hzFrom").value=x;$("#hzTo").value=y;store.set("hzr"+n,[x,y]);hzQuiz=null;stopRec();rec=null;if(player.queue)stopAudio();
+    const pre=$("#hzPre");pre.querySelector('[data-p="prev"]').disabled=x<=1;pre.querySelector('[data-p="next"]').disabled=y>=N;pre.querySelector('[data-p="all"]').setAttribute("aria-pressed",String(x===1&&y===N));drawHz(data)};
+  const onR=()=>setR(+$("#hzFrom").value||1,+$("#hzTo").value||+$("#hzFrom").value||1);
+  $("#hzFrom").onchange=onR;$("#hzTo").onchange=onR;
+  $("#hzPre").onclick=e=>{const x=e.target.closest("[data-p]");if(!x||x.disabled)return;const [c,d]=hzRange(N),len=d-c+1;
+    if(x.dataset.p==="all")setR(1,N);else if(x.dataset.p==="next")setR(d+1,Math.min(N,d+len));else setR(Math.max(1,c-len),c-1)};
+  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab",x.dataset.t);$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
+  drawHz(data);window.scrollTo(0,0);
+}
+
+/* ---------- Settings (v4: grouped rows, live preview) ---------- */
 function renderPrefs(){
   current=0;curPage=0;titleEl.textContent="الإعدادات";document.title="الإعدادات · مصحف التدبر";
-  const th=store.get("theme",null)||"auto",ps=store.get("pagesound",true),ord=store.get("order","asc");
+  const th=store.get("theme",null)||"auto",ps=store.get("pagesound",true),ord=store.get("order","asc"),goal=goalPages();
   view.innerHTML=`<div class="wrap pgx">
     <div class="pgx-h"><h1>الإعدادات</h1><a class="back" href="#">→ الرئيسية</a></div>
-    <div class="card"><h2>المظهر</h2><div class="seg" id="pfTheme"><button type="button" data-t="auto" aria-pressed="${th==="auto"}">تلقائي</button><button type="button" data-t="light" aria-pressed="${th==="light"}">فاتح</button><button type="button" data-t="dark" aria-pressed="${th==="dark"}">داكن</button></div></div>
-    <div class="card">
-      <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>صوت ورق خفيف عند الانتقال بين صفحات المصحف</small></span><i class="sw"></i></button></div>
-      <div class="row"><span>ترتيب السور في الفهرس<small>يُحفظ اختيارك</small></span><div class="seg" id="pfOrd"><button type="button" data-o="asc" aria-pressed="${ord==="asc"}">من الفاتحة</button><button type="button" data-o="desc" aria-pressed="${ord==="desc"}">من الناس</button></div></div>
-      <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="btns"><button class="vb" type="button" id="pfMinus" style="border-color:var(--line-strong)">أ−</button><button class="vb" type="button" id="pfPlus" style="border-color:var(--line-strong)">أ+</button></div></div>
-    </div>
-    <div class="card"><h2>البيانات</h2>
-      <div class="row"><span>مسح الإحصائيات<small>الآيات المقروءة، الوقت، والحسنات المقدّرة</small></span><span class="btns" style="flex:none" id="clrSt"><button class="btn danger" type="button" data-ask>مسح</button></span></div>
-      <div class="row"><span>مسح بيانات الحفظ<small>السور المحفوظة ومواعيد المراجعة</small></span><span class="btns" style="flex:none" id="clrHz"><button class="btn danger" type="button" data-ask>مسح</button></span></div>
-    </div>
-    <div class="card"><h2>عن التطبيق</h2><p class="note2">النص بالرسم العثماني من موسوعة القرآن الكريم. التفاسير: الميسر، السعدي، ابن كثير. التلاوات من EveryAyah.com. تقسيم الصفحات والأجزاء والأحزاب وفق مصحف المدينة.</p></div>
+    <h2 class="h2x">المظهر</h2>
+    <section class="card"><div class="seg" id="pfTheme"><button type="button" data-t="auto" aria-pressed="${th==="auto"}">تلقائي</button><button type="button" data-t="light" aria-pressed="${th==="light"}">فاتح</button><button type="button" data-t="dark" aria-pressed="${th==="dark"}">داكن</button></div></section>
+    <h2 class="h2x">القراءة</h2>
+    <section class="card">
+      <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
+      <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
+      <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
+      <div class="row"><span>ترتيب السور</span><div class="seg sm" id="pfOrd"><button type="button" data-o="asc" aria-pressed="${ord==="asc"}">من الفاتحة</button><button type="button" data-o="desc" aria-pressed="${ord==="desc"}">من الناس</button></div></div>
+      <div class="row"><span>الورد اليومي<small>يظهر في الإحصائيات</small></span><div class="stepper"><button type="button" id="pfGm" aria-label="إنقاص">−</button><span id="pfGoal">${an(goal)} ص</span><button type="button" id="pfGp" aria-label="زيادة">+</button></div></div>
+    </section>
+    <h2 class="h2x">البيانات</h2>
+    <section class="card">
+      <div class="row"><span>مسح الإحصائيات<small>الآيات، الوقت، الحسنات المقدّرة</small></span><span class="btns" style="flex:none" id="clrSt"><button class="btn danger sm" type="button" data-ask>مسح</button></span></div>
+      <div class="row"><span>مسح بيانات الحفظ<small>السور المحفوظة ومواعيد المراجعة</small></span><span class="btns" style="flex:none" id="clrHz"><button class="btn danger sm" type="button" data-ask>مسح</button></span></div>
+    </section>
+    <details class="card fold"><summary>عن التطبيق</summary><p class="note2">النص بالرسم العثماني من موسوعة القرآن الكريم. التفاسير: الميسر، السعدي، ابن كثير. التلاوات من EveryAyah.com. تقسيم الصفحات والأجزاء والأحزاب وفق مصحف المدينة. بياناتك محفوظة على جهازك.</p></details>
   </div>`;
-  $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);renderPrefs()};
-  $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);if(on)pageSound();renderPrefs()};
-  $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(x){save("order",x.dataset.o);renderPrefs()}};
-  $("#pfMinus").onclick=()=>setSize(-.15);$("#pfPlus").onclick=()=>setSize(.15);
+  $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
+  $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  const sz=d=>{setSize(d);$("#pfSize").textContent=an(Math.round(qsize/1.75*100))+"٪"};
+  $("#pfMinus").onclick=()=>sz(-.15);$("#pfPlus").onclick=()=>sz(.15);
+  const gl=d=>{const g=Math.max(1,Math.min(40,goalPages()+d));save("goal",g);$("#pfGoal").textContent=an(g)+" ص"};
+  $("#pfGm").onclick=()=>gl(-1);$("#pfGp").onclick=()=>gl(1);
   const confirmBox=(id,fn,msg)=>{const box=$(id);box.onclick=e=>{const x=e.target.closest("button");if(!x)return;
-    if(x.hasAttribute("data-ask")){box.innerHTML=`<button class="btn danger" type="button" data-yes>تأكيد المسح</button><button class="btn" type="button" data-no>إلغاء</button>`;return}
-    if(x.hasAttribute("data-yes")){fn();toast(msg)}renderPrefs()}};
+    if(x.hasAttribute("data-ask")){box.innerHTML=`<button class="btn danger sm" type="button" data-yes>تأكيد</button><button class="btn sm" type="button" data-no>إلغاء</button>`;return}
+    if(x.hasAttribute("data-yes")){fn();toast(msg)}box.innerHTML=`<button class="btn danger sm" type="button" data-ask>مسح</button>`}};
   confirmBox("#clrSt",()=>{ST={days:{},seen:"",td:{d:"",ids:[],lids:[]}};SEEN=new Uint8Array(780);tdRead=new Set();tdListen=new Set();flushStats(true)},"تم مسح الإحصائيات");
   confirmBox("#clrHz",()=>{HZ={};hzSave()},"تم مسح بيانات الحفظ");
   window.scrollTo(0,0);
