@@ -7,7 +7,10 @@ Application web simple pour **lire le Coran** (texte arabe en rasm uthmani) et *
 - Les 114 sourates en écriture uthmani
 - Deux modes de lecture : **verset par verset** ou **pages du Mushaf** (604 pages du Mushaf de Médine, avec juz', hizb et quarts de hizb ; glisser du doigt pour tourner les pages)
 - Tafsir sous chaque verset : **Al-Muyassar** (par défaut), **As-Sa'di**, **Ibn Kathir**
-- Récitation verset par verset avec enchaînement automatique et choix du récitateur : **Saad Al-Ghamdi, Maher Al-Muaiqly, Abdul Basit, Al-Husary, Yasser Ad-Dossari, As-Sudais**
+- Récitation verset par verset avec enchaînement automatique et 12 récitateurs au choix (Saad Al-Ghamdi, Maher Al-Muaiqly, Abdul Basit, Al-Husary, Yasser Ad-Dossari, As-Sudais, Alafasy, Al-Minshawi, Ash-Shuraym, Ash-Shatri, Hani Ar-Rifai, At-Tablawi) ; reprise de l'écoute depuis l'accueil
+- Son de page tournée (réglable), ordre des sourates 1 → 114 ou 114 → 1
+- **Statistiques** : versets lus (comptés automatiquement), versets écoutés, temps de lecture, hassanates estimées, série de jours, graphique
+- **Mémorisation** : masquer et révéler les mots, répétition audio, petit quiz, suivi des sourates mémorisées et rappels de révision
 - **توقفت هنا** : marque le verset où tu t'es arrêté (un seul à la fois)
 - Marque-pages multiples (**علامة**)
 - Recherche par mot ou par référence (ex. `2:255`)
