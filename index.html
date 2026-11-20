@@ -457,6 +457,9 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .pkrow.on .ck{background:var(--gold);border-color:var(--gold)}
 .pkrow.on .ck::after{content:"";width:9px;height:5px;border-left:2px solid #111;border-bottom:2px solid #111;transform:rotate(-45deg) translateY(-1px)}
 .pkfoot{padding-top:10px}
+.pkbar{display:flex;align-items:center;gap:8px}
+.pkbar .filter{flex:1;min-width:0;margin:0}
+.chead2 .btns{align-items:center;gap:6px}
 .atrow{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:8px 10px;border-radius:12px;background:var(--gold-soft);font-family:var(--f-head);font-size:.88rem}
 .atrow svg{width:16px;height:16px;fill:var(--gold);stroke:none;flex:none}
 .atrow input{width:64px;padding:5px 8px;border-radius:10px;border:1px solid var(--gold);background:var(--surface);color:var(--ink);font:inherit;text-align:center}
@@ -1157,9 +1160,13 @@ const SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
 const skel=w=>norm(w).replace(/[اء]/g,"");
 function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);
   for(let i=1;i<=m;i++){const c=[i];for(let j=1;j<=n;j++)c[j]=Math.min(p[j]+1,c[j-1]+1,p[j-1]+(a[i-1]===b[j-1]?0:1));p=c}return p[n]}
-const wordMatch=(a,b)=>a===b||(a.length>1&&b.length>1&&lev(a,b)<=Math.max(1,Math.floor(Math.max(a.length,b.length)*.34)));
+const wordMatch=(a,b)=>a===b||(a.length>1&&b.length>1&&lev(a,b)<=Math.max(1,Math.floor(Math.max(a.length,b.length)*.4)));
+/* "almost right": looser similarity, and very short words (لا / ما / من / إن) are easily confused by the recogniser */
+const nearMatch=(a,b)=>(a.length<=2&&b.length<=2)||lev(a,b)<=Math.ceil(Math.max(a.length,b.length)*.6);
 function alignRec(spoken,target,start){const st=new Array(target.length).fill(0);let i=start||0;
   for(let q=0;q<spoken.length;q++){const w=spoken[q];if(i>=target.length)break;let hit=-1;
+    /* substitution: this word is close to the expected one and the next spoken word confirms the position */
+    if(!wordMatch(w,target[i])&&nearMatch(w,target[i])&&(i+1>=target.length||(q+1<spoken.length&&wordMatch(spoken[q+1],target[i+1])))){st[i]=1;i++;continue}
     for(let k=0;k<=2&&i+k<target.length;k++){if(!wordMatch(w,target[i+k]))continue;
       if(k===0){hit=i;break}
       /* a jump ahead must be confirmed by the next spoken word, and never on a very short word */
@@ -1320,7 +1327,7 @@ function setCurrent(s){const prev=hzCur();Object.keys(HZ).forEach(k=>{if(HZ[k].s
 function hzContinue(s){const h=HZ[s],N=META[s-1][4],at=Math.min(N,(h&&h.at)||1);store.set("hzr"+s,[at,Math.min(N,at+6)]);location.hash="hifz-"+s}
 function renderHifzHome(){
   current=0;curPage=0;titleEl.textContent="الحفظ";document.title="الحفظ والمراجعة · مصحف التدبر";
-  const ids=Object.keys(HZ).map(Number),mem=ids.filter(s=>HZ[s].st===2).sort((a,b)=>a-b),due=hzDue(),cur=hzCur();
+  const desc=store.get("order","asc")==="desc",ids=Object.keys(HZ).map(Number),mem=ids.filter(s=>HZ[s].st===2).sort((a,b)=>desc?b-a:a-b),due=hzDue(),cur=hzCur();
   const mv=mem.reduce((a,s)=>a+META[s-1][4],0),pct=mv/6236;
   let curHtml;
   if(cur){const N=META[cur-1][4],at=Math.min(N,HZ[cur].at||1),done=(at-1)/N;
@@ -1336,7 +1343,7 @@ function renderHifzHome(){
     ${curHtml}
     ${due.length?`<section class="card duecard"><h2>للمراجعة اليوم <span class="pill due">${an(due.length)}</span></h2><ul class="hzlist">${due.map(s=>`<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${META[s-1][1]}</span></span><span class="btn gold sm">راجِع</span></a></li>`).join("")}</ul></section>`:""}
     <section class="card">
-      <div class="chead2"><h2>محفوظاتي <span class="pill">${an(mem.length)}</span></h2><button class="btn sm" type="button" id="addMem">+ إضافة سور</button></div>
+      <div class="chead2"><h2>محفوظاتي <span class="pill">${an(mem.length)}</span></h2><div class="btns">${mem.length>1?`<button class="ordbtn" type="button" id="memOrd" aria-label="عكس الترتيب"><svg viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg>${desc?"من الناس":"من الفاتحة"}</button>`:""}<button class="btn sm" type="button" id="addMem">+ إضافة سور</button></div></div>
       <div class="ringbox" style="margin:2px 0 6px">${ringSVG(pct,64,anD((pct*100).toFixed(pct>0&&pct<.01?1:0))+"٪","")}<p class="note2">${fmtN(mv)} آية محفوظة من ${fmtN(6236)}</p></div>
       ${mem.length?`<ul class="hzlist" id="memList">${mem.map(s=>`<li data-s="${s}"><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${META[s-1][1]}</span><br><span class="smeta">${HZ[s].due<=today()?"للمراجعة اليوم":`المراجعة بعد ${an(daysUntil(HZ[s].due))} يوم`}</span></span></a><button class="xbtn" type="button" data-rm="${s}" aria-label="إزالة سورة ${META[s-1][1]} من المحفوظات">×</button></li>`).join("")}</ul>`
         :`<p class="note2">أضف السور التي تحفظها مسبقًا، وسيذكّرك التطبيق بمراجعتها في الوقت المناسب.</p>`}
@@ -1345,6 +1352,7 @@ function renderHifzHome(){
   $("#chgCur").onclick=()=>openPicker("one");
   if($("#contCur"))$("#contCur").onclick=()=>hzContinue(cur);
   $("#addMem").onclick=()=>openPicker("many");
+  const mo=$("#memOrd");if(mo)mo.onclick=()=>{save("order",desc?"asc":"desc");renderHifzHome()};
   const ml=$("#memList");if(ml)ml.onclick=e=>{const x=e.target.closest("button");if(!x)return;const li=x.closest("li"),s=+li.dataset.s;
     if(x.dataset.rm){e.preventDefault();li.innerHTML=`<div class="rmask"><span>إزالة سورة ${META[s-1][1]} من المحفوظات؟</span><button class="btn danger sm" type="button" data-yes>إزالة</button><button class="btn sm" type="button" data-no>إلغاء</button></div>`;return}
     if(x.hasAttribute("data-yes")){delete HZ[s];hzSave();toast("أُزيلت من المحفوظات")}
@@ -1359,7 +1367,7 @@ function openPicker(modeP){
   let q="";
   pk.innerHTML=`<div class="wrap"><div class="sgrip"></div>
     <div class="shd"><span class="ref">${modeP==="one"?"اختر السورة التي تحفظها الآن":"حدّد السور التي تحفظها"}</span><button class="ib" type="button" id="pkClose" aria-label="إغلاق">${ICON.close}</button></div>
-    <input class="filter" id="pkSearch" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off">
+    <div class="pkbar"><input class="filter" id="pkSearch" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off"><button class="ordbtn" type="button" id="pkOrd" aria-label="عكس ترتيب السور"><svg viewBox="0 0 24 24"><path d="M7 4v16M3 16l4 4 4-4M17 20V4M13 8l4-4 4 4"/></svg><span></span></button></div>
     ${modeP==="many"?`<div class="chips" id="pkQuick" style="margin:8px 0"><button type="button" data-r="78-114">جزء عمّ</button><button type="button" data-r="67-77">جزء تبارك</button><button type="button" data-r="clear">إلغاء التحديد</button></div>`:""}
     <ul class="pklist" id="pkList"></ul>
     ${modeP==="many"?`<div class="pkfoot"><button class="btn gold wide" type="button" id="pkSave"></button></div>`:""}
@@ -1369,6 +1377,8 @@ function openPicker(modeP){
       const s=m[0],on=modeP==="many"?sel.has(s):s===cur,tag=modeP==="one"&&HZ[s]&&HZ[s].st===2?'<span class="pill mem">محفوظة</span>':"";
       return `<li><button type="button" class="pkrow${on?" on":""}" data-s="${s}" aria-pressed="${on}"><span class="ck" aria-hidden="true"></span><span class="meta"><span class="sname">${an(s)}. ${m[1]}</span><small>${an(m[4])} آية</small></span>${tag}</button></li>`}).join("");
     const sv=$("#pkSave");if(sv)sv.textContent=`حفظ (${an(sel.size)} سورة)`};
+  const ordLbl=()=>{$("#pkOrd span").textContent=store.get("order","asc")==="desc"?"من الناس":"من الفاتحة"};ordLbl();
+  $("#pkOrd").onclick=()=>{save("order",store.get("order","asc")==="desc"?"asc":"desc");ordLbl();draw();$("#pkList").scrollTop=0};
   draw();pk.hidden=false;$("#pscrim").hidden=false;
   $("#pkClose").onclick=closePicker;
   $("#pkSearch").oninput=e=>{q=e.target.value;draw()};
