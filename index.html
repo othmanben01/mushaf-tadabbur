@@ -485,6 +485,11 @@ body.reclive .recinfo,body.reclive .hzpage>*:not(#hzBody):not(.hzhead){display:n
 .recbar .heard{color:var(--solid-ink);opacity:.85;font-size:.92rem;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
 .recbar .heard.live{opacity:.65}
 
+/* ===== v8: no sideways drift on iPhone ===== */
+/* iOS zooms into any field whose text is under 16px, and the page then slides left and right */
+input,select,textarea{font-size:16px!important}
+html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
