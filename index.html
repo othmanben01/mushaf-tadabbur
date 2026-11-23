@@ -16,7 +16,7 @@
 /* Layout: one reading column (max ~760px). Black/white ground, gold reserved for ornament and active states.
    Home opens on a black "mushaf cover" band; reader has a sticky bar with a gold reading-progress line. */
 :root{
-  --bg:#fafaf8; --surface:#ffffff; --ink:#0f0f0f; --muted:#6e6c66; --line:#e8e5de; --line-strong:#d6d2c7;
+  --bg:#fafaf8; --surface:#ffffff; --ink:#0b0b0b; --muted:#4f4d47; --line:#e1ddd4; --line-strong:#c9c4b8;
   --gold:#b08c3a; --gold-strong:#8f6f25; --gold-soft:#f6efdd; --hl:#f7eed2;
   --cover:#0d0d0c; --cover-ink:#f6f4ee; --cover-muted:#b9b4a6;
   --solid:#0f0f0f; --solid-ink:#ffffff;
@@ -26,12 +26,12 @@
   --qsize:1.75rem;
 }
 @media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
-  --bg:#0a0a0a; --surface:#131312; --ink:#f3f1ec; --muted:#9d998f; --line:#242320; --line-strong:#34322d;
+  --bg:#0a0a0a; --surface:#151513; --ink:#faf8f3; --muted:#c3beb2; --line:#2c2a26; --line-strong:#48453e;
   --gold:#d6b46a; --gold-strong:#e4c789; --gold-soft:#1e1a10; --hl:#262013;
   --cover:#000000; --cover-ink:#f6f4ee; --cover-muted:#a8a395;
   --solid:#f3f1ec; --solid-ink:#0a0a0a; color-scheme:dark}}
 :root[data-theme="dark"]{
-  --bg:#0a0a0a; --surface:#131312; --ink:#f3f1ec; --muted:#9d998f; --line:#242320; --line-strong:#34322d;
+  --bg:#0a0a0a; --surface:#151513; --ink:#faf8f3; --muted:#c3beb2; --line:#2c2a26; --line-strong:#48453e;
   --gold:#d6b46a; --gold-strong:#e4c789; --gold-soft:#1e1a10; --hl:#262013;
   --cover:#000000; --cover-ink:#f6f4ee; --cover-muted:#a8a395;
   --solid:#f3f1ec; --solid-ink:#0a0a0a; color-scheme:dark}
@@ -278,7 +278,7 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .card{background:var(--surface);border:1px solid var(--line);border-radius:16px;padding:14px 16px}
 .card h2{margin:0 0 10px;font-family:var(--f-head);font-weight:500;font-size:1rem;color:var(--muted);display:flex;align-items:center;gap:8px}
 .card h2::before{content:"";width:7px;height:7px;background:var(--gold);transform:rotate(45deg);flex:none}
-.note2{color:var(--muted);font-size:.86rem;line-height:1.9;margin:0}
+.note2{color:var(--muted);font-size:.9rem;line-height:1.9;margin:0}
 .seg{display:flex;gap:4px;padding:4px;border:1px solid var(--line-strong);border-radius:999px;background:var(--bg)}
 .seg button{flex:1;border:0;background:none;border-radius:999px;padding:6px 8px;font-family:var(--f-head);font-size:.88rem;color:var(--muted);white-space:nowrap}
 .seg button[aria-pressed="true"]{background:var(--solid);color:var(--solid-ink)}
@@ -367,7 +367,7 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .dots i.cur{outline:2px solid var(--gold);outline-offset:2px}
 #hzTab button{padding-inline:4px;font-size:.82rem}
 .rw{--hwc:color-mix(in srgb,var(--gold) 22%,var(--line));color:transparent;background:linear-gradient(var(--hwc),var(--hwc)) 50% 58%/100% .95em no-repeat;border-radius:4px;transition:color .3s}
-.rw.peek{color:color-mix(in srgb,var(--ink) 28%,transparent);--hwc:transparent}
+.rw.peek{color:color-mix(in srgb,var(--ink) 45%,transparent);--hwc:transparent}
 .rw.ok{color:inherit;--hwc:transparent}
 .rw.miss{color:#b3261e;--hwc:transparent;text-decoration:underline wavy color-mix(in srgb,#b3261e 60%,transparent);text-underline-offset:.35em}
 #recText .hzv{cursor:pointer;border-inline-start:3px solid transparent;transition:background .3s,border-color .3s}
@@ -474,8 +474,16 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .recbar .btn.mic{flex:none;padding:10px 18px}
 .recbar .btn.mic.live{background:var(--gold);border-color:var(--gold);color:#111}
 #recText .hzv{scroll-margin-top:calc(env(safe-area-inset-top,0px) + 70px);transition:background .3s,border-color .3s,opacity .4s,font-size .4s}
-#recText .hzv.done{opacity:.4;font-size:calc(var(--qsize)*.72)}
+#recText .hzv.done{opacity:.62;font-size:calc(var(--qsize)*.72)}
 body.reclive .recinfo,body.reclive .hzpage>*:not(#hzBody):not(.hzhead){display:none}
+
+/* ===== v7: recitation panel, level meter ===== */
+.recopts{display:flex;align-items:center;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.recopts .swbtn{width:auto;gap:8px;font-family:var(--f-head);font-size:.9rem}
+.lvl{flex:none;width:10px;height:28px;border-radius:5px;background:color-mix(in srgb,var(--gold) 25%,transparent);position:relative;overflow:hidden}
+.lvl::after{content:"";position:absolute;inset:auto 0 0 0;height:calc(var(--lv,0)*100%);background:var(--gold);transition:height .08s}
+.recbar .heard{color:var(--solid-ink);opacity:.85;font-size:.92rem;white-space:normal;overflow:hidden;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical}
+.recbar .heard.live{opacity:.65}
 
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
@@ -1234,16 +1242,20 @@ function alignRec(spoken,target,start,final){const T=target.length,st=new Array(
 let rec=null;
 function stopRec(){if(rec){rec.want=false;try{rec.r.stop()}catch(e){}}document.body.classList.remove("reclive")}
 /* ---------- Accurate engine: Quran-tuned Whisper (Tarteel whisper-base-ar-quran, ONNX) running on the device ---------- */
-const QASR={model:"iqbalaesthetic/Basira",lib:"https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1",worker:null,ready:false,loading:null,busy:0,cbs:{},id:0,onProgress:null,files:{}};
+/* Uses the phone's GPU (WebGPU) when available: much faster, and fast enough to show the text while you recite. */
+const QASR={model:"iqbalaesthetic/Basira",lib:"https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1",worker:null,ready:false,dev:"",loading:null,busy:0,cbs:{},id:0,onProgress:null,files:{}};
 function qasrWorker(){
   if(QASR.worker)return QASR.worker;
   const code=`import {pipeline,env} from "${QASR.lib}";
 env.allowLocalModels=false;
 let asr=null;
+const load=(device,dtype,cb)=>pipeline("automatic-speech-recognition",self.__m,{device,dtype,progress_callback:cb});
 self.onmessage=async e=>{const m=e.data;
-  if(m.type==="load"){try{
-    asr=await pipeline("automatic-speech-recognition",m.model,{device:"wasm",dtype:"q8",progress_callback:p=>self.postMessage({type:"progress",p})});
-    self.postMessage({type:"ready"})}catch(err){self.postMessage({type:"error",msg:String(err&&err.message||err)})}}
+  if(m.type==="load"){self.__m=m.model;const cb=p=>self.postMessage({type:"progress",p});let dev="wasm",dt="q8";
+    try{if(m.gpu&&self.navigator&&navigator.gpu){const ad=await navigator.gpu.requestAdapter();if(ad){dev="webgpu";dt=ad.features.has("shader-f16")?"fp16":"q4"}}}catch(x){}
+    try{asr=await load(dev,dt,cb)}catch(err){if(dev==="wasm"){self.postMessage({type:"error",msg:String(err&&err.message||err)});return}
+      try{dev="wasm";asr=await load("wasm","q8",cb)}catch(err2){self.postMessage({type:"error",msg:String(err2&&err2.message||err2)});return}}
+    self.postMessage({type:"ready",dev})}
   if(m.type==="run"){let text="";try{let out;try{out=await asr(m.audio,{language:"arabic",task:"transcribe"})}catch(x){out=await asr(m.audio)}text=(out&&out.text)||""}catch(err){}
     self.postMessage({type:"text",id:m.id,text})}};`;
   const url=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));
@@ -1251,30 +1263,34 @@ self.onmessage=async e=>{const m=e.data;
   QASR.worker.onmessage=e=>{const m=e.data;
     if(m.type==="progress"&&m.p&&m.p.file){if(m.p.total)QASR.files[m.p.file]={l:m.p.loaded||0,t:m.p.total};if(m.p.status==="done"&&QASR.files[m.p.file])QASR.files[m.p.file].l=QASR.files[m.p.file].t;
       let l=0,t=0;for(const f of Object.values(QASR.files)){l+=f.l;t+=f.t}QASR.onProgress&&QASR.onProgress(t?l/t:0,t)}
-    if(m.type==="ready"){QASR.ready=true;store.set("qasr",1);QASR.loading&&QASR.loading.res()}
+    if(m.type==="ready"){QASR.ready=true;QASR.dev=m.dev;store.set("qasr",m.dev);QASR.loading&&QASR.loading.res()}
     if(m.type==="error"){const L=QASR.loading;QASR.loading=null;QASR.worker.terminate();QASR.worker=null;L&&L.rej(new Error(m.msg))}
     if(m.type==="text"){QASR.busy=Math.max(0,QASR.busy-1);const cb=QASR.cbs[m.id];delete QASR.cbs[m.id];cb&&cb(m.text)}};
   QASR.worker.onerror=()=>{const L=QASR.loading;QASR.loading=null;if(QASR.worker)QASR.worker.terminate();QASR.worker=null;L&&L.rej(new Error("worker"))};
   return QASR.worker}
 function qasrLoad(onProgress){QASR.onProgress=onProgress;if(QASR.ready)return Promise.resolve();if(QASR.loading)return QASR.loading.p;
   let res,rej;const p=new Promise((a,b)=>{res=a;rej=b});QASR.loading={p,res,rej};QASR.files={};
-  try{qasrWorker().postMessage({type:"load",model:QASR.model})}catch(e){QASR.loading=null;return Promise.reject(e)}return p}
+  try{qasrWorker().postMessage({type:"load",model:QASR.model,gpu:true})}catch(e){QASR.loading=null;return Promise.reject(e)}return p}
 function qasrRun(audio){return new Promise(res=>{const id=++QASR.id;QASR.cbs[id]=res;QASR.busy++;QASR.worker.postMessage({type:"run",id,audio},[audio.buffer])})}
-function resample(buf,from,to){if(from===to)return buf;const r=from/to,n=Math.floor(buf.length/r),out=new Float32Array(n);
+function resample(buf,from,to){if(from===to)return buf.slice();const r=from/to,n=Math.floor(buf.length/r),out=new Float32Array(n);
   for(let i=0;i<n;i++){const x=i*r,j=Math.floor(x),f=x-j;out[i]=buf[j]*(1-f)+(buf[j+1]||0)*f}return out}
-/* Microphone cut into phrases at each short pause (simple energy-based voice detection) */
-async function micPhrases(onPhrase){
+/* Microphone cut into phrases at each short pause (energy-based voice detection).
+   onPhrase(audio16k) at each pause; onPartial(audio16k) while you are still reciting (only used when the GPU is fast enough);
+   onLevel(0..1) for the meter. */
+async function micPhrases(opt){
   const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
   const Ctx=window.AudioContext||window.webkitAudioContext,ctx=new Ctx();if(ctx.state==="suspended")await ctx.resume();
-  const src=ctx.createMediaStreamSource(stream),proc=ctx.createScriptProcessor(4096,1,1),mute=ctx.createGain();mute.gain.value=0;
-  const sr=ctx.sampleRate,ms=4096/sr*1000;
-  let chunks=[],pre=[],speaking=false,speech=0,sil=0,nf=.008;
-  const emit=()=>{if(speech>=350){let n=0;for(const c of chunks)n+=c.length;const buf=new Float32Array(n);let o=0;for(const c of chunks){buf.set(c,o);o+=c.length}onPhrase(resample(buf,sr,16000))}
-    chunks=[];speaking=false;speech=0;sil=0};
+  const src=ctx.createMediaStreamSource(stream),proc=ctx.createScriptProcessor(2048,1,1),mute=ctx.createGain();mute.gain.value=0;
+  const sr=ctx.sampleRate,ms=2048/sr*1000,pause=opt.pauseMs||550,maxMs=opt.maxMs||9000;
+  let chunks=[],pre=[],speaking=false,speech=0,sil=0,nf=.008,sincePartial=0;
+  const join=()=>{let n=0;for(const c of chunks)n+=c.length;const buf=new Float32Array(n);let o=0;for(const c of chunks){buf.set(c,o);o+=c.length}return resample(buf,sr,16000)};
+  const emit=()=>{if(speech>=300)opt.onPhrase(join());chunks=[];speaking=false;speech=0;sil=0;sincePartial=0};
   proc.onaudioprocess=e=>{const d=new Float32Array(e.inputBuffer.getChannelData(0));let s=0;for(let i=0;i<d.length;i++)s+=d[i]*d[i];
-    const rms=Math.sqrt(s/d.length),loud=rms>Math.max(.012,nf*2.5);
-    if(!speaking){nf=nf*.95+rms*.05;pre.push(d);if(pre.length>4)pre.shift();if(loud){speaking=true;chunks=pre;pre=[];speech=ms;sil=0}}
-    else{chunks.push(d);if(loud){speech+=ms;sil=0}else{sil+=ms;if(sil>=700)emit()}if(speech+sil>=12000)emit()}};
+    const rms=Math.sqrt(s/d.length),loud=rms>Math.max(.012,nf*2.5);opt.onLevel&&opt.onLevel(Math.min(1,rms*8));
+    if(!speaking){nf=nf*.95+rms*.05;pre.push(d);if(pre.length>8)pre.shift();if(loud){speaking=true;chunks=pre;pre=[];speech=ms;sil=0}}
+    else{chunks.push(d);if(loud){speech+=ms;sil=0}else{sil+=ms;if(sil>=pause){emit();return}}
+      if(speech+sil>=maxMs){emit();return}
+      sincePartial+=ms;if(opt.onPartial&&sincePartial>=1200&&speech>=600){sincePartial=0;opt.onPartial(join())}}};
   src.connect(proc);proc.connect(mute);mute.connect(ctx.destination);
   return {stop(flush){try{proc.disconnect();src.disconnect()}catch(e){}stream.getTracks().forEach(t=>t.stop());if(flush&&speaking)emit();try{ctx.close()}catch(e){}}};
 }
@@ -1288,14 +1304,13 @@ function drawRec(data,a,b){
   for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
     html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
   body.innerHTML=`<div class="card recinfo">
-      <p class="note2">اقرأ المقطع من حفظك بصوت واضح. تظهر كل كلمة حين يُتعرَّف عليها، وما تجاوزته يُعلَّم بالأحمر. إن أخطأ التطبيق في موضعك، المس الآية التي تقرؤها.</p>
-      <div class="row" style="padding-block:4px"><span>طريقة التعرّف</span><div class="seg sm" id="recEng">${SRC?`<button type="button" data-e="fast" aria-pressed="${engine==="fast"}">سريع</button>`:""}<button type="button" data-e="exact" aria-pressed="${engine==="exact"}">دقيق</button></div></div>
-      <p class="note2" style="font-size:.8rem">${engine==="fast"?"سريع: تظهر الكلمات فورًا أثناء قراءتك، عبر خدمة التعرّف على الكلام في متصفحك (Apple أو Google).":`دقيق: نموذج مدرَّب على تلاوة القرآن (Tarteel) يعمل على جهازك دون إرسال صوتك. يتحقق بعد كل وقفة قصيرة، فتوقّف لحظة بعد كل جملة. ${QASR.ready||store.get("qasr",0)?"النموذج محفوظ على جهازك.":"يُنزَّل مرة واحدة (نحو ١٠٠ ميغابايت)، ويُفضَّل عبر Wi-Fi."}`}</p>
-      <button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>إظهار النص باهتًا أثناء القراءة</span><i class="sw"></i></button>
-      <p class="note2" style="font-size:.76rem">تقريبي: يتحقق من الكلمات وترتيبها فقط، لا من الحركات أو التجويد.</p>
+      <div class="recopts">
+        <div class="seg sm" id="recEng" aria-label="طريقة التعرّف">${SRC?`<button type="button" data-e="fast" aria-pressed="${engine==="fast"}">سريع</button>`:""}<button type="button" data-e="exact" aria-pressed="${engine==="exact"}">دقيق</button></div>
+        <button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>النص باهتًا</span><i class="sw"></i></button>
+      </div>
     </div>
     <div id="recText">${html}</div>
-    <div class="recbar"><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
+    <div class="recbar"><i class="lvl" id="recLvl" aria-hidden="true"></i><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
       <button class="btn gold mic" type="button" id="recBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ</span></button></div>`;
   const spans=[...document.querySelectorAll("#recText .rw")],vEls=[...document.querySelectorAll("#recText .hzv")];
   const vStart={},vEnd={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k;vEnd[v]=k});
@@ -1330,14 +1345,20 @@ function drawRec(data,a,b){
     try{await qasrLoad((f,t)=>{if(rec===me)$("#recHeard").textContent=`تنزيل النموذج ${an(Math.round(f*100))}٪${t?` من ${an(Math.round(t/1048576))} ميغابايت`:""}`})}
     catch(e){if(rec===me){rec=null;setLive(false);btnLabel("ابدأ")}toast("تعذّر تنزيل النموذج. تحقّق من الاتصال وأعد المحاولة، أو استعمل الطريقة السريعة");return}
     if(rec!==me)return;
-    try{me.mic=await micPhrases(async seg=>{if(rec!==me&&!me.closing)return;$("#recHeard").textContent="أتحقق…";
-        const text=await qasrRun(seg);if(rec!==me&&!me.closing)return;
-        if(text.trim()){commit(toWords(text),true);last={st:fixed.slice(),pos:startIdx};paint(last.st,last.pos,false)}
-        $("#recHeard").textContent=text.trim()||"لم أسمع بوضوح، أعد الجملة";
-        if(startIdx>=words.length&&rec===me)setTimeout(()=>{if(rec===me)finish()},300)})}
+    const heard=$("#recHeard"),lvl=$("#recLvl");let phraseNo=0;
+    try{me.mic=await micPhrases({
+      onLevel:v=>{lvl.style.setProperty("--lv",v.toFixed(2))},
+      /* GPU only: transcribe the phrase so far, to show the words while you recite (not counted until the pause) */
+      onPartial:QASR.dev==="webgpu"?async seg=>{if(QASR.busy>0||rec!==me)return;const no=phraseNo;const text=(await qasrRun(seg)).trim();
+        if(rec!==me||no!==phraseNo||!text)return;heard.textContent=text;heard.classList.add("live");last=merged(alignRec(toWords(text),words,startIdx,false));paint(last.st,last.pos,false)}:null,
+      onPhrase:async seg=>{if(rec!==me&&!me.closing)return;phraseNo++;if(QASR.dev!=="webgpu")heard.textContent="أتحقق…";
+        const text=(await qasrRun(seg)).trim();if(rec!==me&&!me.closing)return;
+        if(text){commit(toWords(text),true);last={st:fixed.slice(),pos:startIdx};paint(last.st,last.pos,false)}
+        heard.classList.remove("live");heard.textContent=text||"لم أسمع بوضوح، أعد الجملة";
+        if(startIdx>=words.length&&rec===me)setTimeout(()=>{if(rec===me)finish()},300)}})}
     catch(e){if(rec===me){rec=null;setLive(false);btnLabel("ابدأ")}toast("اسمح للمتصفح باستعمال الميكروفون، ثم أعد المحاولة");return}
     if(rec!==me){me.mic.stop(false);return}
-    $("#recHeard").textContent="أستمع إليك… توقّف لحظة بعد كل جملة";
+    heard.textContent=QASR.dev==="webgpu"?"أستمع إليك…":"أستمع إليك… توقّف لحظة بعد كل جملة";
   };
   const finishExact=async()=>{const me=rec;me.closing=true;btnLabel("…");if(me.mic)me.mic.stop(true);
     const t0=Date.now();while(QASR.busy>0&&Date.now()-t0<15000)await new Promise(r=>setTimeout(r,150));if(rec===me)finish()};
