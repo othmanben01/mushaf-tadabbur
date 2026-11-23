@@ -748,17 +748,36 @@ function markPlaying(){
 }
 /* Two audio elements: while one plays, the next verse is already loaded in the other, so verses follow without a gap. */
 const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+/* Tight chaining: each file's leading and trailing silence is measured (when the server allows it) so the next
+   verse starts as soon as the reciter's voice ends, instead of waiting for the end of the file. */
+const TIMING={};let timingOff=false;
+async function measureSilence(url){
+  if(timingOff||TIMING[url])return;TIMING[url]={pending:true};
+  try{const r=await fetch(url,{mode:"cors"});if(!r.ok)throw 0;const ab=await r.arrayBuffer();
+    const Ctx=window.OfflineAudioContext||window.webkitOfflineAudioContext;const ctx=new Ctx(1,2,22050);
+    const buf=await new Promise((ok,ko)=>{const p=ctx.decodeAudioData(ab,ok,ko);if(p&&p.then)p.then(ok,ko)});
+    const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;
+    let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
+    TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};skipLead(player.a)}
+  catch(e){TIMING[url]={fail:true};timingOff=true}}
+let handT=null;
+/* jump over the leading silence of the verse that has just started */
+function skipLead(el){if(!el||el!==player.a||!player.s)return;const t=TIMING[el.dataset.url];if(t&&t.lead>.04&&el.currentTime<Math.min(.25,t.lead-.02)){try{el.currentTime=t.lead}catch(e){}}}
+function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a;if(!a||!player.s||a.paused||!a.duration||!isFinite(a.duration))return;
+    const t=TIMING[a.dataset.url];const tail=t&&t.tail!==undefined?t.tail:.2;
+    if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},40)}
 function audioEls(){
   if(player.els)return player.els;
   player.els=[new Audio(),new Audio()];
   player.els.forEach(el=>{el.preload="auto";
-    el.addEventListener("ended",()=>{if(el===player.a)onVerseEnded()});
+    el.addEventListener("ended",()=>{if(el===player.a&&player.handed!==el.dataset.url+"#"+player.s+":"+player.v){player.handed=el.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}});
     el.addEventListener("error",()=>{if(el!==player.a||!player.s||!el.getAttribute("src")||el.src===SILENT)return;toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
+    el.addEventListener("loadedmetadata",()=>skipLead(el));
     el.addEventListener("play",()=>{if(el===player.a)updatePlayerBar()});el.addEventListener("pause",()=>{if(el===player.a)updatePlayerBar()})});
   player.a=player.els[0];return player.els}
 /* iOS only lets an element play without a tap if it was started once from a tap: start both silently on the first tap */
 function unlockAudio(){if(player.unlocked)return;player.unlocked=true;audioEls().forEach(el=>{if(el===player.a||el.getAttribute("src"))return;el.src=SILENT;el.muted=true;const p=el.play();if(p)p.then(()=>{if(el.getAttribute("src")===SILENT)el.pause();el.muted=false}).catch(()=>{el.muted=false})})}
-function stopAudio(){player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
+function stopAudio(){clearInterval(handT);player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
   (player.els||[]).forEach(el=>{el.pause();el.removeAttribute("src");el.dataset.url="";try{el.load()}catch(e){}});clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
@@ -795,7 +814,9 @@ function playVerse(s,v,opt){
   const prev=player.a;
   if(idle.dataset.url===url){player.a=idle}else{player.a=prev;player.a.dataset.url=url;player.a.src=url}
   if(prev!==player.a){prev.pause()}
-  player.s=s;player.v=v;player.bas=bas;
+  player.s=s;player.v=v;player.bas=bas;player.handed="";
+  const tm=TIMING[url];if(tm&&tm.lead>.04){try{player.a.currentTime=tm.lead}catch(e){}}
+  measureSilence(url);watchEnd();
   const p=player.a.play();
   if(p)p.catch(()=>{if(player.a!==prev&&player.a.dataset.url===url){/* fallback: the other element was not allowed to start */player.a.pause();player.a=prev;prev.dataset.url=url;prev.src=url;prev.play().catch(()=>{})}});
   /* preload what comes next into the element that is now idle */
@@ -804,6 +825,7 @@ function playVerse(s,v,opt){
   if(player.queue&&player.queue.length){const q=player.queue[0];nx=q[0]===s&&q[1]===v?null:audioUrl(q[0],q[1])}
   else{const n=nextOf(s,v,bas);if(n)nx=n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
   if(nx&&other.dataset.url!==nx){other.dataset.url=nx;other.src=nx;try{other.load()}catch(e){}}
+  if(nx)measureSilence(nx);
   if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
   setMediaSession(s,v);
   if(player.onStep)player.onStep(s,v,opt.rep||1);
