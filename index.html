@@ -651,7 +651,7 @@ function renderHome(){
   view.innerHTML=`<section class="cover"><div class="wrap"><div class="frame"><div class="frame-in">
       ${ORN}<h1>القرآن الكريم</h1><p>اقرأ السورة، ثم افتح تفسير أي آية بلمسة واحدة.</p>
       ${lastHtml}
-      ${STANDALONE&&listenAt?`<button class="resume" type="button" id="resumeBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><div><b>استئناف الاستماع</b><span>سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${(RECITERS.find(r=>r.id===listenAt[2])||reciter).name}</span></div></button>`:""}
+      ${STANDALONE&&listenAt?`<button class="resume" type="button" id="resumeBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><div><b>استئناف الاستماع</b><span>سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}</span></div></button>`:""}
       <div class="stats"><div><b>${an(114)}</b>سورة</div><div><b>${an(6236)}</b>آية</div><div><b>${an(3)}</b>تفاسير</div></div>
     </div></div></div></section>
     <div class="wrap">
@@ -676,7 +676,7 @@ function renderHome(){
   document.querySelectorAll(".modeseg button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
   const hr=$("#hreciter");if(hr)hr.onchange=()=>setReciter(hr.value);
   $("#ordBtn").onclick=()=>{save("order",store.get("order","asc")==="desc"?"asc":"desc");const y=scrollY;renderHome();scrollTo(0,y)};
-  const rb=$("#resumeBtn");if(rb)rb.onclick=()=>{const [s,v,r]=listenAt;if(r&&r!==reciter.id){const R=RECITERS.find(x=>x.id===r);if(R){reciter=R;store.set("reciter",r)}}playVerse(s,v);go(s,v)};
+  const rb=$("#resumeBtn");if(rb)rb.onclick=()=>{const [s,v]=listenAt;playVerse(s,v);go(s,v)}; /* resumes with the reciter chosen now */
   window.scrollTo(0,0);
 }
 
@@ -707,7 +707,7 @@ const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
   $("#plStop").onclick=()=>stopAudio();
 })();
 function reciterOptions(){return RECITERS.map(r=>`<option value="${r.id}"${r.id===reciter.id?" selected":""}>${r.name}</option>`).join("")}
-function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.set("reciter",reciter.id);
+function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.set("reciter",reciter.id);const rbs=$("#resumeBtn span");if(rbs&&listenAt)rbs.textContent=`سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}`;
   document.querySelectorAll("#hreciter").forEach(x=>x.value=reciter.id);
   toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)}
 function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
@@ -733,33 +733,66 @@ function markPlaying(){
   const b=li.querySelector('[data-act="play"]');if(b){b.classList.add("playing");b.setAttribute("aria-pressed","true");b.innerHTML=ICON.pause+"<span>إيقاف</span>"}
   const r=li.getBoundingClientRect(),pl=$("#player").offsetHeight||0;if(r.top<70||r.bottom>innerHeight-pl)li.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
 }
-function stopAudio(){player.s=0;player.v=0;player.next=null;player.queue=null;player.onStep=null;player.onDone=null;if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.load()}clearPlayingUI();updatePlayerBar()}
+/* Two audio elements: while one plays, the next verse is already loaded in the other, so verses follow without a gap. */
+const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
+function audioEls(){
+  if(player.els)return player.els;
+  player.els=[new Audio(),new Audio()];
+  player.els.forEach(el=>{el.preload="auto";
+    el.addEventListener("ended",()=>{if(el===player.a)onVerseEnded()});
+    el.addEventListener("error",()=>{if(el!==player.a||!player.s||!el.getAttribute("src")||el.src===SILENT)return;toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
+    el.addEventListener("play",()=>{if(el===player.a)updatePlayerBar()});el.addEventListener("pause",()=>{if(el===player.a)updatePlayerBar()})});
+  player.a=player.els[0];return player.els}
+/* iOS only lets an element play without a tap if it was started once from a tap: start both silently on the first tap */
+function unlockAudio(){if(player.unlocked)return;player.unlocked=true;audioEls().forEach(el=>{if(el===player.a||el.getAttribute("src"))return;el.src=SILENT;el.muted=true;const p=el.play();if(p)p.then(()=>{if(el.getAttribute("src")===SILENT)el.pause();el.muted=false}).catch(()=>{el.muted=false})})}
+function stopAudio(){player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
+  (player.els||[]).forEach(el=>{el.pause();el.removeAttribute("src");el.dataset.url="";try{el.load()}catch(e){}});clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
+/* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
+function nextOf(s,v,bas){
+  if(bas)return {s,v:1};
+  if(v<META[s-1][4])return {s,v:v+1};
+  if(s>=114)return null;
+  return {s:s+1,v:1,bas:s+1!==9};
+}
+function onVerseEnded(){
+  const s=player.s,v=player.v,bas=player.bas;
+  if(s&&!bas)recordListen(s,v);
+  if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();playVerse(a,b,{keep:true,rep:r})}else{const done=player.onDone;stopAudio();if(done)done()}return}
+  if(!s||!(current===s||curPage)){stopAudio();return}
+  const nx=nextOf(s,v,bas);if(!nx){stopAudio();toast("صدق الله العظيم");return}
+  /* keep the page in step with the recitation */
+  if(curPage){const np=pageOf(nx.s,nx.v);player.s=nx.s;player.v=nx.v;if(np!==curPage)location.hash="p"+np}
+  else if(nx.s!==s){player.s=nx.s;player.v=1;location.hash="s"+nx.s+"-1"}
+  playVerse(nx.s,nx.v,{keep:true,bas:nx.bas});
+}
 function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
   navigator.mediaSession.metadata=new MediaMetadata({title:`سورة ${META[s-1][1]}، الآية ${v}`,artist:reciter.name,album:"مصحف التدبر"});
   if(!setMediaSession.done){setMediaSession.done=true;const ms=navigator.mediaSession;
     ms.setActionHandler("play",()=>player.a&&player.a.play());ms.setActionHandler("pause",()=>player.a&&player.a.pause());
-    ms.setActionHandler("nexttrack",()=>{if(player.s&&player.v<META[player.s-1][4])playVerse(player.s,player.v+1,{keep:!!player.queue})});
+    ms.setActionHandler("nexttrack",()=>{const n=player.s&&nextOf(player.s,player.v,false);if(n)playVerse(n.s,n.v,{keep:!!player.queue})});
     ms.setActionHandler("previoustrack",()=>{if(player.s&&player.v>1)playVerse(player.s,player.v-1,{keep:!!player.queue})})}}catch(e){}}
 function playVerse(s,v,opt){
   opt=opt||{};if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
-  if(!player.a){
-    player.a=new Audio();player.a.preload="auto";
-    player.a.addEventListener("ended",()=>{const s=player.s,v=player.v;
-      if(s)recordListen(s,v);
-      if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();playVerse(a,b,{keep:true,rep:r})}else{const done=player.onDone;stopAudio();if(done)done()}return}
-      if(s&&v<META[s-1][4]&&(current===s||curPage)){
-        if(curPage){const np=pageOf(s,v+1);if(np!==curPage){player.v=v+1;location.hash="p"+np;playVerse(s,v+1);return}}
-        playVerse(s,v+1)}else stopAudio()});
-    player.a.addEventListener("error",()=>{if(!player.s)return;toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
-    player.a.addEventListener("play",updatePlayerBar);player.a.addEventListener("pause",updatePlayerBar);
-  }
-  player.s=s;player.v=v;
-  player.a.src=audioUrl(s,v);
-  player.a.play().catch(()=>{});
-  const nx=player.queue&&player.queue.length?player.queue[0]:(v<META[s-1][4]?[s,v+1]:null);
-  if(nx&&!(nx[0]===s&&nx[1]===v)){player.next=new Audio();player.next.preload="auto";player.next.src=audioUrl(nx[0],nx[1])}
-  listenAt=[s,v,reciter.id];store.set("listen",listenAt);setMediaSession(s,v);
+  const els=audioEls();unlockAudio();
+  /* the basmala before a new surah is verse 1:1 in the same reciter's voice (not for Al-Fatiha or At-Tawbah) */
+  const bas=!!opt.bas&&s!==1&&s!==9;
+  const url=bas?audioUrl(1,1):audioUrl(s,v);
+  const idle=els[0]===player.a?els[1]:els[0];
+  const prev=player.a;
+  if(idle.dataset.url===url){player.a=idle}else{player.a=prev;player.a.dataset.url=url;player.a.src=url}
+  if(prev!==player.a){prev.pause()}
+  player.s=s;player.v=v;player.bas=bas;
+  const p=player.a.play();
+  if(p)p.catch(()=>{if(player.a!==prev&&player.a.dataset.url===url){/* fallback: the other element was not allowed to start */player.a.pause();player.a=prev;prev.dataset.url=url;prev.src=url;prev.play().catch(()=>{})}});
+  /* preload what comes next into the element that is now idle */
+  const other=player.a===els[0]?els[1]:els[0];
+  let nx=null;
+  if(player.queue&&player.queue.length){const q=player.queue[0];nx=q[0]===s&&q[1]===v?null:audioUrl(q[0],q[1])}
+  else{const n=nextOf(s,v,bas);if(n)nx=n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
+  if(nx&&other.dataset.url!==nx){other.dataset.url=nx;other.src=nx;try{other.load()}catch(e){}}
+  if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
+  setMediaSession(s,v);
   if(player.onStep)player.onStep(s,v,opt.rep||1);
   markPlaying();
 }
@@ -1200,18 +1233,66 @@ function alignRec(spoken,target,start,final){const T=target.length,st=new Array(
   return {st,pos:i,used}}
 let rec=null;
 function stopRec(){if(rec){rec.want=false;try{rec.r.stop()}catch(e){}}document.body.classList.remove("reclive")}
+/* ---------- Accurate engine: Quran-tuned Whisper (Tarteel whisper-base-ar-quran, ONNX) running on the device ---------- */
+const QASR={model:"iqbalaesthetic/Basira",lib:"https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1",worker:null,ready:false,loading:null,busy:0,cbs:{},id:0,onProgress:null,files:{}};
+function qasrWorker(){
+  if(QASR.worker)return QASR.worker;
+  const code=`import {pipeline,env} from "${QASR.lib}";
+env.allowLocalModels=false;
+let asr=null;
+self.onmessage=async e=>{const m=e.data;
+  if(m.type==="load"){try{
+    asr=await pipeline("automatic-speech-recognition",m.model,{device:"wasm",dtype:"q8",progress_callback:p=>self.postMessage({type:"progress",p})});
+    self.postMessage({type:"ready"})}catch(err){self.postMessage({type:"error",msg:String(err&&err.message||err)})}}
+  if(m.type==="run"){let text="";try{let out;try{out=await asr(m.audio,{language:"arabic",task:"transcribe"})}catch(x){out=await asr(m.audio)}text=(out&&out.text)||""}catch(err){}
+    self.postMessage({type:"text",id:m.id,text})}};`;
+  const url=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));
+  QASR.worker=new Worker(url,{type:"module"});
+  QASR.worker.onmessage=e=>{const m=e.data;
+    if(m.type==="progress"&&m.p&&m.p.file){if(m.p.total)QASR.files[m.p.file]={l:m.p.loaded||0,t:m.p.total};if(m.p.status==="done"&&QASR.files[m.p.file])QASR.files[m.p.file].l=QASR.files[m.p.file].t;
+      let l=0,t=0;for(const f of Object.values(QASR.files)){l+=f.l;t+=f.t}QASR.onProgress&&QASR.onProgress(t?l/t:0,t)}
+    if(m.type==="ready"){QASR.ready=true;store.set("qasr",1);QASR.loading&&QASR.loading.res()}
+    if(m.type==="error"){const L=QASR.loading;QASR.loading=null;QASR.worker.terminate();QASR.worker=null;L&&L.rej(new Error(m.msg))}
+    if(m.type==="text"){QASR.busy=Math.max(0,QASR.busy-1);const cb=QASR.cbs[m.id];delete QASR.cbs[m.id];cb&&cb(m.text)}};
+  QASR.worker.onerror=()=>{const L=QASR.loading;QASR.loading=null;if(QASR.worker)QASR.worker.terminate();QASR.worker=null;L&&L.rej(new Error("worker"))};
+  return QASR.worker}
+function qasrLoad(onProgress){QASR.onProgress=onProgress;if(QASR.ready)return Promise.resolve();if(QASR.loading)return QASR.loading.p;
+  let res,rej;const p=new Promise((a,b)=>{res=a;rej=b});QASR.loading={p,res,rej};QASR.files={};
+  try{qasrWorker().postMessage({type:"load",model:QASR.model})}catch(e){QASR.loading=null;return Promise.reject(e)}return p}
+function qasrRun(audio){return new Promise(res=>{const id=++QASR.id;QASR.cbs[id]=res;QASR.busy++;QASR.worker.postMessage({type:"run",id,audio},[audio.buffer])})}
+function resample(buf,from,to){if(from===to)return buf;const r=from/to,n=Math.floor(buf.length/r),out=new Float32Array(n);
+  for(let i=0;i<n;i++){const x=i*r,j=Math.floor(x),f=x-j;out[i]=buf[j]*(1-f)+(buf[j+1]||0)*f}return out}
+/* Microphone cut into phrases at each short pause (simple energy-based voice detection) */
+async function micPhrases(onPhrase){
+  const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
+  const Ctx=window.AudioContext||window.webkitAudioContext,ctx=new Ctx();if(ctx.state==="suspended")await ctx.resume();
+  const src=ctx.createMediaStreamSource(stream),proc=ctx.createScriptProcessor(4096,1,1),mute=ctx.createGain();mute.gain.value=0;
+  const sr=ctx.sampleRate,ms=4096/sr*1000;
+  let chunks=[],pre=[],speaking=false,speech=0,sil=0,nf=.008;
+  const emit=()=>{if(speech>=350){let n=0;for(const c of chunks)n+=c.length;const buf=new Float32Array(n);let o=0;for(const c of chunks){buf.set(c,o);o+=c.length}onPhrase(resample(buf,sr,16000))}
+    chunks=[];speaking=false;speech=0;sil=0};
+  proc.onaudioprocess=e=>{const d=new Float32Array(e.inputBuffer.getChannelData(0));let s=0;for(let i=0;i<d.length;i++)s+=d[i]*d[i];
+    const rms=Math.sqrt(s/d.length),loud=rms>Math.max(.012,nf*2.5);
+    if(!speaking){nf=nf*.95+rms*.05;pre.push(d);if(pre.length>4)pre.shift();if(loud){speaking=true;chunks=pre;pre=[];speech=ms;sil=0}}
+    else{chunks.push(d);if(loud){speech+=ms;sil=0}else{sil+=ms;if(sil>=700)emit()}if(speech+sil>=12000)emit()}};
+  src.connect(proc);proc.connect(mute);mute.connect(ctx.destination);
+  return {stop(flush){try{proc.disconnect();src.disconnect()}catch(e){}stream.getTracks().forEach(t=>t.stop());if(flush&&speaking)emit();try{ctx.close()}catch(e){}}};
+}
+
 function drawRec(data,a,b){
   const n=hzS,body=$("#hzBody");stopRec();
   if(!STANDALONE){body.innerHTML=`<div class="card"><p class="note2">التسميع بالميكروفون يعمل في نسخة التطبيق المنشورة على Vercel أو GitHub، لأن هذه الصفحة لا تستطيع استعمال الميكروفون.</p></div>`;return}
-  if(!SRC){body.innerHTML=`<div class="card"><p class="note2">متصفحك لا يدعم التعرّف على الصوت. جرّب Safari على iPhone أو Chrome على Android أو الحاسوب.</p></div>`;return}
+  const engine=SRC?store.get("recengine","fast"):"exact";
   const show=store.get("recshow",false);
   const words=[];let html="";
   for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
     html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
   body.innerHTML=`<div class="card recinfo">
       <p class="note2">اقرأ المقطع من حفظك بصوت واضح. تظهر كل كلمة حين يُتعرَّف عليها، وما تجاوزته يُعلَّم بالأحمر. إن أخطأ التطبيق في موضعك، المس الآية التي تقرؤها.</p>
+      <div class="row" style="padding-block:4px"><span>طريقة التعرّف</span><div class="seg sm" id="recEng">${SRC?`<button type="button" data-e="fast" aria-pressed="${engine==="fast"}">سريع</button>`:""}<button type="button" data-e="exact" aria-pressed="${engine==="exact"}">دقيق</button></div></div>
+      <p class="note2" style="font-size:.8rem">${engine==="fast"?"سريع: تظهر الكلمات فورًا أثناء قراءتك، عبر خدمة التعرّف على الكلام في متصفحك (Apple أو Google).":`دقيق: نموذج مدرَّب على تلاوة القرآن (Tarteel) يعمل على جهازك دون إرسال صوتك. يتحقق بعد كل وقفة قصيرة، فتوقّف لحظة بعد كل جملة. ${QASR.ready||store.get("qasr",0)?"النموذج محفوظ على جهازك.":"يُنزَّل مرة واحدة (نحو ١٠٠ ميغابايت)، ويُفضَّل عبر Wi-Fi."}`}</p>
       <button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>إظهار النص باهتًا أثناء القراءة</span><i class="sw"></i></button>
-      <p class="note2" style="font-size:.76rem">تقريبي: يتحقق من الكلمات وترتيبها فقط، لا من الحركات أو التجويد. يمرّ الصوت عبر خدمة التعرّف على الكلام في متصفحك.</p>
+      <p class="note2" style="font-size:.76rem">تقريبي: يتحقق من الكلمات وترتيبها فقط، لا من الحركات أو التجويد.</p>
     </div>
     <div id="recText">${html}</div>
     <div class="recbar"><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
@@ -1239,18 +1320,38 @@ function drawRec(data,a,b){
     if(rec){try{rec.r.abort()}catch(x){}}
     toast(`أتابع معك من الآية ${an(v)}`)};
   $("#recShow").onclick=()=>{store.set("recshow",!show);drawRec(data,a,b)};
+  $("#recEng").onclick=e=>{const x=e.target.closest("[data-e]");if(!x||rec)return;store.set("recengine",x.dataset.e);drawRec(data,a,b)};
+  const toWords=t=>t.split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
+  const commit=(ws,final)=>{const al=alignRec(ws,words,startIdx,final);for(let k=startIdx;k<al.pos;k++)fixed[k]=al.st[k];startIdx=al.pos;return final?ws.length:al.used};
+  /* accurate engine: each phrase (cut at a pause) is transcribed on the device, then compared with what remains */
+  const startExact=async()=>{
+    const me={want:true,exact:true,mic:null,r:{stop(){if(me.mic)me.mic.stop(false)},abort(){}}};rec=me;btnLabel("إنهاء");
+    $("#recHeard").textContent=QASR.ready?"":"جارٍ تجهيز النموذج…";
+    try{await qasrLoad((f,t)=>{if(rec===me)$("#recHeard").textContent=`تنزيل النموذج ${an(Math.round(f*100))}٪${t?` من ${an(Math.round(t/1048576))} ميغابايت`:""}`})}
+    catch(e){if(rec===me){rec=null;setLive(false);btnLabel("ابدأ")}toast("تعذّر تنزيل النموذج. تحقّق من الاتصال وأعد المحاولة، أو استعمل الطريقة السريعة");return}
+    if(rec!==me)return;
+    try{me.mic=await micPhrases(async seg=>{if(rec!==me&&!me.closing)return;$("#recHeard").textContent="أتحقق…";
+        const text=await qasrRun(seg);if(rec!==me&&!me.closing)return;
+        if(text.trim()){commit(toWords(text),true);last={st:fixed.slice(),pos:startIdx};paint(last.st,last.pos,false)}
+        $("#recHeard").textContent=text.trim()||"لم أسمع بوضوح، أعد الجملة";
+        if(startIdx>=words.length&&rec===me)setTimeout(()=>{if(rec===me)finish()},300)})}
+    catch(e){if(rec===me){rec=null;setLive(false);btnLabel("ابدأ")}toast("اسمح للمتصفح باستعمال الميكروفون، ثم أعد المحاولة");return}
+    if(rec!==me){me.mic.stop(false);return}
+    $("#recHeard").textContent="أستمع إليك… توقّف لحظة بعد كل جملة";
+  };
+  const finishExact=async()=>{const me=rec;me.closing=true;btnLabel("…");if(me.mic)me.mic.stop(true);
+    const t0=Date.now();while(QASR.busy>0&&Date.now()-t0<15000)await new Promise(r=>setTimeout(r,150));if(rec===me)finish()};
   $("#recBtn").onclick=()=>{
-    if(rec){finish();return}
+    if(rec){if(rec.exact)finishExact();else finish();return}
     if(player.s)stopAudio();
     if(last.pos>=words.length||$("#recBtn span").textContent==="أعد"){startIdx=0;fixed=new Array(words.length).fill(0)}
     finals=[];lastV=0;last={st:fixed.slice(),pos:startIdx};setLive(true);paint(last.st,startIdx,false);$("#recHeard").textContent="أستمع إليك…";
+    if(engine==="exact"){startExact();return}
     const r=new SRC();r.lang="ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=3;
     rec={r,want:true};btnLabel("إنهاء");
-    const toWords=t=>t.split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
     /* Words that are recognised are locked in and dropped from the transcript, so new speech is only
        compared with the rest of the passage. used[i] = words of result i already consumed. */
     const used={};
-    const commit=(ws,final)=>{const al=alignRec(ws,words,startIdx,final);for(let k=startIdx;k<al.pos;k++)fixed[k]=al.st[k];startIdx=al.pos;return final?ws.length:al.used};
     r.onresult=e=>{let pending=[],raw=[];
       for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i],u=used[i]||0;
         /* among the recogniser's alternatives, keep the one that fits what remains best */

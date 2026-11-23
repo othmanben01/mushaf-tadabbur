@@ -10,7 +10,7 @@ Application web simple pour **lire le Coran** (texte arabe en rasm uthmani) et *
 - Récitation verset par verset avec enchaînement automatique et 12 récitateurs au choix (Saad Al-Ghamdi, Maher Al-Muaiqly, Abdul Basit, Al-Husary, Yasser Ad-Dossari, As-Sudais, Alafasy, Al-Minshawi, Ash-Shuraym, Ash-Shatri, Hani Ar-Rifai, At-Tablawi) ; reprise de l'écoute depuis l'accueil
 - Son de page tournée (réglable), ordre des sourates 1 → 114 ou 114 → 1
 - **Statistiques** : versets lus (comptés automatiquement), versets écoutés, temps de lecture, hassanates estimées, série de jours, graphique
-- **Mémorisation** : masquer et révéler les mots, répétition audio, petit quiz, **التسميع** (récitation au micro vérifiée mot à mot, approximative), suivi des sourates mémorisées et rappels de révision
+- **Mémorisation** : masquer et révéler les mots, répétition audio, petit quiz, **التسميع** (récitation au micro vérifiée mot à mot, deux moteurs : « سريع » via la reconnaissance vocale du navigateur, « دقيق » via le modèle Tarteel whisper-base-ar-quran exécuté sur l'appareil), suivi des sourates mémorisées et rappels de révision
 - **توقفت هنا** : marque le verset où tu t'es arrêté (un seul à la fois)
 - Marque-pages multiples (**علامة**)
 - Recherche par mot ou par référence (ex. `2:255`)
@@ -40,3 +40,4 @@ Ouvre l'adresse GitHub Pages du projet. Sur téléphone, ajoute-la à l'écran d
 - Pages, juz' et hizb : paquet npm [`quran-meta`](https://www.npmjs.com/package/quran-meta)
 - Police : Amiri Quran (licence SIL OFL, voir `fonts/`)
 - Audio : [EveryAyah.com](https://everyayah.com) (fichiers verset par verset)
+- Reconnaissance « دقيق » : [tarteel-ai/whisper-base-ar-quran](https://huggingface.co/tarteel-ai/whisper-base-ar-quran) (Apache-2.0), export ONNX [iqbalaesthetic/Basira](https://huggingface.co/iqbalaesthetic/Basira), via [Transformers.js](https://huggingface.co/docs/transformers.js)
