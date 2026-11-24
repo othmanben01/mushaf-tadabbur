@@ -668,7 +668,7 @@ function renderHome(){
       <div><b>أكمل من حيث توقفت</b><span>الصفحة ${an(last[1])}، سورة ${META[sv(PG[last[1]])[0]-1][1]}</span></div><span class="go">‹</span></button>`:
     last?`<button class="continue" type="button" data-go="${last[0]}-${last[1]}">
       <div><b>أكمل من حيث توقفت</b><span>سورة ${META[last[0]-1][1]}، الآية ${an(last[1])}</span></div><span class="go">‹</span></button>`:
-    `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة، الآية ١</span></div><span class="go">‹</span></button>`;
+    `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة، الآية ${an(1)}</span></div><span class="go">‹</span></button>`;
   const marksHtml=marks.length?`<div class="seclabel">العلامات المحفوظة</div><div class="marks">${marks.map(m=>`<button class="chip" type="button" data-go="${m[0]}-${m[1]}">${META[m[0]-1][1]} ${an(m[1])}</button>`).join("")}</div>`:"";
   const ORN='<svg class="orn" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><path d="M20 9l3 4.3 5 1-3.4 4 .6 5.2L20 21.4l-5.2 2.1.6-5.2-3.4-4 5-1z" fill="var(--gold)"/></svg>';
   view.innerHTML=`<section class="cover"><div class="wrap"><div class="frame"><div class="frame-in">
@@ -1154,13 +1154,13 @@ async function runSearch(q){
   const ref=toLatin(q).match(/^(\d{1,3})\s*[:：.\/\-]\s*(\d{1,3})$/);
   if(ref){const s=+ref[1],v=+ref[2];if(s>=1&&s<=114&&v>=1&&v<=META[s-1][4]){hint.textContent="انتقال مباشر:";
       res.innerHTML=`<li><button type="button" data-go="${s}-${v}"><div class="ref">سورة ${META[s-1][1]}، الآية ${an(v)}</div><div class="t">اضغط للانتقال إلى الآية</div></button></li>`}
-    else{res.innerHTML="";hint.textContent="هذا الرقم غير موجود. السور من ١ إلى ١١٤."}return}
+    else{res.innerHTML="";hint.textContent=`هذا الرقم غير موجود. السور من ${an(1)} إلى ${an(114)}.`}return}
   if(norm(q).length<2){res.innerHTML="";hint.textContent="اكتب حرفين على الأقل.";return}
   hint.textContent="جارٍ البحث…";
   try{await ensureIndex()}catch(e){hint.textContent="تعذّر تحميل فهرس البحث.";return}
   const nq=norm(q),out=[];let total=0;
   for(let s=0;s<114;s++)for(let v=0;v<QN[s].length;v++)if(QN[s][v].includes(nq)){total++;if(out.length<60)out.push([s+1,v+1])}
-  hint.textContent=total?`${an(total)} نتيجة${total>60?" (تُعرض أول ٦٠)":""}`:"لا توجد نتائج. جرّب كلمة أقصر أو بدون "+"ال"+".";
+  hint.textContent=total?`${an(total)} نتيجة${total>60?` (تُعرض أول ${an(60)})`:""}`:"لا توجد نتائج. جرّب كلمة أقصر أو بدون "+"ال"+".";
   res.innerHTML=out.map(([s,v])=>`<li><button type="button" data-go="${s}-${v}"><div class="ref">${META[s-1][1]}، ${an(v)}</div><div class="t">${highlight(QURAN[s-1][v-1],nq)}</div></button></li>`).join("");
 }
 let st=null;$("#q").addEventListener("input",e=>{clearTimeout(st);st=setTimeout(()=>runSearch(e.target.value),250)});
@@ -1174,7 +1174,7 @@ const today=()=>ymd(new Date());
 function addDays(n){const d=new Date();d.setDate(d.getDate()+n);return ymd(d)}
 const anD=x=>DIGW?String(x):an(x).replace(".","٫");
 const fmtN=n=>an(String(Math.round(n)).replace(/\B(?=(\d{3})+(?!\d))/g,DIGW?",":"٬"));
-function fmtDur(sec){const m=Math.floor(sec/60);if(m<1)return sec>0?"أقل من دقيقة":"٠ د";const h=Math.floor(m/60),r=m%60;return h?`${an(h)} س${r?" "+an(r)+" د":""}`:`${an(m)} د`}
+function fmtDur(sec){const m=Math.floor(sec/60);if(m<1)return sec>0?"أقل من دقيقة":`${an(0)} د`;const h=Math.floor(m/60),r=m%60;return h?`${an(h)} س${r?" "+an(r)+" د":""}`:`${an(m)} د`}
 const LETTER=/[ء-غف-يٱ-ۓ]/g;
 const letters=t=>(t.match(LETTER)||[]).length;
 function verseText(s,v){const d=cache[s];return d&&d.v[v-1]||""}
@@ -1562,7 +1562,7 @@ function renderStats(){
     </section>
     <section class="card">
       <div class="chead"><div class="seg sm" id="stMetric"><button type="button" data-m="p" aria-pressed="${metric==="p"}">صفحات</button><button type="button" data-m="r" aria-pressed="${metric==="r"}">آيات</button><button type="button" data-m="sec" aria-pressed="${metric==="sec"}">دقائق</button></div>
-        <div class="seg sm" id="stDays"><button type="button" data-n="7" aria-pressed="${n===7}">٧ أيام</button><button type="button" data-n="14" aria-pressed="${n===14}">١٤</button><button type="button" data-n="30" aria-pressed="${n===30}">٣٠</button></div></div>
+        <div class="seg sm" id="stDays"><button type="button" data-n="7" aria-pressed="${n===7}">${an(7)} أيام</button><button type="button" data-n="14" aria-pressed="${n===14}">${an(14)}</button><button type="button" data-n="30" aria-pressed="${n===30}">${an(30)}</button></div></div>
       <div id="chartBox">${chartSVG(metric,n)}</div>
       <p class="chtip" id="chTip">المس عمودًا لرؤية تفاصيل اليوم${metric==="p"?"، والخط المنقّط هو وردك":""}.</p>
     </section>
@@ -1580,8 +1580,8 @@ function renderStats(){
     </section>
     <details class="card fold"><summary>عن الحسنات وطريقة الحساب</summary>
       <p class="hadith">«مَن قرأ حرفًا من كتاب الله فله به حسنة، والحسنة بعشر أمثالها»</p>
-      <p class="note2">رواه الترمذي. الرقم تقدير تقريبي: عدد حروف الآيات المقروءة × ١٠، والأجر عند الله وحده.</p>
-      <p class="note2">تُحتسب الآية مقروءة حين تبقى أمامك مدة تكفي لقراءتها (نحو ١٥ حرفًا في الثانية)، مرة واحدة في اليوم. الصفحة = ما يعادل حروف صفحة من مصحف المدينة. الوقت يتوقف بعد ٣ دقائق دون نشاط. البيانات على جهازك.</p>
+      <p class="note2">رواه الترمذي. الرقم تقدير تقريبي: عدد حروف الآيات المقروءة × ${an(10)}، والأجر عند الله وحده.</p>
+      <p class="note2">تُحتسب الآية مقروءة حين تبقى أمامك مدة تكفي لقراءتها (نحو ${an(15)} حرفًا في الثانية)، مرة واحدة في اليوم. الصفحة = ما يعادل حروف صفحة من مصحف المدينة. الوقت يتوقف بعد ${an(3)} دقائق دون نشاط. البيانات على جهازك.</p>
     </details>
   </div>`;
   const setGoal=d=>{const g=Math.max(1,Math.min(40,goalPages()+d));save("goal",g);renderStats()};
@@ -1727,7 +1727,7 @@ function renderPrefs(){
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
-      <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):"٠"}</button>`).join("")}</div></div>
+      <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
       <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
       <div class="row"><span>ترتيب السور</span><div class="seg sm" id="pfOrd"><button type="button" data-o="asc" aria-pressed="${ord==="asc"}">من الفاتحة</button><button type="button" data-o="desc" aria-pressed="${ord==="desc"}">من الناس</button></div></div>
       <div class="row"><span>الورد اليومي<small>يظهر في الإحصائيات</small></span><div class="stepper"><button type="button" id="pfGm" aria-label="إنقاص">−</button><span id="pfGoal">${an(goal)} ص</span><button type="button" id="pfGp" aria-label="زيادة">+</button></div></div>
