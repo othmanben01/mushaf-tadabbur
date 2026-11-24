@@ -755,18 +755,39 @@ function markPlaying(){
 }
 /* Two audio elements: while one plays, the next verse is already loaded in the other, so verses follow without a gap. */
 const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-/* Tight chaining: each file's leading and trailing silence is measured (when the server allows it) so the next
-   verse starts as soon as the reciter's voice ends, instead of waiting for the end of the file. */
-const TIMING={};let timingOff=false;
-async function measureSilence(url){
-  if(timingOff||TIMING[url])return;TIMING[url]={pending:true};
-  try{const r=await fetch(url,{mode:"cors"});if(!r.ok)throw 0;const ab=await r.arrayBuffer();
-    const Ctx=window.OfflineAudioContext||window.webkitOfflineAudioContext;const ctx=new Ctx(1,2,22050);
-    const buf=await new Promise((ok,ko)=>{const p=ctx.decodeAudioData(ab,ok,ko);if(p&&p.then)p.then(ok,ko)});
-    const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;
-    let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
-    TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};skipLead(player.a)}
-  catch(e){TIMING[url]={fail:true};timingOff=true}}
+/* ---- Audio engine v3: one player, verses downloaded ahead into memory ----
+   On the Vercel site the files come through /audio/ (same site, see vercel.json), so they can be kept in memory
+   and their silences measured. Elsewhere, or if that fails, they are played straight from EveryAyah. */
+const TIMING={};let proxyOff=!STANDALONE||/github\.io$/.test(location.hostname),directCors=true;
+const proxied=url=>"/audio/"+url.split("/data/")[1];
+const BUF=new Map(),READY=new Map(); /* url -> promise / url -> object URL */
+const AHEAD=6;
+function measureFrom(url,ab){
+  try{const Ctx=window.OfflineAudioContext||window.webkitOfflineAudioContext;const ctx=new Ctx(1,2,22050);
+    const done=buf=>{const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;
+      let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
+      TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};skipLead(player.a)};
+    const p=ctx.decodeAudioData(ab,done,()=>{});if(p&&p.then)p.then(done,()=>{})}catch(e){}}
+function fetchVerse(url){
+  if(BUF.has(url))return BUF.get(url);
+  const p=(async()=>{
+    let r=null;
+    if(!proxyOff){try{r=await fetch(proxied(url));if(!r.ok||!/audio|octet/.test(r.headers.get("content-type")||"")){r=null;proxyOff=true}}catch(e){r=null;proxyOff=true}}
+    if(!r&&directCors){try{r=await fetch(url,{mode:"cors"});if(!r.ok)r=null}catch(e){r=null;directCors=false}}
+    if(!r)return null;
+    const ab=await r.arrayBuffer();const obj=URL.createObjectURL(new Blob([ab],{type:"audio/mpeg"}));
+    READY.set(url,obj);measureFrom(url,ab);
+    if(READY.size>24){const k=READY.keys().next().value;if(player.a&&player.a.src===READY.get(k))return obj;URL.revokeObjectURL(READY.get(k));READY.delete(k);BUF.delete(k)}
+    return obj})().catch(()=>null);
+  BUF.set(url,p);return p}
+/* download the next verses (or the next items of a repetition), two at a time */
+async function prefetchAhead(s,v,bas){
+  const urls=[];
+  if(player.queue&&player.queue.length){for(const q of player.queue.slice(0,AHEAD))urls.push(audioUrl(q[0],q[1]))}
+  else{let c={s,v,bas};for(let i=0;i<AHEAD;i++){c=nextOf(c.s,c.v,c.bas);if(!c)break;urls.push(c.bas&&c.s!==1&&c.s!==9?audioUrl(1,1):audioUrl(c.s,c.v))}}
+  const todo=[...new Set(urls)].filter(u=>!BUF.has(u));
+  for(let i=0;i<todo.length;i+=2)await Promise.all(todo.slice(i,i+2).map(fetchVerse));
+}
 let handT=null;
 /* jump over the leading silence of the verse that has just started */
 function skipLead(el){if(!el||el!==player.a||!player.s)return;const t=TIMING[el.dataset.url];if(t&&t.lead>.04&&el.currentTime<Math.min(.25,t.lead-.02)){try{el.currentTime=t.lead}catch(e){}}}
@@ -774,18 +795,20 @@ function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a
     const t=TIMING[a.dataset.url];const tail=t&&t.tail!==undefined?t.tail:.2;
     if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},40)}
 function audioEls(){
-  if(player.els)return player.els;
-  player.els=[new Audio(),new Audio()];
-  player.els.forEach(el=>{el.preload="auto";
-    el.addEventListener("ended",()=>{if(el===player.a&&player.handed!==el.dataset.url+"#"+player.s+":"+player.v){player.handed=el.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}});
-    el.addEventListener("error",()=>{if(el!==player.a||!player.s||!el.getAttribute("src")||el.src===SILENT)return;toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
-    el.addEventListener("loadedmetadata",()=>skipLead(el));
-    el.addEventListener("play",()=>{if(el===player.a)updatePlayerBar()});el.addEventListener("pause",()=>{if(el===player.a)updatePlayerBar()})});
-  player.a=player.els[0];return player.els}
-/* iOS only lets an element play without a tap if it was started once from a tap: start both silently on the first tap */
-function unlockAudio(){if(player.unlocked)return;player.unlocked=true;audioEls().forEach(el=>{if(el===player.a||el.getAttribute("src"))return;el.src=SILENT;el.muted=true;const p=el.play();if(p)p.then(()=>{if(el.getAttribute("src")===SILENT)el.pause();el.muted=false}).catch(()=>{el.muted=false})})}
+  if(player.a)return [player.a];
+  const el=new Audio();el.preload="auto";player.a=el;
+  el.addEventListener("ended",()=>{const key=(el.dataset.url||"")+"#"+player.s+":"+player.v;if(player.s&&player.handed!==key){player.handed=key;onVerseEnded()}});
+  el.addEventListener("error",()=>{if(!player.s||!el.getAttribute("src"))return;
+    /* a downloaded copy failed: try the file from the network once */
+    const url=el.dataset.url;if(url&&el.src.startsWith("blob:")){READY.delete(url);BUF.delete(url);el.src=proxyOff?url:proxied(url);el.play().catch(()=>{});return}
+    if(url&&el.src.indexOf("/audio/")>-1){proxyOff=true;el.src=url;el.play().catch(()=>{});return}
+    toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
+  el.addEventListener("loadedmetadata",()=>skipLead(el));
+  el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",updatePlayerBar);
+  return [el]}
+function unlockAudio(){}
 function stopAudio(){clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
-  (player.els||[]).forEach(el=>{el.pause();el.removeAttribute("src");el.dataset.url="";try{el.load()}catch(e){}});clearPlayingUI();updatePlayerBar()}
+  if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.dataset.url="";try{player.a.load()}catch(e){}}clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
 function nextOf(s,v,bas){
@@ -819,28 +842,19 @@ function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
     ms.setActionHandler("previoustrack",()=>{if(player.s&&player.v>1)playVerse(player.s,player.v-1,{keep:!!player.queue})})}}catch(e){}}
 function playVerse(s,v,opt){
   opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
-  const els=audioEls();unlockAudio();
+  const el=audioEls()[0];
   /* the basmala before a new surah is verse 1:1 in the same reciter's voice (not for Al-Fatiha or At-Tawbah) */
   const bas=!!opt.bas&&s!==1&&s!==9;
   const url=bas?audioUrl(1,1):audioUrl(s,v);
-  const idle=els[0]===player.a?els[1]:els[0];
-  const prev=player.a;
-  if(idle.dataset.url===url){player.a=idle}else{player.a=prev;player.a.dataset.url=url;player.a.src=url}
-  if(prev!==player.a){prev.pause()}
   player.s=s;player.v=v;player.bas=bas;player.handed="";
-  const tm=TIMING[url];if(tm&&tm.lead>.04){try{player.a.currentTime=tm.lead}catch(e){}}
-  measureSilence(url);watchEnd();
-  const p=player.a.play();
-  if(p)p.catch(()=>{if(player.a!==prev&&player.a.dataset.url===url){/* fallback: the other element was not allowed to start */player.a.pause();player.a=prev;prev.dataset.url=url;prev.src=url;prev.play().catch(()=>{})}});
-  /* preload what comes next into the element that is now idle */
-  const other=player.a===els[0]?els[1]:els[0];
-  let nx=null;
-  if(player.queue&&player.queue.length){const q=player.queue[0];nx=q[0]===s&&q[1]===v?null:audioUrl(q[0],q[1])}
-  else{const n=nextOf(s,v,bas);if(n)nx=n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
-  if(nx&&other.dataset.url!==nx){other.dataset.url=nx;other.src=nx;try{other.load()}catch(e){}
-    if(player.unlocked){other.muted=true;const pp=other.play();
-      if(pp)pp.then(()=>{if(other!==player.a){other.pause();try{other.currentTime=0}catch(e){}}other.muted=false}).catch(()=>{other.muted=false})}}
-  if(nx)measureSilence(nx);
+  /* already in memory: starts at once; otherwise stream it and keep a copy for next time */
+  const mem=READY.get(url);
+  el.dataset.url=url;el.src=mem||(proxyOff?url:proxied(url));
+  const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}
+  if(!mem)fetchVerse(url);
+  watchEnd();
+  el.play().catch(()=>{});
+  prefetchAhead(s,v,bas);
   if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
   setMediaSession(s,v);
   if(player.onStep)player.onStep(s,v,opt.rep||1);
