@@ -197,6 +197,10 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .ptext{font-family:var(--f-quran);font-size:1em;line-height:2.02;text-align:justify;text-align-last:center;margin:0}
 .pv{cursor:pointer;border-radius:4px;transition:background .45s;-webkit-tap-highlight-color:transparent}
 .pv.pressing,.pv.sel,.pv.reading,.pv.flash{background:var(--hl)}
+.pv.stopped{box-shadow:inset 0 -2px 0 var(--gold);border-radius:0}
+.pv.stopped .ayn{color:var(--gold-strong)}
+.basmala[data-bas]{cursor:pointer;border-radius:8px;transition:background .3s;-webkit-tap-highlight-color:transparent}
+.basmala.reading{background:var(--hl)}
 .pv:focus-visible{outline:2px solid var(--gold);outline-offset:1px}
 .rub{color:var(--gold);font-size:.85em;margin-inline:2px}
 .psura{text-align:center;margin:.25em 0 .1em}
@@ -227,7 +231,7 @@ html.pagemode .top{display:none}
 .shd{display:flex;align-items:center;gap:8px}
 .shd .ref{flex:1;font-family:var(--f-head);color:var(--gold-strong);font-size:.9rem}
 .sverse{font-family:var(--f-quran);font-size:1.35rem;line-height:2.1;margin:6px 0 8px;max-height:30vh;overflow-y:auto}
-.sheet .vbar{grid-template-columns:repeat(4,minmax(0,1fr));opacity:1}
+.sheet .vbar{grid-template-columns:repeat(5,minmax(0,1fr));opacity:1}
 /* Mini player */
 :root{--pl:0px}
 .player{position:fixed;inset:auto 0 0 0;z-index:18;background:var(--solid);color:var(--solid-ink);border-top:1.5px solid var(--gold);
@@ -740,10 +744,14 @@ function updatePlayerBar(){updateGapBtn();const pp=$("#pplay");if(pp&&curPage){c
 }
 function clearPlayingUI(){
   document.querySelectorAll(".vb.playing").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-pressed","false");b.innerHTML=ICON.play+"<span>استماع</span>"});
-  document.querySelectorAll(".verse.reading,.pv.reading,.hzv.reading").forEach(x=>x.classList.remove("reading"));
+  document.querySelectorAll(".verse.reading,.pv.reading,.hzv.reading,.basmala.reading").forEach(x=>x.classList.remove("reading"));
 }
+const basAttr=n=>STANDALONE?` data-bas="${n}" role="button" tabindex="0" aria-label="استمع من البسملة"`:"";
+/* start a surah from its basmala (Al-Fatiha and At-Tawba have none to add) */
+const playFrom=(s,v)=>playVerse(s,v,{bas:v===1});
 function markPlaying(){
   clearPlayingUI();updatePlayerBar();if(!player.s)return;
+  if(player.bas){const bm=document.querySelector(`.basmala[data-bas="${player.s}"]`);if(bm)bm.classList.add("reading");return}
   document.querySelectorAll(`.hzv[data-sv="${player.s}:${player.v}"]`).forEach(x=>x.classList.add("reading"));
   if(curPage){const el=document.querySelector(`.pv[data-sv="${player.s}:${player.v}"]`);if(el)el.classList.add("reading");
     const sb=document.querySelector('#sheet [data-act="play"]');if(sb&&sheetAt&&sheetAt[0]===player.s&&sheetAt[1]===player.v){sb.classList.add("playing");sb.setAttribute("aria-pressed","true");sb.innerHTML=ICON.pause+"<span>إيقاف</span>"}
@@ -948,7 +956,7 @@ async function renderSurah(n,target){
     view.innerHTML=`<div class="wrap"><div class="loading">جارٍ تحميل السورة…</div></div>`;
     let data;try{data=await loadSurah(n)}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر تحميل السورة. تحقّق من الاتصال ثم أعد المحاولة.</div></div>`;return}
     if(current!==n)return;
-    const bas=(n!==1&&n!==9)?`<div class="basmala">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>`:"";
+    const bas=(n!==1&&n!==9)?`<div class="basmala"${basAttr(n)}>بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>`:"";
     view.innerHTML=`<div class="wrap">
       <div class="shead"><div class="cartouche"><i></i>سورة ${m[1]}<i></i></div><div class="smeta">${m[3]==="meccan"?"مكية":"مدنية"}، ${an(m[4])} آية، ترتيبها ${an(n)}</div></div>
       <div class="tools"><button class="vb" type="button" id="fminus" aria-label="تصغير الخط">أ−</button><button class="vb" type="button" id="fplus" aria-label="تكبير الخط">أ+</button></div>
@@ -980,7 +988,7 @@ function onVerseClick(e,n,data){
   const b=e.target.closest("[data-act]");if(!b)return;
   const li=b.closest(".verse");const v=+li.dataset.v;const i=v-1;
   if(b.dataset.act==="mark"){toggleMark(n,v);const on=isMarked(n,v);b.classList.toggle("saved",on);b.setAttribute("aria-pressed",on);b.querySelector("span").textContent=on?"محفوظة":"علامة"}
-  if(b.dataset.act==="play"){if(player.s===n&&player.v===v)stopAudio();else playVerse(n,v);return}
+  if(b.dataset.act==="play"){if(player.s===n&&player.v===v)stopAudio();else playFrom(n,v);return}
   if(b.dataset.act==="stop"){
     document.querySelectorAll(".verse.stopped").forEach(x=>x.classList.remove("stopped"));
     document.querySelectorAll('.vb.here').forEach(x=>{x.classList.remove("here");x.setAttribute("aria-pressed","false")});
@@ -1018,10 +1026,10 @@ async function renderPage(p){
   for(let id=first;id<=last;id++){
     const [s,v]=sv(id);const data=datas[s-s1];
     if(v===1){if(open){html+="</p>";open=false}
-      html+=`<div class="psura"><div class="cartouche"><i></i>سورة ${META[s-1][1]}<i></i></div>${(s!==1&&s!==9)?'<div class="basmala">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>':""}</div>`}
+      html+=`<div class="psura"><div class="cartouche"><i></i>سورة ${META[s-1][1]}<i></i></div>${(s!==1&&s!==9)?`<div class="basmala"${basAttr(s)}>بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>`:""}</div>`}
     if(!open){html+='<p class="ptext">';open=true}
     const k=HQ.indexOf(id);const rub=(k>1)?'<span class="rub" aria-label="'+(QL[(k-1)%4]||"بداية الحزب")+'">۞</span>':"";
-    html+=`${rub}<span class="pv" data-sv="${s}:${v}" tabindex="0" role="button" aria-label="الآية ${an(v)}، اضغط مطولًا للخيارات">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></span> `;
+    html+=`${rub}<span class="pv${isStop(s,v)?" stopped":""}" data-sv="${s}:${v}" tabindex="0" role="button" aria-label="الآية ${an(v)}، اضغط مطولًا للخيارات">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></span> `;
   }
   if(open)html+="</p>";
   view.innerHTML=`<div class="wrap pview">
@@ -1044,7 +1052,7 @@ async function renderPage(p){
     updatePageStop()};
   const pp=$("#pplay");if(pp){const onThis=()=>player.s&&pageOf(player.s,player.v)===p;
     const icon=()=>{pp.innerHTML=onThis()&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!onThis())};icon();
-    pp.onclick=()=>{if(onThis()){togglePause()}else{const [s,v]=sv(PG[p]);playVerse(s,v)}setTimeout(icon,60)}}
+    pp.onclick=()=>{if(onThis()){togglePause()}else{const [s,v]=sv(PG[p]);playFrom(s,v)}setTimeout(icon,60)}}
   const body=$("#pbody");bindLongPress(body);
   body.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("pv")){e.preventDefault();const [s,v]=e.target.dataset.sv.split(":").map(Number);openSheet(s,v)}});
   const mp=$("#mpage");let x0=null,y0=0,t0=0;
@@ -1076,6 +1084,8 @@ function bindLongPress(root){
     el=t;x=e.clientX;y=e.clientY;t.classList.add("pressing");
     timer=setTimeout(()=>{const t2=el;cancel();if(!t2)return;try{navigator.vibrate&&navigator.vibrate(12)}catch(_){}
       const [s,v]=t2.dataset.sv.split(":").map(Number);openSheet(s,v)},480)});
+  let bx=null;root.addEventListener("pointerdown",e=>{bx=e.target.closest("[data-bas]")?[e.clientX,e.clientY,Date.now()]:null});
+  root.addEventListener("pointerup",e=>{const bm=e.target.closest("[data-bas]");if(bm&&bx&&Math.abs(e.clientX-bx[0])<10&&Math.abs(e.clientY-bx[1])<10&&Date.now()-bx[2]<600)basTap(+bm.dataset.bas);bx=null});
   root.addEventListener("pointermove",e=>{if(timer&&(Math.abs(e.clientX-x)>10||Math.abs(e.clientY-y)>10))cancel()});
   ["pointerup","pointercancel","pointerleave"].forEach(t=>root.addEventListener(t,cancel));
   root.addEventListener("contextmenu",e=>{if(e.target.closest(".pv"))e.preventDefault()});
@@ -1100,6 +1110,7 @@ async function openSheet(s,v){
       <button class="vb" type="button" data-act="tafsir" aria-expanded="false">${ICON.tafsir}تفسير</button>
       <button class="vb${mk?" saved":""}" type="button" data-act="mark" aria-pressed="${mk}">${ICON.mark}<span>${mk?"محفوظة":"علامة"}</span></button>
       ${STANDALONE?`<button class="vb" type="button" data-act="play" aria-pressed="false">${ICON.play}<span>استماع</span></button>`:`<a class="vb" href="https://quran.com/${s}/${v}" target="_blank" rel="noopener">${ICON.play}استماع</a>`}
+      <button class="vb${isStop(s,v)?" here":""}" type="button" data-act="stop" aria-pressed="${isStop(s,v)}">${ICON.stop}<span>توقفت هنا</span></button>
       <button class="vb" type="button" data-act="copy">${ICON.copy}نسخ</button>
     </div>
     <div id="stafsir"></div></div>`;
@@ -1107,7 +1118,11 @@ async function openSheet(s,v){
   $("#sclose").onclick=closeSheet;
   sh.querySelector(".vbar").onclick=e=>{const b=e.target.closest("[data-act]");if(!b)return;const act=b.dataset.act;
     if(act==="mark"){toggleMark(s,v);const on=isMarked(s,v);b.classList.toggle("saved",on);b.setAttribute("aria-pressed",on);b.querySelector("span").textContent=on?"محفوظة":"علامة"}
-    if(act==="play"){if(player.s===s&&player.v===v)stopAudio();else playVerse(s,v)}
+    if(act==="play"){if(player.s===s&&player.v===v)stopAudio();else playFrom(s,v)}
+    if(act==="stop"){document.querySelectorAll(".pv.stopped").forEach(x=>x.classList.remove("stopped"));
+      if(isStop(s,v)){stopAt=null;save("stop",null);toast("تم حذف موضع التوقف")}
+      else{stopAt=[s,v];save("stop",stopAt);if(el)el.classList.add("stopped");toast(`حُفظ موضع توقفك: ${META[s-1][1]} ${an(v)}`)}
+      const on=isStop(s,v);b.classList.toggle("here",on);b.setAttribute("aria-pressed",String(on));updatePageStop()}
     if(act==="copy"){const txt=`${data.v[v-1]} ﴿${an(v)}﴾ [${META[s-1][1]}: ${an(v)}]`;const lbl=b.lastChild;
       try{navigator.clipboard.writeText(txt).then(()=>{lbl.textContent="نُسخت";setTimeout(()=>lbl.textContent="نسخ",1400)},()=>{})}catch(err){}}
     if(act==="tafsir"){const host=$("#stafsir");if(host.firstChild){host.innerHTML="";b.setAttribute("aria-expanded","false");return}
@@ -1241,7 +1256,7 @@ let hzS=0,hzQuiz=null;
 function hzRange(N){const r=store.get("hzr"+hzS,null),h=HZ[hzS],at=h&&h.st===1&&h.at?h.at:1;let a=r?r[0]:at,b=r?r[1]:Math.min(N,at+6);a=Math.max(1,Math.min(N,a|0||1));b=Math.max(a,Math.min(N,b|0||a));return [a,b]}
 const isMark=w=>!/[ء-يٱ-ۓ]/.test(w);
 function drawHz(data){
-  const N=data.v.length,[a,b]=hzRange(N),tab=store.get("hztab","mask"),body=$("#hzBody"),n=hzS;
+  const N=data.v.length,[a,b]=hzRange(N),tab=store.get("hztab2","rec"),body=$("#hzBody"),n=hzS;
   if(tab==="mask"){
     const lvl=store.get("hzlvl","mid");
     const hide=(i,w)=>!isMark(w)&&(lvl==="hard"||(lvl==="mid"&&i>0)||(lvl==="easy"&&i%3===1));
@@ -1665,7 +1680,7 @@ async function renderHifzSurah(n){
   view.innerHTML=`<div class="wrap"><div class="loading">جارٍ التحميل…</div></div>`;
   let data;try{data=await loadSurah(n)}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر التحميل. تحقّق من الاتصال.</div></div>`;return}
   if(hzS!==n)return;
-  const N=data.v.length,[a,b]=hzRange(N),h=HZ[n],st=h?h.st:0,tab=store.get("hztab","mask");
+  const N=data.v.length,[a,b]=hzRange(N),h=HZ[n],st=h?h.st:0,tab=store.get("hztab2","rec");
   const due=h&&h.st===2&&h.due<=today();
   const nextTxt=h&&h.st===2&&!due?`المراجعة القادمة بعد ${an(daysUntil(h.due))} يوم`:"";
   view.innerHTML=`<div class="wrap pgx hzpage">
@@ -1681,7 +1696,7 @@ async function renderHifzSurah(n){
       <div class="chips" id="hzPre"><button type="button" data-p="prev" ${a<=1?"disabled":""}>→ السابق</button><button type="button" data-p="next" ${b>=N?"disabled":""}>التالي ←</button><button type="button" data-p="all" aria-pressed="${a===1&&b===N}">كل السورة</button></div>
     </section>
     <div class="tooltabs" id="hzTab" role="tablist">
-      ${[["mask","إخفاء"],["rep","تكرار"],["quiz","اختبار"],["rec","تسميع"]].map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-pressed="${tab===k}">${ICO[k]}<span>${l}</span></button>`).join("")}
+      ${[["rec","تسميع"],["rep","مراجعة"],["mask","إخفاء"],["quiz","اختبار"]].map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-pressed="${tab===k}">${ICO[k]}<span>${l}</span></button>`).join("")}
     </div>
     <div id="hzBody"></div>
   </div>`;
@@ -1695,7 +1710,7 @@ async function renderHifzSurah(n){
   $("#hzFrom").onchange=onR;$("#hzTo").onchange=onR;
   $("#hzPre").onclick=e=>{const x=e.target.closest("[data-p]");if(!x||x.disabled)return;const [c,d]=hzRange(N),len=d-c+1;
     if(x.dataset.p==="all")setR(1,N);else if(x.dataset.p==="next")setR(d+1,Math.min(N,d+len));else setR(Math.max(1,c-len),c-1)};
-  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab",x.dataset.t);$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
+  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab2",x.dataset.t);$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
   drawHz(data);window.scrollTo(0,0);
 }
 
@@ -1755,7 +1770,9 @@ function go(s,v){$("#panel").hidden=true;closeSheet();
   if(mode==="pages"){const p=pageOf(s,v);pendingFlash=v>1?[s,v]:null;const h="p"+p;if(location.hash==="#"+h)route();else location.hash=h;return}
   const h="s"+s+"-"+v;if(location.hash==="#"+h)route();else location.hash=h}
 document.addEventListener("click",e=>{const pb=e.target.closest("[data-page]");if(pb&&!pb.disabled){closeSheet();const np=+pb.dataset.page;if(curPage&&Math.abs(np-curPage)===1){swipeDir=np-curPage;pageSound()}location.hash="p"+np;return}
+  const bm=e.target.closest("[data-bas]");if(bm&&!bm.closest("#pbody")){basTap(+bm.dataset.bas);return}
   const b=e.target.closest("[data-go]");if(!b)return;const [s,v]=b.dataset.go.split("-").map(Number);go(s,v)});
+function basTap(n){if(player.s===n&&player.bas){stopAudio();return}playVerse(n,1,{bas:true})}
 $("#home").onclick=()=>{if(location.hash){location.hash=""}else renderHome()};
 function route(){closeMenu();closePicker();stopRec();rec=null;const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
   curPage=0;document.documentElement.classList.remove("pagemode");
