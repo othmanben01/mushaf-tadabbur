@@ -212,6 +212,7 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .ribbon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
 .ribbon.here{color:#111;background:var(--gold);border-color:var(--gold)}
 .ribbon.here svg{fill:currentColor}
+.pplay svg{fill:currentColor;stroke:none}
 @keyframes inNext{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes inPrev{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 .mpage.in-next{animation:inNext .22s ease-out}.mpage.in-prev{animation:inPrev .22s ease-out}
@@ -721,7 +722,7 @@ let listenAt=store.get("listen",null);
 const PAUSE_I='<svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></svg>';
 const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 (function initPlayerBar(){
-  $("#plToggle").onclick=()=>{if(!player.a||!player.s)return;if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()};
+  $("#plToggle").onclick=()=>togglePause();
   $("#plStop").onclick=()=>stopAudio();
   $("#plGap").onclick=()=>{const i=GAPS.indexOf(gapSec());const g=GAPS[(i+1)%GAPS.length];save("gap",g);updateGapBtn();toast("الفاصل بين الآيات: "+gapLabel(g))};
 })();
@@ -732,10 +733,10 @@ function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.s
 function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
   document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");if(curPage)fitPage()}
 function updateGapBtn(){const b=$("#plGap");if(b)b.querySelector("span").textContent=gapLabel(gapSec())}
-function updatePlayerBar(){updateGapBtn();
+function updatePlayerBar(){updateGapBtn();const pp=$("#pplay");if(pp&&curPage){const on=player.s&&pageOf(player.s,player.v)===curPage;pp.innerHTML=on&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!on)}
   if(!player.s){showPlayer(false);return}
   showPlayer(true);$("#plWho").textContent=reciter.name;$("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
-  const paused=!player.a||player.a.paused;$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
+  const paused=audioPaused();$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
 }
 function clearPlayingUI(){
   document.querySelectorAll(".vb.playing").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-pressed","false");b.innerHTML=ICON.play+"<span>استماع</span>"});
@@ -776,7 +777,7 @@ function fetchVerse(url){
     if(!r&&directCors){try{r=await fetch(url,{mode:"cors"});if(!r.ok)r=null}catch(e){r=null;directCors=false}}
     if(!r)return null;
     const ab=await r.arrayBuffer();const obj=URL.createObjectURL(new Blob([ab],{type:"audio/mpeg"}));
-    READY.set(url,obj);measureFrom(url,ab);
+    READY.set(url,obj);await decodeTo(url,ab.slice(0));
     if(READY.size>24){const k=READY.keys().next().value;if(player.a&&player.a.src===READY.get(k))return obj;URL.revokeObjectURL(READY.get(k));READY.delete(k);BUF.delete(k)}
     return obj})().catch(()=>null);
   BUF.set(url,p);return p}
@@ -807,7 +808,7 @@ function audioEls(){
   el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",updatePlayerBar);
   return [el]}
 function unlockAudio(){}
-function stopAudio(){clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
+function stopAudio(){waStopAll();clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
   if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.dataset.url="";try{player.a.load()}catch(e){}}clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
@@ -837,25 +838,72 @@ function onVerseEnded(){
 function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
   navigator.mediaSession.metadata=new MediaMetadata({title:`سورة ${META[s-1][1]}، الآية ${v}`,artist:reciter.name,album:"مصحف التدبر"});
   if(!setMediaSession.done){setMediaSession.done=true;const ms=navigator.mediaSession;
-    ms.setActionHandler("play",()=>player.a&&player.a.play());ms.setActionHandler("pause",()=>player.a&&player.a.pause());
+    ms.setActionHandler("play",()=>{if(audioPaused())togglePause()});ms.setActionHandler("pause",()=>{if(!audioPaused())togglePause()});
     ms.setActionHandler("nexttrack",()=>{const n=player.s&&nextOf(player.s,player.v,false);if(n)playVerse(n.s,n.v,{keep:!!player.queue})});
     ms.setActionHandler("previoustrack",()=>{if(player.s&&player.v>1)playVerse(player.s,player.v-1,{keep:!!player.queue})})}}catch(e){}}
+/* ---- Gapless engine (Web Audio): verses already in memory are decoded and scheduled back to back,
+   each one trimmed of its silences, so the next verse starts exactly when the reciter's voice ends (+ the chosen pause).
+   The <audio> element is only a fallback when a verse cannot be kept in memory. ---- */
+const BUFS=new Map();
+const WA={ctx:null,cur:null,next:null,timer:null,paused:false,on:false,wait:""};
+function waCtx(){if(!WA.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{WA.ctx=new C()}catch(e){return null}
+  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}}return WA.ctx}
+function decodeTo(url,ab){return new Promise(res=>{const ctx=waCtx();if(!ctx)return res(null);let done=false;
+  const ok=buf=>{if(done)return;done=true;BUFS.set(url,buf);
+    const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;let a=0,b=d.length-1;
+    while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
+    TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};
+    if(BUFS.size>30){for(const k of BUFS.keys()){if((WA.cur&&WA.cur.url===k)||(WA.next&&WA.next.url===k))continue;BUFS.delete(k);break}}
+    res(buf)};
+  const ko=()=>{if(!done){done=true;res(null)}};
+  try{const p=ctx.decodeAudioData(ab,ok,ko);if(p&&p.then)p.then(ok,ko)}catch(e){ko()}})}
+function waItem(s,v,bas,rep){const b=!!bas&&s!==1&&s!==9;return {s,v,bas:b,rep:rep||1,url:b?audioUrl(1,1):audioUrl(s,v)}}
+function waSchedule(it,when){const ctx=WA.ctx,t=TIMING[it.url]||{},off=t.lead||0,len=Math.max(.05,it.buf.duration-off-(t.tail||0));
+  const src=ctx.createBufferSource();src.buffer=it.buf;src.connect(ctx.destination);src.start(when,off,len);it.src=src;it.start=when;it.end=when+len;return it}
+function waStopAll(){[WA.cur,WA.next].forEach(it=>{if(it&&it.src){try{it.src.stop()}catch(e){}}});WA.cur=WA.next=null;WA.wait="";
+  clearInterval(WA.timer);WA.timer=null;WA.on=false;if(WA.paused&&WA.ctx){WA.ctx.resume()}WA.paused=false}
+function waStart(it){const ctx=waCtx();WA.on=true;WA.paused=false;if(ctx.state!=="running")ctx.resume();
+  waSchedule(it,ctx.currentTime+.03);WA.cur=it;WA.next=null;clearInterval(WA.timer);WA.timer=setInterval(waTick,60);updatePlayerBar()}
+/* what follows `it`: the repetition queue first, otherwise the next verse / surah; null when the reader left this surah or the Quran ends */
+function waPeek(it){if(player.queue){if(!player.queue.length)return null;const [s,v,r]=player.queue[0];return waItem(s,v,false,r)}
+  if(!(current===it.s||curPage))return null;const n=nextOf(it.s,it.v,it.bas);return n?waItem(n.s,n.v,n.bas):null}
+function waTick(){
+  if(!WA.on||WA.paused||!WA.cur)return;const now=WA.ctx.currentTime,cur=WA.cur;
+  if(!WA.next&&cur.end-now<1.5){const nx=waPeek(cur);
+    if(!nx){if(now>=cur.end){const q=player.queue,done=player.onDone,endQ=!q&&(current===cur.s||curPage);if(!cur.bas)recordListen(cur.s,cur.v);stopAudio();if(q&&done)done();if(endQ)toast("صدق الله العظيم")}return}
+    const buf=BUFS.get(nx.url);
+    if(buf){nx.buf=buf;if(player.queue)player.queue.shift();waSchedule(nx,Math.max(now+.02,cur.end+gapSec()));WA.next=nx}
+    else if(WA.wait!==nx.url){WA.wait=nx.url;const tok=player.tok;
+      /* not in memory yet: when it arrives the tick schedules it; if it cannot be kept in memory, continue with the <audio> element */
+      fetchVerse(nx.url).then(()=>{if(player.tok!==tok||WA.cur!==cur)return;if(!BUFS.get(nx.url)&&WA.on){const it=nx;if(player.queue)player.queue.shift();waStopAll();waEnter(cur,it);elPlay(it.url)}})}}
+  if(WA.next&&now>=WA.next.start-.01){const prev=cur;WA.cur=WA.next;WA.next=null;WA.wait="";waEnter(prev,WA.cur)}
+}
+/* the reader-visible side of moving to the next verse: stats, page/surah in step, player bar, highlight, prefetch */
+function waEnter(prev,it){
+  if(!prev.bas)recordListen(prev.s,prev.v);
+  if(curPage){const np=pageOf(it.s,it.v);player.s=it.s;player.v=it.v;if(np!==curPage)location.hash="p"+np}
+  else if(current&&it.s!==prev.s){player.s=it.s;player.v=it.v;location.hash="s"+it.s+"-"+it.v}
+  player.s=it.s;player.v=it.v;player.bas=it.bas;
+  if(!it.bas){listenAt=[it.s,it.v,reciter.id];store.set("listen",listenAt)}
+  setMediaSession(it.s,it.v);if(player.onStep)player.onStep(it.s,it.v,it.rep);markPlaying();prefetchAhead(it.s,it.v,it.bas)}
+const audioPaused=()=>WA.on?WA.paused:(!player.a||player.a.paused);
+function togglePause(){if(!player.s)return;
+  if(WA.on){if(WA.paused){WA.paused=false;WA.ctx.resume()}else{WA.paused=true;WA.ctx.suspend()}updatePlayerBar();return}
+  if(player.a){if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()}}
+function elPlay(url){const el=audioEls()[0];const mem=READY.get(url);el.dataset.url=url;el.src=mem||(proxyOff?url:proxied(url));
+  const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}watchEnd();el.play().catch(()=>{})}
 function playVerse(s,v,opt){
   opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
-  const el=audioEls()[0];
-  /* the basmala before a new surah is verse 1:1 in the same reciter's voice (not for Al-Fatiha or At-Tawbah) */
-  const bas=!!opt.bas&&s!==1&&s!==9;
-  const url=bas?audioUrl(1,1):audioUrl(s,v);
-  player.s=s;player.v=v;player.bas=bas;player.handed="";
-  /* already in memory: starts at once; otherwise stream it and keep a copy for next time */
-  const mem=READY.get(url);
-  el.dataset.url=url;el.src=mem||(proxyOff?url:proxied(url));
-  const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}
-  if(!mem)fetchVerse(url);
-  watchEnd();
-  el.play().catch(()=>{});
-  prefetchAhead(s,v,bas);
-  if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
+  waStopAll();const el=audioEls()[0];el.pause();clearInterval(handT);
+  const it=waItem(s,v,opt.bas,opt.rep),url=it.url;
+  player.s=s;player.v=v;player.bas=it.bas;player.handed="";
+  const ctx=waCtx();if(ctx&&ctx.state!=="running")ctx.resume(); /* started from the tap, so iOS allows it */
+  const buf=BUFS.get(url);
+  if(buf&&ctx){it.buf=buf;waStart(it)}
+  else if(ctx&&(!proxyOff||directCors)){const tok=player.tok;fetchVerse(url).then(()=>{if(player.tok!==tok)return;const b=BUFS.get(url);if(b){it.buf=b;waStart(it)}else elPlay(url)})}
+  else elPlay(url);
+  prefetchAhead(s,v,it.bas);
+  if(!it.bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
   setMediaSession(s,v);
   if(player.onStep)player.onStep(s,v,opt.rep||1);
   markPlaying();
@@ -982,7 +1030,7 @@ async function renderPage(p){
       <div class="pbody" id="pbody"><div class="pinner">${html}</div></div>
       <footer class="pfoot">
         <button class="parrow" type="button" data-page="${p-1}" aria-label="الصفحة السابقة" ${p<=1?"disabled":""}>${ICON.prev}</button>
-        <div class="pmid"><span class="pnum">${an(p)}</span><button class="ribbon" type="button" id="pstop" aria-label="توقفت هنا" title="توقفت هنا">${ICON.stop}</button></div>
+        <div class="pmid">${STANDALONE?`<button class="ribbon pplay" type="button" id="pplay" aria-label="استمع إلى الصفحة" title="استمع إلى الصفحة">${ICON.play}</button>`:""}<span class="pnum">${an(p)}</span><button class="ribbon" type="button" id="pstop" aria-label="توقفت هنا" title="توقفت هنا">${ICON.stop}</button></div>
         <button class="parrow" type="button" data-page="${p+1}" aria-label="الصفحة التالية" ${p>=604?"disabled":""}>${ICON.next}</button>
       </footer>
     </div></article>
@@ -994,6 +1042,9 @@ async function renderPage(p){
     if(stopAt&&stopAt[0]===0&&stopAt[1]===p){stopAt=null;save("stop",null);toast("تم حذف موضع التوقف")}
     else{stopAt=[0,p];save("stop",stopAt);toast(`حُفظ موضع توقفك: الصفحة ${an(p)}`)}
     updatePageStop()};
+  const pp=$("#pplay");if(pp){const onThis=()=>player.s&&pageOf(player.s,player.v)===p;
+    const icon=()=>{pp.innerHTML=onThis()&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!onThis())};icon();
+    pp.onclick=()=>{if(onThis()){togglePause()}else{const [s,v]=sv(PG[p]);playVerse(s,v)}setTimeout(icon,60)}}
   const body=$("#pbody");bindLongPress(body);
   body.addEventListener("keydown",e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("pv")){e.preventDefault();const [s,v]=e.target.dataset.sv.split(":").map(Number);openSheet(s,v)}});
   const mp=$("#mpage");let x0=null,y0=0,t0=0;
@@ -1164,7 +1215,7 @@ function readTick(){
 }
 setInterval(()=>{
   if(document.visibilityState!=="visible")return;
-  const playing=!!(player.a&&player.s&&!player.a.paused);
+  const playing=!!(player.s&&!audioPaused());
   if(!playing&&Date.now()-lastAct>180000)return;
   dayRec().sec++;stDirty=true;readTick();
 },1000);
