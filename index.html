@@ -490,6 +490,10 @@ body.reclive .recinfo,body.reclive .hzpage>*:not(#hzBody):not(.hzhead){display:n
 input,select,textarea{font-size:16px!important}
 html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
 
+/* ===== v9: gap between verses ===== */
+.pgap{flex:none;display:inline-flex;align-items:center;gap:5px;height:34px;padding:0 10px;border-radius:999px;border:1px solid var(--gold);background:none;color:var(--solid-ink);font-family:var(--f-head);font-size:.8rem;white-space:nowrap}
+.pgap svg{width:15px;height:15px;stroke:var(--gold);fill:none;stroke-width:1.8}
+
 @media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important;scroll-behavior:auto!important}}
 </style>
 </head>
@@ -519,6 +523,7 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
   <div class="wrap">
     <button class="pbtn main" type="button" id="plToggle" aria-label="إيقاف مؤقت"></button>
     <div class="pinfo"><b id="plWhat"></b><small id="plWho"></small></div>
+    <button class="pgap" type="button" id="plGap" aria-label="الفاصل بين الآيات"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span></span></button>
     <button class="pbtn x" type="button" id="plStop" aria-label="إيقاف التلاوة"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </div>
 </div>
@@ -590,7 +595,7 @@ function setMode(m){if(m===mode)return;mode=m;save("mode",m);updateModeBtn();
 /* ---------- Save: device + account ---------- */
 const cloud={doc:null,busy:false,again:false,tm:null};
 function save(k,v){store.set(k,v);store.set("t",Date.now());if(cloud.doc){clearTimeout(cloud.tm);cloud.tm=setTimeout(push,600)}}
-function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),order:store.get("order","asc"),pagesound:store.get("pagesound",true),digits:store.get("digits","east"),goal:store.get("goal",2),hifz:HZ,stats:{days:ST.days,seen:ST.seen},t:store.get("t",0)}}
+function stateNow(){return {stop:stopAt||null,marks,mode,theme:store.get("theme",null),qsize,tab:store.get("tab","m"),order:store.get("order","asc"),pagesound:store.get("pagesound",true),gap:gapSec(),digits:store.get("digits","east"),goal:store.get("goal",2),hifz:HZ,stats:{days:ST.days,seen:ST.seen},t:store.get("t",0)}}
 async function push(){if(!cloud.doc)return;if(cloud.busy){cloud.again=true;return}cloud.busy=true;
   try{await cloud.doc.set(stateNow())}catch(e){}
   cloud.busy=false;if(cloud.again){cloud.again=false;push()}}
@@ -598,7 +603,7 @@ function applyRemote(d){
   if(!d||(+d.t||0)<=store.get("t",0))return;
   stopAt=Array.isArray(d.stop)?d.stop:null;marks=Array.isArray(d.marks)?d.marks:[];
   store.set("stop",stopAt);store.set("marks",marks);if(d.mode==="pages"||d.mode==="ayat"){mode=d.mode;store.set("mode",mode);updateModeBtn()}store.set("theme",d.theme||null);store.set("tab",d.tab||"m");store.set("qsize",+d.qsize||1.75);store.set("t",+d.t);
-  if(d.order)store.set("order",d.order);if(typeof d.pagesound==="boolean")store.set("pagesound",d.pagesound);if(+d.goal)store.set("goal",+d.goal);if(d.digits){store.set("digits",d.digits);DIGW=d.digits==="west"}
+  if(d.order)store.set("order",d.order);if(typeof d.pagesound==="boolean")store.set("pagesound",d.pagesound);if(+d.goal)store.set("goal",+d.goal);if(d.gap!==undefined)store.set("gap",+d.gap);if(d.digits){store.set("digits",d.digits);DIGW=d.digits==="west"}
   if(d.hifz&&typeof d.hifz==="object"){HZ=d.hifz;store.set("hifz",HZ)}
   if(d.stats&&d.stats.days){ST.days=d.stats.days;ST.seen=d.stats.seen||"";SEEN=decodeSeen(ST.seen);store.set("stats",ST)}
   applyTheme(d.theme||null);applySize(d.qsize);refreshUI();
@@ -718,6 +723,7 @@ const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 (function initPlayerBar(){
   $("#plToggle").onclick=()=>{if(!player.a||!player.s)return;if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()};
   $("#plStop").onclick=()=>stopAudio();
+  $("#plGap").onclick=()=>{const i=GAPS.indexOf(gapSec());const g=GAPS[(i+1)%GAPS.length];save("gap",g);updateGapBtn();toast("الفاصل بين الآيات: "+gapLabel(g))};
 })();
 function reciterOptions(){return RECITERS.map(r=>`<option value="${r.id}"${r.id===reciter.id?" selected":""}>${r.name}</option>`).join("")}
 function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.set("reciter",reciter.id);const rbs=$("#resumeBtn span");if(rbs&&listenAt)rbs.textContent=`سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}`;
@@ -725,7 +731,8 @@ function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.s
   toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)}
 function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
   document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");if(curPage)fitPage()}
-function updatePlayerBar(){
+function updateGapBtn(){const b=$("#plGap");if(b)b.querySelector("span").textContent=gapLabel(gapSec())}
+function updatePlayerBar(){updateGapBtn();
   if(!player.s){showPlayer(false);return}
   showPlayer(true);$("#plWho").textContent=reciter.name;$("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
   const paused=!player.a||player.a.paused;$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
@@ -777,7 +784,7 @@ function audioEls(){
   player.a=player.els[0];return player.els}
 /* iOS only lets an element play without a tap if it was started once from a tap: start both silently on the first tap */
 function unlockAudio(){if(player.unlocked)return;player.unlocked=true;audioEls().forEach(el=>{if(el===player.a||el.getAttribute("src"))return;el.src=SILENT;el.muted=true;const p=el.play();if(p)p.then(()=>{if(el.getAttribute("src")===SILENT)el.pause();el.muted=false}).catch(()=>{el.muted=false})})}
-function stopAudio(){clearInterval(handT);player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
+function stopAudio(){clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
   (player.els||[]).forEach(el=>{el.pause();el.removeAttribute("src");el.dataset.url="";try{el.load()}catch(e){}});clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
@@ -787,16 +794,22 @@ function nextOf(s,v,bas){
   if(s>=114)return null;
   return {s:s+1,v:1,bas:s+1!==9};
 }
+/* pause between two verses, chosen by the reader (seconds, counted after the reciter's voice ends) */
+const GAPS=[0,.3,.6,1,2];
+const gapSec=()=>{const g=+store.get("gap",0);return GAPS.includes(g)?g:0};
+const gapLabel=g=>g?`${anD(String(g))} ث`:"بلا فاصل";
+function afterGap(fn){const g=gapSec();if(!g){fn();return}const tok=player.tok;if(player.a)player.a.pause();
+  setTimeout(()=>{if(player.tok===tok&&player.s)fn()},g*1000)}
 function onVerseEnded(){
   const s=player.s,v=player.v,bas=player.bas;
   if(s&&!bas)recordListen(s,v);
-  if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();playVerse(a,b,{keep:true,rep:r})}else{const done=player.onDone;stopAudio();if(done)done()}return}
+  if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();afterGap(()=>playVerse(a,b,{keep:true,rep:r}))}else{const done=player.onDone;stopAudio();if(done)done()}return}
   if(!s||!(current===s||curPage)){stopAudio();return}
   const nx=nextOf(s,v,bas);if(!nx){stopAudio();toast("صدق الله العظيم");return}
   /* keep the page in step with the recitation */
   if(curPage){const np=pageOf(nx.s,nx.v);player.s=nx.s;player.v=nx.v;if(np!==curPage)location.hash="p"+np}
   else if(nx.s!==s){player.s=nx.s;player.v=1;location.hash="s"+nx.s+"-1"}
-  playVerse(nx.s,nx.v,{keep:true,bas:nx.bas});
+  afterGap(()=>playVerse(nx.s,nx.v,{keep:true,bas:nx.bas}));
 }
 function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
   navigator.mediaSession.metadata=new MediaMetadata({title:`سورة ${META[s-1][1]}، الآية ${v}`,artist:reciter.name,album:"مصحف التدبر"});
@@ -805,7 +818,7 @@ function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
     ms.setActionHandler("nexttrack",()=>{const n=player.s&&nextOf(player.s,player.v,false);if(n)playVerse(n.s,n.v,{keep:!!player.queue})});
     ms.setActionHandler("previoustrack",()=>{if(player.s&&player.v>1)playVerse(player.s,player.v-1,{keep:!!player.queue})})}}catch(e){}}
 function playVerse(s,v,opt){
-  opt=opt||{};if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
+  opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
   const els=audioEls();unlockAudio();
   /* the basmala before a new surah is verse 1:1 in the same reciter's voice (not for Al-Fatiha or At-Tawbah) */
   const bas=!!opt.bas&&s!==1&&s!==9;
@@ -824,7 +837,9 @@ function playVerse(s,v,opt){
   let nx=null;
   if(player.queue&&player.queue.length){const q=player.queue[0];nx=q[0]===s&&q[1]===v?null:audioUrl(q[0],q[1])}
   else{const n=nextOf(s,v,bas);if(n)nx=n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
-  if(nx&&other.dataset.url!==nx){other.dataset.url=nx;other.src=nx;try{other.load()}catch(e){}}
+  if(nx&&other.dataset.url!==nx){other.dataset.url=nx;other.src=nx;try{other.load()}catch(e){}
+    if(player.unlocked){other.muted=true;const pp=other.play();
+      if(pp)pp.then(()=>{if(other!==player.a){other.pause();try{other.currentTime=0}catch(e){}}other.muted=false}).catch(()=>{other.muted=false})}}
   if(nx)measureSilence(nx);
   if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
   setMediaSession(s,v);
@@ -1632,6 +1647,7 @@ function renderPrefs(){
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
+      <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):"٠"}</button>`).join("")}</div></div>
       <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
       <div class="row"><span>ترتيب السور</span><div class="seg sm" id="pfOrd"><button type="button" data-o="asc" aria-pressed="${ord==="asc"}">من الفاتحة</button><button type="button" data-o="desc" aria-pressed="${ord==="desc"}">من الناس</button></div></div>
       <div class="row"><span>الورد اليومي<small>يظهر في الإحصائيات</small></span><div class="stepper"><button type="button" id="pfGm" aria-label="إنقاص">−</button><span id="pfGoal">${an(goal)} ص</span><button type="button" id="pfGp" aria-label="زيادة">+</button></div></div>
@@ -1646,6 +1662,7 @@ function renderPrefs(){
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
   $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  $("#pfGap").onclick=e=>{const x=e.target.closest("[data-g]");if(!x)return;save("gap",+x.dataset.g);$("#pfGap").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));updateGapBtn()};
   $("#pfDig").onclick=e=>{const x=e.target.closest("[data-d]");if(!x)return;save("digits",x.dataset.d);DIGW=x.dataset.d==="west";renderPrefs()};
   const sz=d=>{setSize(d);$("#pfSize").textContent=an(Math.round(qsize/1.75*100))+"٪"};
   $("#pfMinus").onclick=()=>sz(-.15);$("#pfPlus").onclick=()=>sz(.15);
