@@ -1747,12 +1747,12 @@ async function renderAdmin(){
   const [users,opens,...per]=await Promise.all([cget("users"),cget("opens"),...days.map(d=>cget(cday(d)))]);
   const out=$("#adOut");if(!out)return;
   if(users===null&&opens===null){out.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد. حاول لاحقًا.</p>`;return}
-  const v=x=>x===null?"–":an(x),week=per.slice(-7).reduce((a,x)=>a+(x||0),0),max=Math.max(1,...per.map(x=>x||0));
+  const v=x=>x===null?"–":String(x),week=per.slice(-7).reduce((a,x)=>a+(x||0),0),max=Math.max(1,...per.map(x=>x||0));
   const k=(n,l)=>`<div class="adk"><b>${n}</b><span>${l}</span></div>`;
-  out.innerHTML=`<section class="card adgrid">${k(v(users),"مستخدم منذ البداية")}${k(v(per[13]),"مستخدم اليوم")}${k(an(week),`زيارات يومية آخر ${an(7)} أيام`)}${k(v(opens),"مجموع مرات الفتح")}</section>
-    <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (${an(14)} يومًا)</h2>
+  out.innerHTML=`<section class="card adgrid">${k(v(users),"مستخدم منذ البداية")}${k(v(per[13]),"مستخدم اليوم")}${k(String(week),`زيارات يومية آخر ${String(7)} أيام`)}${k(v(opens),"مجموع مرات الفتح")}</section>
+    <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (${String(14)} يومًا)</h2>
     <section class="card"><div class="adbars">${per.map((x,i)=>`<div class="adb" title="${days[i].toISOString().slice(0,10)}: ${x||0}"><i style="height:${Math.max(2,(x||0)/max*100)}%"></i></div>`).join("")}</div>
-    <div class="adax"><span>${an(days[0].getDate())}/${an(days[0].getMonth()+1)}</span><span>اليوم</span></div></section>
+    <div class="adax"><span>${String(days[0].getDate())}/${String(days[0].getMonth()+1)}</span><span>اليوم</span></div></section>
     <p class="note2">التفاصيل (البلدان، الأجهزة، مصدر الزيارة) متاحة أيضًا في لوحة Vercel ← Analytics إن فعّلتها.</p>`;
 }
 function renderPrefs(){
