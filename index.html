@@ -321,6 +321,10 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .tile.hero em{color:color-mix(in srgb,var(--solid-ink) 70%,transparent)}
 .chart{width:100%;height:auto;display:block}
 .chart .gl{stroke:var(--line);stroke-width:1}
+.adform{display:flex;gap:10px}.adform input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
+.adgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.adk{display:flex;flex-direction:column;gap:2px}.adk b{font-size:1.7rem;color:var(--gold-strong);font-variant-numeric:tabular-nums}.adk span{font-size:.85rem;color:var(--muted)}
+.adbars{display:flex;align-items:flex-end;gap:3px;height:140px;direction:ltr}.adb{flex:1;height:100%;display:flex;align-items:flex-end}.adb i{display:block;width:100%;background:var(--gold);border-radius:3px 3px 0 0;opacity:.85}
+.adax{display:flex;justify-content:space-between;direction:ltr;font-size:.75rem;color:var(--muted);margin-top:6px}
 .chart .bar{fill:color-mix(in srgb,var(--gold) 55%,transparent)}
 .chart .bar.now{fill:var(--gold)}
 .chart text{fill:var(--muted);font-size:10px;font-family:var(--f-head)}
@@ -1733,6 +1737,27 @@ async function renderHifzSurah(n){
 }
 
 /* ---------- Settings (v4: grouped rows, live preview) ---------- */
+/* ---------- Visitors (owner only: reached by typing #admin after the address, protected by ADMIN_KEY) ---------- */
+async function renderAdmin(){
+  current=0;curPage=0;titleEl.textContent="الزوار";document.title="الزوار · مصحف التدبر";
+  const key=store.get("adminkey","");
+  view.innerHTML=`<div class="wrap pgx"><div class="pgx-h"><h1>الزوار</h1><a class="back" href="#">→ الرئيسية</a></div>
+    <section class="card"><form id="adForm" class="adform"><input id="adKey" type="password" placeholder="مفتاح الدخول (ADMIN_KEY)" value="${esc(key)}" autocomplete="current-password"><button class="btn" type="submit">عرض</button></form>
+    <p class="note2">زياراتك من هذا الهاتف لا تُحتسب بعد إدخال المفتاح.</p></section><div id="adOut"></div></div>`;
+  $("#adForm").onsubmit=e=>{e.preventDefault();store.set("adminkey",$("#adKey").value.trim());renderAdmin()};
+  if(!key)return;const out=$("#adOut");out.innerHTML=`<p class="note2">جارٍ التحميل…</p>`;
+  try{const r=await fetch("/api/stats?key="+encodeURIComponent(key),{cache:"no-store"});const d=await r.json().catch(()=>({}));
+    if(r.status===401){out.innerHTML=`<p class="note2">المفتاح غير صحيح.</p>`;return}
+    if(!r.ok){out.innerHTML=`<p class="note2">العدّاد غير مفعّل بعد (${esc(d.error||r.status)}). أنشئ قاعدة Upstash Redis وأضف ADMIN_KEY في Vercel.</p>`;return}
+    const t=d.days[d.days.length-1]||{users:0,visits:0,new:0},max=Math.max(1,...d.days.map(x=>x.users));
+    const k=(v,l)=>`<div class="adk"><b>${an(v)}</b><span>${l}</span></div>`;
+    out.innerHTML=`<section class="card adgrid">${k(d.users,"مستخدم منذ البداية")}${k(t.users,"مستخدم اليوم")}${k(d.week,"آخر 7 أيام".replace("7",an(7)))}${k(d.month,"آخر 30 يومًا".replace("30",an(30)))}${k(d.visits,"مجموع الزيارات")}${k(t.new,"جديد اليوم")}</section>
+      <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (${an(30)} يومًا)</h2>
+      <section class="card"><div class="adbars">${d.days.map(x=>`<div class="adb" title="${x.d}: ${x.users}"><i style="height:${Math.max(2,x.users/max*100)}%"></i></div>`).join("")}</div>
+      <div class="adax"><span>${an(+d.days[0].d.slice(8))}/${an(+d.days[0].d.slice(5,7))}</span><span>اليوم</span></div></section>
+      <p class="note2">التفاصيل (البلدان، الأجهزة، مصدر الزيارة مثل TikTok) في لوحة Vercel ← Analytics.</p>`;
+  }catch(e){out.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد.</p>`}
+}
 function renderPrefs(){
   current=0;curPage=0;titleEl.textContent="الإعدادات";document.title="الإعدادات · مصحف التدبر";
   const th=store.get("theme",null)||"auto",ps=store.get("pagesound",true),ord=store.get("order","asc"),goal=goalPages();
@@ -1795,6 +1820,7 @@ $("#home").onclick=()=>{if(location.hash){location.hash=""}else renderHome()};
 function route(){closeMenu();closePicker();stopRec();rec=null;const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
   curPage=0;document.documentElement.classList.remove("pagemode");
   const h=location.hash;
+  if(h==="#admin"){closeSheet();stopAudio();current=0;renderAdmin();return}
   if(h==="#stats"||h==="#hifz"||h==="#prefs"){closeSheet();stopAudio();current=0;({"#stats":renderStats,"#hifz":renderHifzHome,"#prefs":renderPrefs})[h]();return}
   const hz=h.match(/^#hifz-(\d{1,3})$/);if(hz&&+hz[1]>=1&&+hz[1]<=114){closeSheet();stopAudio();current=0;renderHifzSurah(+hz[1]);return}
   closeSheet();const m=location.hash.match(/^#s(\d{1,3})-(\d{1,3})$/);
@@ -1814,6 +1840,13 @@ connectCloud();
 
 try{if(STANDALONE&&navigator.storage&&navigator.storage.persist&&!/Firefox/.test(navigator.userAgent))navigator.storage.persisted().then(p=>{if(!p)navigator.storage.persist()})}catch(e){}
 try{if(sessionStorage.getItem("mt_migr")){sessionStorage.removeItem("mt_migr");setTimeout(()=>toast("تم نقل تقدّمك وإعداداتك إلى العنوان الجديد"),900)}}catch(e){}
+
+/* audience: Vercel Web Analytics + one anonymous count per app opening (the owner's phone, with the admin key, is not counted) */
+try{if(STANDALONE&&/\.vercel\.app$/.test(location.hostname)){
+  const va=document.createElement("script");va.defer=true;va.src="/_vercel/insights/script.js";document.head.appendChild(va);
+  if(!store.get("adminkey","")&&!sessionStorage.getItem("mt_hit")){sessionStorage.setItem("mt_hit","1");
+    let id=store.get("uid","");if(!id){id=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,"0")).join("");store.set("uid",id)}
+    fetch("/api/hit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id}),keepalive:true}).catch(()=>{})}}}catch(e){}
 </script>
 </body>
 </html>

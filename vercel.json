@@ -1,8 +1,28 @@
 {
   "rewrites": [
-    { "source": "/audio/:path*", "destination": "https://everyayah.com/data/:path*" }
+    {
+      "source": "/audio/:path*",
+      "destination": "https://everyayah.com/data/:path*"
+    }
   ],
   "headers": [
-    { "source": "/audio/(.*)", "headers": [ { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" } ] }
+    {
+      "source": "/audio/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "public, max-age=31536000, immutable"
+        }
+      ]
+    },
+    {
+      "source": "/api/(.*)",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-store"
+        }
+      ]
+    }
   ]
 }
