@@ -1735,26 +1735,25 @@ async function renderHifzSurah(n){
 }
 
 /* ---------- Settings (v4: grouped rows, live preview) ---------- */
-/* ---------- Visitors (owner only: reached by typing #admin after the address, protected by ADMIN_KEY) ---------- */
+/* ---------- Visitors: free public counter (Abacus, no account). Page reached by typing #admin after the address. ---------- */
+const CNT="https://abacus.jasoncameron.dev",CNS="mushaf-tadabbur";
+const cday=d=>"day-"+d.toISOString().slice(0,10).replace(/-/g,"");
+async function cget(k){try{const r=await fetch(`${CNT}/get/${CNS}/${k}`,{cache:"no-store"});if(r.status===404)return 0;if(!r.ok)return null;return +(await r.json()).value||0}catch(e){return null}}
 async function renderAdmin(){
-  current=0;curPage=0;titleEl.textContent="الزوار";document.title="الزوار · مصحف التدبر";
-  const key=store.get("adminkey","");
-  view.innerHTML=`<div class="wrap pgx"><div class="pgx-h"><h1>الزوار</h1><a class="back" href="#">→ الرئيسية</a></div>
-    <section class="card"><form id="adForm" class="adform"><input id="adKey" type="password" placeholder="مفتاح الدخول (ADMIN_KEY)" value="${esc(key)}" autocomplete="current-password"><button class="btn" type="submit">عرض</button></form>
-    <p class="note2">زياراتك من هذا الهاتف لا تُحتسب بعد إدخال المفتاح.</p></section><div id="adOut"></div></div>`;
-  $("#adForm").onsubmit=e=>{e.preventDefault();store.set("adminkey",$("#adKey").value.trim());renderAdmin()};
-  if(!key)return;const out=$("#adOut");out.innerHTML=`<p class="note2">جارٍ التحميل…</p>`;
-  try{const r=await fetch("/api/stats?key="+encodeURIComponent(key),{cache:"no-store"});const d=await r.json().catch(()=>({}));
-    if(r.status===401){out.innerHTML=`<p class="note2">المفتاح غير صحيح.</p>`;return}
-    if(!r.ok){out.innerHTML=`<p class="note2">العدّاد غير مفعّل بعد (${esc(d.error||r.status)}). أنشئ قاعدة Upstash Redis وأضف ADMIN_KEY في Vercel.</p>`;return}
-    const t=d.days[d.days.length-1]||{users:0,visits:0,new:0},max=Math.max(1,...d.days.map(x=>x.users));
-    const k=(v,l)=>`<div class="adk"><b>${an(v)}</b><span>${l}</span></div>`;
-    out.innerHTML=`<section class="card adgrid">${k(d.users,"مستخدم منذ البداية")}${k(t.users,"مستخدم اليوم")}${k(d.week,"آخر 7 أيام".replace("7",an(7)))}${k(d.month,"آخر 30 يومًا".replace("30",an(30)))}${k(d.visits,"مجموع الزيارات")}${k(t.new,"جديد اليوم")}</section>
-      <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (${an(30)} يومًا)</h2>
-      <section class="card"><div class="adbars">${d.days.map(x=>`<div class="adb" title="${x.d}: ${x.users}"><i style="height:${Math.max(2,x.users/max*100)}%"></i></div>`).join("")}</div>
-      <div class="adax"><span>${an(+d.days[0].d.slice(8))}/${an(+d.days[0].d.slice(5,7))}</span><span>اليوم</span></div></section>
-      <p class="note2">التفاصيل (البلدان، الأجهزة، مصدر الزيارة مثل TikTok) في لوحة Vercel ← Analytics.</p>`;
-  }catch(e){out.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد.</p>`}
+  current=0;curPage=0;titleEl.textContent="الزوار";document.title="الزوار · مصحف التدبر";store.set("owner",1);
+  view.innerHTML=`<div class="wrap pgx"><div class="pgx-h"><h1>الزوار</h1><a class="back" href="#">→ الرئيسية</a></div><div id="adOut"><p class="note2">جارٍ التحميل…</p></div>
+    <p class="note2">زياراتك من هذا الهاتف لا تُحتسب.</p></div>`;
+  const days=[...Array(14)].map((_,i)=>new Date(Date.now()-(13-i)*864e5));
+  const [users,opens,...per]=await Promise.all([cget("users"),cget("opens"),...days.map(d=>cget(cday(d)))]);
+  const out=$("#adOut");if(!out)return;
+  if(users===null&&opens===null){out.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد. حاول لاحقًا.</p>`;return}
+  const v=x=>x===null?"–":an(x),week=per.slice(-7).reduce((a,x)=>a+(x||0),0),max=Math.max(1,...per.map(x=>x||0));
+  const k=(n,l)=>`<div class="adk"><b>${n}</b><span>${l}</span></div>`;
+  out.innerHTML=`<section class="card adgrid">${k(v(users),"مستخدم منذ البداية")}${k(v(per[13]),"مستخدم اليوم")}${k(an(week),`زيارات يومية آخر ${an(7)} أيام`)}${k(v(opens),"مجموع مرات الفتح")}</section>
+    <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (${an(14)} يومًا)</h2>
+    <section class="card"><div class="adbars">${per.map((x,i)=>`<div class="adb" title="${days[i].toISOString().slice(0,10)}: ${x||0}"><i style="height:${Math.max(2,(x||0)/max*100)}%"></i></div>`).join("")}</div>
+    <div class="adax"><span>${an(days[0].getDate())}/${an(days[0].getMonth()+1)}</span><span>اليوم</span></div></section>
+    <p class="note2">التفاصيل (البلدان، الأجهزة، مصدر الزيارة) متاحة أيضًا في لوحة Vercel ← Analytics إن فعّلتها.</p>`;
 }
 function renderPrefs(){
   current=0;curPage=0;titleEl.textContent="الإعدادات";document.title="الإعدادات · مصحف التدبر";
@@ -1839,12 +1838,13 @@ connectCloud();
 try{if(STANDALONE&&navigator.storage&&navigator.storage.persist&&!/Firefox/.test(navigator.userAgent))navigator.storage.persisted().then(p=>{if(!p)navigator.storage.persist()})}catch(e){}
 try{if(sessionStorage.getItem("mt_migr")){sessionStorage.removeItem("mt_migr");setTimeout(()=>toast("تم نقل تقدّمك وإعداداتك إلى العنوان الجديد"),900)}}catch(e){}
 
-/* audience: Vercel Web Analytics + one anonymous count per app opening (the owner's phone, with the admin key, is not counted) */
+/* audience: anonymous counts (one per phone, one per opening, one per phone per day); the owner's phone is not counted */
 try{if(STANDALONE&&/\.vercel\.app$/.test(location.hostname)){
   const va=document.createElement("script");va.defer=true;va.src="/_vercel/insights/script.js";document.head.appendChild(va);
-  if(!store.get("adminkey","")&&!sessionStorage.getItem("mt_hit")){sessionStorage.setItem("mt_hit","1");
-    let id=store.get("uid","");if(!id){id=Array.from(crypto.getRandomValues(new Uint8Array(12)),b=>b.toString(16).padStart(2,"0")).join("");store.set("uid",id)}
-    fetch("/api/hit",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify({id}),keepalive:true}).catch(()=>{})}}}catch(e){}
+  if(!store.get("owner",0)&&location.hash!=="#admin"){const hit=k=>fetch(`${CNT}/hit/${CNS}/${k}`,{keepalive:true}).catch(()=>{});
+    if(!store.get("counted",0)){store.set("counted",1);hit("users")}
+    if(!sessionStorage.getItem("mt_hit")){sessionStorage.setItem("mt_hit","1");hit("opens")}
+    const d=cday(new Date());if(store.get("cday","")!==d){store.set("cday",d);hit(d)}}}}catch(e){}
 </script>
 </body>
 </html>
