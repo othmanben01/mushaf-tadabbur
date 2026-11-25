@@ -234,7 +234,7 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .hzgroup{display:flex;flex-direction:column;gap:12px}
 .hzg-main{display:flex;align-items:baseline;justify-content:center;gap:10px}.hzg-main b{font-size:2rem;line-height:1;color:var(--gold-strong);font-variant-numeric:tabular-nums}
 .hzg-main .lbl,.hzrow2 .lbl{font-weight:700;color:var(--ink)}
-.hzg-ctl{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hzg-ctl{display:flex;align-items:center;justify-content:center;gap:10px}
 .hzg-ctl .ib{width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer}
 .hzg-ctl .ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}.hzg-ctl .ib:disabled{opacity:.35}
 .hzgroup .stepper{display:flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:4px;background:var(--bg)}
@@ -1381,16 +1381,15 @@ function drawListen(n,data){
   all.onclick=e=>{const p=e.target.closest(".hzv");if(!p)return;const v=+p.dataset.sv.split(":")[1];store.set("hzg"+n,v);if(player.queue)stopAudio();drawListen(n,data);
     const el=document.querySelector(`#hzAll .hzv[data-sv="${n}:${v}"]`);if(el)el.scrollIntoView({block:"center"});toast(`تبدأ من الآية ${an(v)}`)};if(!STANDALONE)return;
   $("#hzReps").onclick=e=>{const x=e.target.closest("[data-r]");if(x){store.set("hzreps2",+x.dataset.r);if(player.queue)stopAudio();drawListen(n,data)}};
-  const btn=$("#hzPlay"),label=t=>{btn.querySelector("span").textContent=t;btn.querySelector("svg").outerHTML=player.queue?ICON.pause:ICON.play};
+  const btn=$("#hzPlay"),label=t=>{btn.querySelector("span").textContent=t};
   btn.onclick=()=>{
-    if(player.queue){stopAudio();label(`استمع ${an(reps)} مرات`);$("#hzCount").textContent="";return}
     const items=[];for(let r=1;r<=reps;r++)for(let v=a;v<=b;v++)items.push([n,v,r]);
     $("#hzAfter").innerHTML="";
     playQueue(items,(s,v,r)=>{const c=$("#hzCount");if(c)c.innerHTML=`المرة <b>${an(r)}</b> من ${an(reps)} · الآية ${an(v)}`;follow(s,v)},
       ()=>{if(!$("#hzPlay"))return;label("استمع مرة أخرى");$("#hzCount").textContent="";
         $("#hzAfter").innerHTML=`<section class="card nextstep"><b>انتهى الاستماع</b><p>هل أنت جاهز لتسميع الآيات من حفظك؟</p><button class="btn gold" type="button" id="toRecite">انتقل إلى التسميع ←</button></section>`;
         $("#toRecite").onclick=()=>hzSwitch("recite");$("#hzAfter").scrollIntoView({block:"center",behavior:"smooth"})});
-    label("إيقاف");
+    label(`أعد من البداية`);
   };
 }
 /* the group card shared by listen and recite: which verses, how many, previous / next group */
@@ -1398,9 +1397,7 @@ function hzGroupCard(n,N,a,b){const L=hzLearned(n,N),cnt=hzCnt();
   return `<section class="card hzgroup">
     <div class="hzg-main"><span class="lbl">الآيات</span><b>${a===b?an(a):`${an(a)} – ${an(b)}`}</b><span class="muted">من ${an(N)}</span></div>
     <div class="hzg-ctl">
-      <button class="ib" type="button" data-g="prev" aria-label="الآيات السابقة" ${a<=1?"disabled":""}><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
       <div class="chips cntchips" role="group" aria-label="عدد الآيات">${[1,3,5,7,10].map(c=>`<button type="button" data-n="${c}" aria-pressed="${cnt===c}">${an(c)}</button>`).join("")}</div>
-      <button class="ib" type="button" data-g="next" aria-label="الآيات التالية" ${b>=N?"disabled":""}><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
     </div>
     <small class="muted pickhint">${STARP}اضغط على أي آية في نص السورة لتبدأ منها</small>
     ${HZ[n]&&HZ[n].st===1?`<div class="hzprog"><i style="width:${Math.round(L/N*100)}%"></i></div><small class="muted">حفظتَ ${an(L)} من ${an(N)} آية</small>`:""}
@@ -1536,9 +1533,7 @@ function drawReview(n,data){
   if(mode==="chain"){chainStart(n,data,N,L,cur);return}
   showText(n,data,range[0],range[1]);
   const lb=$("#rvListen");if(lb)lb.onclick=()=>{
-    if(player.queue){stopAudio();lb.querySelector("span").textContent="استمع";$("#rvCount").textContent="";return}
     const items=[];for(let r=1;r<=reps;r++)for(let v=range[0];v<=range[1];v++)items.push([n,v,r]);
-    lb.querySelector("span").textContent="إيقاف";
     playQueue(items,(s,v,r)=>{const c=$("#rvCount");if(c)c.innerHTML=`${reps>1?`المرة <b>${an(r)}</b> من ${an(reps)} · `:""}الآية ${an(v)}`;follow(s,v)},
       ()=>{const l=$("#rvListen");if(l)l.querySelector("span").textContent="استمع";const c=$("#rvCount");if(c)c.textContent="انتهت المراجعة، بارك الله فيك"})};
   $("#rvRecite").onclick=()=>{if(player.queue)stopAudio();reciteView(box,n,data,range[0],range[1],{
@@ -1562,10 +1557,9 @@ function drawReview(n,data){
       ${last?"":`<button class="btn gold" type="button" data-ch="next">${META[rvChain.list[rvChain.i+1]-1][1]} ←</button>`}</div></section>`}
   function bindChoices(c){box.querySelectorAll("[data-ch]").forEach(x=>x.onclick=()=>{const a=x.dataset.ch;
     if(a==="again")chainPlay();else if(a==="recite")chainRecite();else{rvChain.i++;chainPlay()}})}
-  async function chainPlay(){if(player.queue){stopAudio();const l=$("#rvListen");if(l)l.querySelector("span").textContent="استمع";return}
+  async function chainPlay(){
     const c=await chainData();if(!rvChain)return;await chainShow();
     const items=[];for(let v=c.a;v<=c.b;v++)items.push([c.s,v,1]);
-    const l=$("#rvListen");if(l)l.querySelector("span").textContent="إيقاف";
     playQueue(items,(s,v)=>{const cc=$("#rvCount");if(cc)cc.innerHTML=`سورة ${META[s-1][1]} · الآية ${an(v)}`;follow(s,v)},
       ()=>{const l2=$("#rvListen");if(l2)l2.querySelector("span").textContent="استمع";const cc=$("#rvCount");if(cc)cc.textContent="";
         box.insertAdjacentHTML("beforeend",chainChoices(c));bindChoices(c);box.lastElementChild.scrollIntoView({block:"center",behavior:"smooth"})})}
