@@ -283,6 +283,12 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .rvh{margin:14px 4px 4px;font-size:1.05rem}
 .chainhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:14px 4px 6px}.chainhead b{font-size:1.15rem}
 .ploop[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-strong)}
+.mklist{list-style:none;margin:0;padding:0;display:flex;flex-direction:column;gap:10px}
+.mkrow{display:flex;align-items:stretch;gap:6px;border:1px solid var(--line-strong);border-radius:16px;background:var(--surface);overflow:hidden}
+.mkgo{flex:1;min-width:0;display:flex;flex-direction:column;gap:6px;text-align:right;padding:12px 14px;background:none;border:0;color:var(--ink);font:inherit;cursor:pointer}
+.mkref{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.mkref b{font-size:1.05rem}.mkref small{color:var(--gold-strong)}
+.mktxt{font-family:var(--f-quran);font-size:1.25rem;line-height:2;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.mkdel{flex:none;width:44px;border:0;border-inline-start:1px solid var(--line);background:none;color:var(--muted);font-size:1.4rem;cursor:pointer}
 .pplay svg{fill:currentColor;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 @keyframes inNext{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes inPrev{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
@@ -587,6 +593,7 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
 <nav class="menu" id="menu" hidden aria-label="المزيد">
   <a href="#stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>الإحصائيات</a>
   <a href="#hifz"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>الحفظ والمراجعة</a>
+  <a href="#marks"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>العلامات المحفوظة</a>
   <a href="#prefs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>الإعدادات</a>
   <hr>
   <button type="button" id="mTheme" role="switch" aria-checked="false"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>الوضع الليلي<i class="sw"></i></button>
@@ -706,7 +713,7 @@ function applyRemote(d){
 }
 function refreshUI(){
   if(curPage){updatePageStop();return}
-  if(/^#(stats|hifz|prefs)/.test(location.hash))return;
+  if(/^#marks/.test(location.hash)){renderMarks();return}if(/^#(stats|hifz|prefs)/.test(location.hash))return;
   if(!current){if(document.activeElement&&document.activeElement.id==="filter")return;renderHome();return}
   document.querySelectorAll(".verse").forEach(li=>{const v=+li.dataset.v;
     const st=isStop(current,v),mk=isMarked(current,v);li.classList.toggle("stopped",st);
@@ -760,7 +767,6 @@ function renderHome(){
     last?`<button class="continue" type="button" data-go="${last[0]}-${last[1]}">
       <div><b>أكمل من حيث توقفت</b><span>سورة ${META[last[0]-1][1]}، الآية ${an(last[1])}</span></div><span class="go">‹</span></button>`:
     `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة، الآية ${an(1)}</span></div><span class="go">‹</span></button>`;
-  const marksHtml=marks.length?`<div class="seclabel">العلامات المحفوظة</div><div class="marks">${marks.map(m=>`<button class="chip" type="button" data-go="${m[0]}-${m[1]}">${META[m[0]-1][1]} ${an(m[1])}</button>`).join("")}</div>`:"";
   const ORN='<svg class="orn" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><path d="M20 9l3 4.3 5 1-3.4 4 .6 5.2L20 21.4l-5.2 2.1.6-5.2-3.4-4 5-1z" fill="var(--gold)"/></svg>';
   view.innerHTML=`<section class="cover"><div class="wrap"><div class="frame"><div class="frame-in">
       ${ORN}<h1>القرآن الكريم</h1><p>اقرأ السورة، ثم افتح تفسير أي آية بلمسة واحدة.</p>
@@ -771,7 +777,6 @@ function renderHome(){
     <div class="wrap">
     <div class="modeseg" role="group" aria-label="طريقة القراءة"><button type="button" data-mode="ayat" aria-pressed="${mode==="ayat"}">آية بآية</button><button type="button" data-mode="pages" aria-pressed="${mode==="pages"}">صفحات المصحف</button></div>
     ${STANDALONE?`<label class="srec" for="hreciter"><span>القارئ</span><select id="hreciter">${reciterOptions()}</select></label>`:""}
-    ${marksHtml}
     <details class="juzbox" id="juzbox"><summary class="seclabel">الأجزاء<span class="chev" aria-hidden="true"></span></summary>
     <div class="juzs">${JZ.slice(1).map((id,j)=>{const [s,v]=sv(id);return `<button type="button" data-go="${s}-${v}" title="الجزء ${an(j+1)}">${an(j+1)}</button>`}).join("")}</div></details>
     <input class="filter" id="filter" type="search" placeholder="ابحث عن سورة بالاسم أو الرقم" autocomplete="off">
@@ -1804,6 +1809,20 @@ async function renderHifzSurah(n){
 }
 
 /* ---------- Settings (v4: grouped rows, live preview) ---------- */
+/* ---------- Bookmarks page (from the ⋯ menu) ---------- */
+async function renderMarks(){
+  current=0;curPage=0;document.documentElement.classList.remove("pagemode");titleEl.textContent="العلامات";document.title="العلامات المحفوظة · مصحف التدبر";
+  const list=marks.slice().sort((a,b)=>aid(a[0],a[1])-aid(b[0],b[1]));
+  const row=m=>`<li class="mkrow"><button class="mkgo" type="button" data-go="${m[0]}-${m[1]}"><span class="mkref"><b>سورة ${META[m[0]-1][1]}</b><small>الآية ${an(m[1])} · الصفحة ${an(pageOf(m[0],m[1]))}</small></span><span class="mktxt" data-t="${m[0]}:${m[1]}">${esc(verseText(m[0],m[1]))}</span></button>
+    <button class="mkdel" type="button" data-del="${m[0]}:${m[1]}" aria-label="حذف العلامة">×</button></li>`;
+  view.innerHTML=`<div class="wrap pgx"><div class="pgx-h"><h1>العلامات المحفوظة</h1><a class="back" href="#">→ الرئيسية</a></div>
+    ${list.length?`<ul class="mklist">${list.map(row).join("")}</ul>`:`<section class="card"><p class="note2">لا توجد علامات بعد. اضغط على «علامة» تحت أي آية (أو اضغط مطولًا على الآية في وضع الصفحات) لحفظها هنا.</p></section>`}</div>`;
+  view.onclick=e=>{const d=e.target.closest("[data-del]");if(!d)return;e.stopPropagation();const [s,v]=d.dataset.del.split(":").map(Number);
+    marks=marks.filter(m=>!(m[0]===s&&m[1]===v));save("marks",marks);toast("حُذفت العلامة");renderMarks()};
+  /* verse text for surahs not loaded yet */
+  for(const s of [...new Set(list.map(m=>m[0]))]){if(cache[s])continue;try{await loadSurah(s)}catch(e){continue}
+    if(location.hash!=="#marks")return;document.querySelectorAll(`.mktxt[data-t^="${s}:"]`).forEach(el=>{const v=+el.dataset.t.split(":")[1];el.textContent=verseText(s,v)})}
+}
 /* ---------- Visitors: free public counter (Abacus, no account). Page reached by typing #admin after the address. ---------- */
 const CNT="https://abacus.jasoncameron.dev",CNS="mushaf-tadabbur";
 const cday=d=>"day-"+d.toISOString().slice(0,10).replace(/-/g,"");
@@ -1896,6 +1915,7 @@ function route(){closeMenu();closePicker();stopRec();rec=null;const pm=location.
   curPage=0;document.documentElement.classList.remove("pagemode");
   const h=location.hash;
   if(h==="#admin"){closeSheet();stopAudio();current=0;renderAdmin();return}
+  if(h==="#marks"){closeSheet();current=0;curPage=0;renderMarks();return}
   if(h==="#stats"||h==="#hifz"||h==="#prefs"){closeSheet();stopAudio();current=0;({"#stats":renderStats,"#hifz":renderHifzHome,"#prefs":renderPrefs})[h]();return}
   const hz=h.match(/^#hifz-(\d{1,3})$/);if(hz&&+hz[1]>=1&&+hz[1]<=114){closeSheet();stopAudio();current=0;renderHifzSurah(+hz[1]);return}
   closeSheet();const m=location.hash.match(/^#s(\d{1,3})-(\d{1,3})$/);
