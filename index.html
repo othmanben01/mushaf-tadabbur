@@ -6,6 +6,10 @@
 <meta name="theme-color" content="#0d0d0c">
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="مصحف التدبر">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
 <meta name="description" content="قراءة القرآن الكريم بالرسم العثماني مع تفسير الميسر والسعدي وابن كثير وتلاوة سعد الغامدي.">
 <link rel="preload" href="fonts/amiri-quran.woff2" as="font" type="font/woff2" crossorigin>
 <style>@font-face{font-family:"Amiri Quran";src:url(fonts/amiri-quran.woff2) format("woff2");font-display:swap}:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
@@ -216,7 +220,12 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .ribbon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
 .ribbon.here{color:#111;background:var(--gold);border-color:var(--gold)}
 .ribbon.here svg{fill:currentColor}
-.pplay svg{fill:currentColor;stroke:none}
+.instcard{display:flex;align-items:center;gap:12px;border-color:var(--gold)}.instcard>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.instcard span{font-size:.85rem;color:var(--muted)}
+.instx{background:none;border:0;color:var(--muted);font-size:1.4rem;line-height:1;padding:4px 6px;cursor:pointer}
+.instov{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
+.instbox{background:var(--surface);color:var(--ink);border:1px solid var(--gold);border-radius:20px;padding:20px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:10px}
+.instbox h3{margin:0;font-size:1.15rem}.instbox p{margin:0;color:var(--muted)}.instbox ol{margin:0;padding-inline-start:22px;display:flex;flex-direction:column;gap:8px;line-height:1.7}.instbox svg{vertical-align:-5px;color:var(--gold-strong)}
+.pplay svg{fill:currentColor;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 @keyframes inNext{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes inPrev{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
 .mpage.in-next{animation:inNext .22s ease-out}.mpage.in-prev{animation:inPrev .22s ease-out}
@@ -615,6 +624,7 @@ function updateModeBtn(){const b=$("#btnMode");if(!b)return;const pg=mode==="pag
   b.innerHTML=pg?ICON.list:ICON.book;b.setAttribute("aria-pressed",String(pg));b.setAttribute("aria-label",pg?"عرض الآيات":"عرض الصفحات");b.title=pg?"عرض الآيات":"عرض الصفحات";
   document.querySelectorAll(".modeseg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mode===mode)))}
 function setMode(m){if(m===mode)return;mode=m;save("mode",m);updateModeBtn();
+  if(player.s&&(curPage||current)){go(player.s,player.bas?1:player.v);return}
   if(curPage){const id=PG[curPage];const [s,v]=sv(id);location.hash="s"+s+"-"+v}
   else if(current){const el=[...document.querySelectorAll(".verse")].find(x=>x.getBoundingClientRect().bottom>90);const v=el?+el.dataset.v:1;go(current,v)}
 }
@@ -1852,7 +1862,7 @@ route();
 connectCloud();
 
 try{if(STANDALONE&&navigator.storage&&navigator.storage.persist&&!/Firefox/.test(navigator.userAgent))navigator.storage.persisted().then(p=>{if(!p)navigator.storage.persist()})}catch(e){}
-try{if(sessionStorage.getItem("mt_migr")){sessionStorage.removeItem("mt_migr");setTimeout(()=>toast("تم نقل تقدّمك وإعداداتك إلى العنوان الجديد"),900)}}catch(e){}
+try{if(sessionStorage.getItem("mt_migr")){sessionStorage.removeItem("mt_migr");setTimeout(()=>toast("تم نقل تقدّمك وإعداداتك"),900)}}catch(e){}
 
 /* audience: anonymous counts (one per phone, one per opening, one per phone per day); the owner's phone is not counted */
 try{if(STANDALONE&&/\.vercel\.app$/.test(location.hostname)){
@@ -1864,6 +1874,32 @@ try{if(STANDALONE&&/\.vercel\.app$/.test(location.hostname)){
 
 /* offline cache: the Quran text, tafsir, fonts and recently heard verses are kept on the phone (faster, works without network) */
 try{if(STANDALONE&&"serviceWorker" in navigator&&/\.vercel\.app$|^localhost$/.test(location.hostname))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}
+
+/* ---------- Home-screen install: no Safari bars, full-screen mushaf ---------- */
+const isIOS=/iPhone|iPad|iPod/.test(navigator.userAgent)||(/Macintosh/.test(navigator.userAgent)&&navigator.maxTouchPoints>1);
+const isInstalled=()=>navigator.standalone===true||matchMedia("(display-mode: standalone)").matches;
+let installEvt=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault();installEvt=e;if(!current&&!curPage&&!location.hash)installCard()});
+/* the home-screen app has its own storage on iPhone: the address it is added with carries this browser's progress and settings */
+function carryData(){try{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("mt_")&&k!=="mt_owner"&&k!=="mt_counted"&&k!=="mt_cday")d[k]=localStorage.getItem(k)}
+  if(!Object.keys(d).length)return;const enc=btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
+  history.replaceState(null,"",location.pathname+"#mig="+enc)}catch(e){}}
+function installHelp(){
+  if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;const c=$("#instCard");if(c)c.remove()});return}
+  carryData();
+  const box=document.createElement("div");box.className="instov";box.innerHTML=`<div class="instbox" role="dialog" aria-label="التثبيت على الشاشة الرئيسية">
+    <h3>أضف المصحف إلى الشاشة الرئيسية</h3><p>يفتح بملء الشاشة بلا أشرطة Safari، وتنتقل معه قراءتك وإعداداتك.</p>
+    <ol><li>اضغط زر <b>المشاركة</b> <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> في شريط Safari</li>
+    <li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b> (قد تحتاج إلى التمرير للأسفل)</li><li>اضغط <b>«إضافة»</b>، ثم افتح المصحف من أيقونته</li></ol>
+    <button class="btn" type="button">حسنًا</button></div>`;
+  document.body.appendChild(box);const close=()=>{box.remove();if(/^#mig=/.test(location.hash))history.replaceState(null,"",location.pathname)};
+  box.querySelector("button").onclick=close;box.onclick=e=>{if(e.target===box)close()};setTimeout(()=>{if(box.isConnected)close()},180000)}
+function installCard(){
+  if(!STANDALONE||isInstalled()||store.get("instno",0)||$("#instCard")||!(isIOS||installEvt))return;
+  const w=document.querySelector("#view .wrap");if(!w)return;
+  const c=document.createElement("section");c.className="card instcard";c.id="instCard";
+  c.innerHTML=`<div><b>اقرأ بملء الشاشة</b><span>ثبّت المصحف على الشاشة الرئيسية لإخفاء أشرطة المتصفح.</span></div><button class="btn" type="button" id="instGo">ثبّت</button><button class="instx" type="button" aria-label="إخفاء">×</button>`;
+  w.prepend(c);$("#instGo").onclick=installHelp;c.querySelector(".instx").onclick=()=>{store.set("instno",1);c.remove()}}
+{const _rh=renderHome;renderHome=function(){_rh.apply(this,arguments);installCard()};if(!current&&!curPage&&!/^#./.test(location.hash))installCard()}
 </script>
 </body>
 </html>
