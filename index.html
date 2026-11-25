@@ -71,6 +71,13 @@ button:focus-visible,a:focus-visible,input:focus-visible{outline:2px solid var(-
 .cover p{margin:2px 0 0;color:var(--cover-muted);font-size:.95rem}
 .continue{display:flex;align-items:center;gap:12px;margin:20px auto 0;max-width:420px;padding:12px 16px;border-radius:12px;background:var(--gold);color:#111;border:0;width:100%;text-align:right;transition:transform .15s}
 .continue:hover{transform:translateY(-1px)}
+.purpose{font-family:var(--f-head);font-weight:700;font-size:1.15rem;color:var(--gold-strong);margin:10px 0 0!important}
+.continue.learn{background:var(--solid);color:var(--solid-ink);border:1px solid var(--gold)}
+.continue.learn .ic{flex:none;width:38px;height:38px;border-radius:50%;background:var(--gold);color:#111;display:grid;place-items:center}
+.continue.learn .ic svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.9;stroke-linecap:round}
+.continue.learn>div{flex:1;min-width:0}.continue.learn .bar{display:block;height:4px;border-radius:9px;background:color-mix(in srgb,var(--solid-ink) 18%,transparent);margin-top:7px;overflow:hidden}
+.continue.learn .bar i{display:block;height:100%;background:var(--gold);border-radius:9px}
+.continue.learn+.continue{margin-top:10px}
 .continue b{display:block;font-family:var(--f-head);font-weight:700;font-size:1rem}
 .continue span{font-size:.88rem;opacity:.8}
 .continue .go{margin-inline-start:auto;font-size:1.4rem;opacity:1}
@@ -397,7 +404,12 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .adform{display:flex;gap:10px}.adform input{flex:1;min-width:0;font:inherit;font-size:16px;padding:10px 12px;border-radius:12px;border:1px solid var(--line);background:var(--bg);color:var(--ink)}
 .adgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:14px}.adk{display:flex;flex-direction:column;gap:2px}.adk b{font-size:1.7rem;color:var(--gold-strong);font-variant-numeric:tabular-nums}.adk span{font-size:.85rem;color:var(--muted)}
 .adbars{display:flex;align-items:flex-end;gap:3px;height:140px;direction:ltr}.adb{flex:1;height:100%;display:flex;align-items:flex-end}.adb i{display:block;width:100%;background:var(--gold);border-radius:3px 3px 0 0;opacity:.85}
-.adax{display:flex;justify-content:space-between;direction:ltr;font-size:.75rem;color:var(--muted);margin-top:6px}
+.adb{position:relative;flex-direction:column;justify-content:flex-end}.adb i{position:relative;overflow:hidden}.adb i s{position:absolute;left:0;right:0;bottom:0;background:color-mix(in srgb,var(--gold) 45%,var(--surface));text-decoration:none}
+.adb em{font-style:normal;font-size:.72rem;color:var(--muted);text-align:center;margin-top:3px;order:2}
+.adk small{font-size:.75rem;color:var(--muted)}
+.adleg{display:flex;gap:14px;justify-content:center;margin-top:10px;font-size:.8rem;color:var(--muted)}.adleg i{display:inline-block;width:10px;height:10px;border-radius:3px;background:var(--gold);margin-inline-end:5px;vertical-align:-1px}.adleg i.r{background:color-mix(in srgb,var(--gold) 45%,var(--surface))}
+.adax span{flex:1;text-align:center}
+.adax{display:flex;gap:3px;justify-content:space-between;direction:ltr;font-size:.75rem;color:var(--muted);margin-top:6px}
 .chart .bar{fill:color-mix(in srgb,var(--gold) 55%,transparent)}
 .chart .bar.now{fill:var(--gold)}
 .chart text{fill:var(--muted);font-size:10px;font-family:var(--f-head)}
@@ -591,8 +603,8 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
 
 <main id="view"></main>
 <nav class="menu" id="menu" hidden aria-label="المزيد">
-  <a href="#stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>الإحصائيات</a>
   <a href="#hifz"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>الحفظ والمراجعة</a>
+  <a href="#stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>الإحصائيات</a>
   <a href="#marks"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>العلامات المحفوظة</a>
   <a href="#prefs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>الإعدادات</a>
   <hr>
@@ -759,6 +771,11 @@ const isStop=(s,v)=>!!stopAt&&stopAt[0]===s&&stopAt[1]===v;
 let tt=null;function toast(msg){const t=$("#toast");t.textContent=msg;t.classList.add("show");clearTimeout(tt);tt=setTimeout(()=>t.classList.remove("show"),1800)}
 
 /* ---------- Home ---------- */
+/* the memorization entry on the home page: continue the surah being learned, or start */
+function hifzHome(){const c=hzCur();
+  if(c){const N=META[c-1][4],L=hzLearned(c,N);
+    return `<button class="continue learn" type="button" id="homeHifz" data-s="${c}"><span class="ic">${ICO.recite}</span><div><b>واصل الحفظ</b><span>سورة ${META[c-1][1]} · حفظتَ ${an(L)} من ${an(N)} آية</span><i class="bar"><i style="width:${Math.round(L/N*100)}%"></i></i></div><span class="go">‹</span></button>`}
+  return `<button class="continue learn" type="button" id="homeHifz"><span class="ic">${ICO.recite}</span><div><b>ابدأ الحفظ</b><span>اختر سورة: استمع، ثم سمّع من حفظك</span></div><span class="go">‹</span></button>`}
 function renderHome(){
   titleEl.textContent="";document.title="مصحف التدبر";curPage=0;
   const last=stopAt;
@@ -769,7 +786,8 @@ function renderHome(){
     `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة، الآية ${an(1)}</span></div><span class="go">‹</span></button>`;
   const ORN='<svg class="orn" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><path d="M20 9l3 4.3 5 1-3.4 4 .6 5.2L20 21.4l-5.2 2.1.6-5.2-3.4-4 5-1z" fill="var(--gold)"/></svg>';
   view.innerHTML=`<section class="cover"><div class="wrap"><div class="frame"><div class="frame-in">
-      ${ORN}<h1>القرآن الكريم</h1><p>اقرأ السورة، ثم افتح تفسير أي آية بلمسة واحدة.</p>
+      ${ORN}<h1>القرآن الكريم</h1><p class="purpose">اقرأ القرآن واحفظه</p><p>استمع، ثم سمّع من حفظك والتطبيق يصحّح لك، وتدبّر كل آية بتفسيرها.</p>
+      ${hifzHome()}
       ${lastHtml}
       ${STANDALONE&&listenAt?`<button class="resume" type="button" id="resumeBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><div><b>استئناف الاستماع</b><span>سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}</span></div></button>`:""}
       <div class="stats"><div><b>${an(114)}</b>سورة</div><div><b>${an(6236)}</b>آية</div><div><b>${an(3)}</b>تفاسير</div></div>
@@ -795,6 +813,7 @@ function renderHome(){
   document.querySelectorAll(".modeseg button").forEach(b=>b.onclick=()=>setMode(b.dataset.mode));
   const hr=$("#hreciter");if(hr)hr.onchange=()=>setReciter(hr.value);
   $("#ordBtn").onclick=()=>{save("order",store.get("order","asc")==="desc"?"asc":"desc");const y=scrollY;renderHome();scrollTo(0,y)};
+  const hh=$("#homeHifz");if(hh)hh.onclick=()=>{if(hh.dataset.s)hzContinue(+hh.dataset.s);else location.hash="hifz"};
   const rb=$("#resumeBtn");if(rb)rb.onclick=()=>{const [s,v]=listenAt;playVerse(s,v);go(s,v)}; /* resumes with the reciter chosen now */
   window.scrollTo(0,0);
 }
@@ -1853,22 +1872,29 @@ async function renderAdmin(){
   current=0;curPage=0;titleEl.textContent="الزوار";document.title="الزوار · مصحف التدبر";store.set("owner",1);
   view.innerHTML=`<div class="wrap pgx"><div class="pgx-h"><h1>الزوار</h1><a class="back" href="#">→ الرئيسية</a></div><div id="adOut"><p class="note2">جارٍ التحميل…</p></div>
     <p class="note2">زياراتك من هذا الهاتف لا تُحتسب.</p></div>`;
-  const days=[...Array(14)].map((_,i)=>new Date(Date.now()-(13-i)*864e5));
-  const draw=(users,opens,per,stamp)=>{const out=$("#adOut");if(!out)return;
-    const v=x=>x===null||x===undefined?"–":String(x),week=per.slice(-7).reduce((a,x)=>a+(x||0),0),max=Math.max(1,...per.map(x=>x||0));
-    const k=(n,l)=>`<div class="adk"><b>${n}</b><span>${l}</span></div>`;
-    out.innerHTML=`<section class="card adgrid">${k(v(users),"مستخدم منذ البداية")}${k(v(per[13]),"مستخدم اليوم")}${k(String(week),"زيارات يومية آخر 7 أيام")}${k(v(opens),"مجموع مرات الفتح")}</section>
-      <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (14 يومًا)</h2>
-      <section class="card"><div class="adbars">${per.map((x,i)=>`<div class="adb" title="${days[i].toISOString().slice(0,10)}: ${x||0}"><i style="height:${Math.max(2,(x||0)/max*100)}%"></i></div>`).join("")}</div>
-      <div class="adax"><span>${days[0].getDate()}/${days[0].getMonth()+1}</span><span>اليوم</span></div></section>
-      <p class="note2">${stamp}</p>`};
-  const saved=store.get("adcache",null);
-  if(saved&&saved.per)draw(saved.users,saved.opens,saved.per,"آخر أرقام محفوظة… جارٍ التحديث");
-  const [users,opens]=await Promise.all([cget("users"),cget("opens")]);
-  if(users===null&&opens===null){if(!saved){const o=$("#adOut");if(o)o.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد. حاول لاحقًا.</p>`}else draw(saved.users,saved.opens,saved.per,"تعذّر التحديث، هذه آخر أرقام محفوظة");return}
-  const prev=saved&&saved.per||new Array(14).fill(null);draw(users,opens,prev,"جارٍ تحميل الأيام…");
-  const per=await Promise.all(days.map(d=>cget(cday(d))));
-  store.set("adcache",{users,opens,per});draw(users,opens,per,"محدَّث الآن");
+  const days=[...Array(7)].map((_,i)=>new Date(Date.now()-(6-i)*864e5)),K=d=>cday(d).slice(4);
+  const fmtMin=m=>m===null||m===undefined?"–":m<60?`${m} د`:`${Math.floor(m/60)} س ${m%60} د`;
+  const draw=(D,stamp)=>{const out=$("#adOut");if(!out||!D)return;const v=x=>x===null||x===undefined?"–":String(x);
+    const t=D.per[6]||{},avg=t.u&&t.m!=null?Math.round(t.m/t.u):null,max=Math.max(1,...D.per.map(x=>x.u||0));
+    const k=(n,l,sub)=>`<div class="adk"><b>${n}</b><span>${l}</span>${sub?`<small>${sub}</small>`:""}</div>`;
+    out.innerHTML=`<h2 class="h2x" style="margin:4px 4px 10px">اليوم</h2>
+      <section class="card adgrid">${k(v(t.u),"زائر اليوم")}${k(v(t.n),"زائر جديد")}${k(v(t.r),"عاد مرة أخرى")}${k(avg===null?"–":fmtMin(avg),"متوسط الوقت لكل زائر")}</section>
+      <h2 class="h2x" style="margin:22px 4px 10px">منذ البداية</h2>
+      <section class="card adgrid">${k(v(D.users),"مستخدم")}${k(v(D.opens),"مرة فتح")}${k(fmtMin(D.minutes),"إجمالي وقت الاستخدام")}${k(D.users&&D.minutes!=null?fmtMin(Math.round(D.minutes/D.users)):"–","متوسط لكل مستخدم")}</section>
+      <h2 class="h2x" style="margin:22px 4px 10px">آخر 7 أيام</h2>
+      <section class="card"><div class="adbars">${D.per.map((x,i)=>{const u=x.u||0,r=Math.min(u,x.r||0);return `<div class="adb" title="${u} زائر، ${r} عائد"><i style="height:${Math.max(2,u/max*100)}%"><s style="height:${u?r/u*100:0}%"></s></i><em>${u}</em></div>`}).join("")}</div>
+      <div class="adax">${D.per.map((_,i)=>`<span>${i===6?"اليوم":days[i].getDate()+"/"+(days[i].getMonth()+1)}</span>`).join("")}</div>
+      <div class="adleg"><span><i></i>جدد</span><span><i class="r"></i>عائدون</span></div></section>
+      <p class="note2">${stamp}<br>الزوار الجدد والعائدون ووقت الاستخدام تُحسب منذ تفعيلها اليوم.</p>`};
+  const saved=store.get("adcache2",null);if(saved)draw(saved,"آخر أرقام محفوظة… جارٍ التحديث");
+  const pool=async(keys)=>{const out=[];for(let i=0;i<keys.length;i+=6)out.push(...await Promise.all(keys.slice(i,i+6).map(cget)));return out};
+  const [users,opens,minutes]=await pool(["users","opens","minutes"]);
+  if(users===null&&opens===null){if(!saved){const o=$("#adOut");if(o)o.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد. حاول لاحقًا.</p>`}return}
+  const tk=K(days[6]),[tu,tn,tr,tm]=await pool(["day-"+tk,"new-"+tk,"ret-"+tk,"min-"+tk]);
+  const D={users,opens,minutes,per:(saved&&saved.per)||days.map(()=>({}))};D.per[6]={u:tu,n:tn,r:tr,m:tm};draw(D,"جارٍ تحميل الأيام…");
+  const vals=await pool(days.slice(0,6).flatMap(d=>["day-"+K(d),"ret-"+K(d)]));
+  for(let i=0;i<6;i++)D.per[i]={u:vals[i*2],r:vals[i*2+1]};
+  store.set("adcache2",D);draw(D,"محدَّث الآن");
 }
 function renderPrefs(){
   current=0;curPage=0;titleEl.textContent="الإعدادات";document.title="الإعدادات · مصحف التدبر";
@@ -1964,9 +1990,13 @@ try{if(sessionStorage.getItem("mt_migr")){sessionStorage.removeItem("mt_migr");s
 try{if(STANDALONE&&/\.vercel\.app$/.test(location.hostname)){
   window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};const va=document.createElement("script");va.defer=true;va.src="/_vercel/insights/script.js";document.head.appendChild(va);
   if(!store.get("owner",0)&&location.hash!=="#admin"){const hit=k=>fetch(`${CNT}/hit/${CNS}/${k}`,{keepalive:true}).catch(()=>{});
-    if(!store.get("counted",0)){store.set("counted",1);hit("users")}
+    const d=cday(new Date()),first=!store.get("counted",0);
+    if(first){store.set("counted",1);hit("users");hit("new-"+d.slice(4))}
     if(!sessionStorage.getItem("mt_hit")){sessionStorage.setItem("mt_hit","1");hit("opens")}
-    const d=cday(new Date());if(store.get("cday","")!==d){store.set("cday",d);hit(d)}}}}catch(e){}
+    if(store.get("cday","")!==d){if(!first)hit("ret-"+d.slice(4));store.set("cday",d);hit(d)}
+    /* one count per minute of real use (screen visible and touched in the last 2 minutes, or recitation playing) */
+    setInterval(()=>{if(document.hidden)return;const busy=Date.now()-lastAct<120000||(player.s&&!audioPaused());if(!busy)return;
+      const dd=cday(new Date());hit("minutes");hit("min-"+dd.slice(4))},60000);}}}catch(e){}
 
 /* offline cache: the Quran text, tafsir, fonts and recently heard verses are kept on the phone (faster, works without network) */
 try{if(STANDALONE&&"serviceWorker" in navigator&&/\.vercel\.app$|^localhost$/.test(location.hostname))addEventListener("load",()=>navigator.serviceWorker.register("sw.js").catch(()=>{}))}catch(e){}
