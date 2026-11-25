@@ -261,6 +261,8 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .result.ok{border-color:#2e7d4f;background:color-mix(in srgb,#2e7d4f 10%,var(--surface))}.result.ok b{color:#2e7d4f}
 .result.ko{border-color:#b3261e;background:color-mix(in srgb,#b3261e 8%,var(--surface))}.result.ko b{color:#b3261e}
 .rechow{margin:0 0 8px;line-height:1.7;color:var(--ink)}
+.rectext{margin-top:6px}.rectext .hzv{border-bottom:0;padding:10px 6px}
+.rectext .rw{--hwc:color-mix(in srgb,var(--ink) 9%,transparent);border-radius:8px}
 .rw.hinted{color:var(--gold-strong);--hwc:transparent}
 .recbar .btn.hint{flex:none;padding:10px 12px;background:transparent;color:var(--solid-ink);border-color:color-mix(in srgb,var(--solid-ink) 35%,transparent)}
 .selfcheck{justify-content:center;margin-top:10px}
@@ -1412,7 +1414,7 @@ function bindGroup(n,data,redraw){const N=data.v.length,c=$(".hzgroup");if(!c)re
 /* step 2 — recite the group from memory; passing saves the position and moves to the next verses */
 function drawRecite(n,data){
   const N=data.v.length,[a,b]=hzGroup(n,N),body=$("#hzBody");
-  body.innerHTML=`${hzGroupCard(n,N,a,b)}<div id="rcBox"></div>`;bindGroup(n,data,drawRecite);
+  body.innerHTML=`<div id="rcBox"></div>`;
   reciteView($("#rcBox"),n,data,a,b,{
     onPass:()=>{const h=HZ[n];let msg="";
       if(!h||h.st!==2){if(!h||h.st!==1){setCurrent(n)}
@@ -1428,15 +1430,12 @@ function drawRecite(n,data){
 function reciteView(box,n,data,a,b,cb){
   stopRec();
   if(!STANDALONE){box.innerHTML=`<div class="card"><p class="note2">التسميع بالميكروفون يعمل في نسخة التطبيق على mushaf-tadabbur.vercel.app.</p></div>`;return}
-  const show=store.get("recshow",false),strict=store.get("strict",false);
+  const show=false,strict=store.get("strict",false);
   const words=[];let html="";
   for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
     html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
-  box.innerHTML=`<section class="card recinfo">
-      <p class="rechow">${SRC?"اضغط <b>ابدأ</b> ثم اقرأ من حفظك، وتظهر كل كلمة عند نطقها صحيحة.":"المتصفح لا يدعم التعرّف على الصوت: اقرأ من حفظك ثم اكشف النص لتتحقق."}</p>
-      <div class="recopts"><button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>إظهار النص باهتًا</span><i class="sw"></i></button>${strict?'<span class="pill">وضع صارم</span>':""}</div>
-    </section>
-    <div id="recText">${html}</div><div id="recRes"></div>
+  box.innerHTML=`${SRC?"":`<p class="note2">المتصفح لا يدعم التعرّف على الصوت: اقرأ من حفظك ثم اكشف النص لتتحقق.</p>`}
+    <div id="recText" class="rectext">${html}</div><div id="recRes"></div>
     <div class="recbar"><i class="lvl" id="recLvl" aria-hidden="true"></i><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
       <button class="btn hint" type="button" id="recHint" title="أظهر الكلمة التالية">تلميح</button>
       <button class="btn gold mic" type="button" id="recBtn">${SRC?`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ</span>`:"<span>اكشف النص</span>"}</button></div>`;
@@ -1464,7 +1463,6 @@ function reciteView(box,n,data,a,b,cb){
       res.innerHTML=`<section class="card result ko"><b>تحتاج إلى مراجعة</b><p>${an(r.err)} ${r.err===1?"كلمة":"كلمات"} لم تُقرأ صحيحة (بالأحمر). استمع إليها مرة أخرى ثم أعد التسميع.</p><div class="btns">${cb.onRetry?'<button class="btn gold" type="button" id="resListen">أعد الاستماع</button>':""}<button class="btn" type="button" id="resAgain">أعد المحاولة</button></div></section>`;
       if(cb.onRetry)$("#resListen").onclick=cb.onRetry;$("#resAgain").onclick=()=>reciteView(box,n,data,a,b,cb)}
     res.scrollIntoView({block:"center",behavior:"smooth"})};
-  $("#recShow").onclick=()=>{store.set("recshow",!show);reciteView(box,n,data,a,b,cb)};
   /* tap a verse to continue from it */
   $("#recText").onclick=e=>{const p=e.target.closest(".hzv");if(!p||!running)return;const v=+p.dataset.sv.split(":")[1];if(vStart[v]===undefined)return;
     startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;lastV=0;last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);
