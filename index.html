@@ -1807,22 +1807,29 @@ async function renderHifzSurah(n){
 /* ---------- Visitors: free public counter (Abacus, no account). Page reached by typing #admin after the address. ---------- */
 const CNT="https://abacus.jasoncameron.dev",CNS="mushaf-tadabbur";
 const cday=d=>"day-"+d.toISOString().slice(0,10).replace(/-/g,"");
-async function cget(k){try{const r=await fetch(`${CNT}/get/${CNS}/${k}`,{cache:"no-store"});if(r.status===404)return 0;if(!r.ok)return null;return +(await r.json()).value||0}catch(e){return null}}
+/* each request gives up after 6 s, so one slow answer never blocks the page */
+async function cget(k){const ac=new AbortController(),t=setTimeout(()=>ac.abort(),6000);
+  try{const r=await fetch(`${CNT}/get/${CNS}/${k}`,{cache:"no-store",signal:ac.signal});if(r.status===404)return 0;if(!r.ok)return null;return +(await r.json()).value||0}catch(e){return null}finally{clearTimeout(t)}}
 async function renderAdmin(){
   current=0;curPage=0;titleEl.textContent="الزوار";document.title="الزوار · مصحف التدبر";store.set("owner",1);
   view.innerHTML=`<div class="wrap pgx"><div class="pgx-h"><h1>الزوار</h1><a class="back" href="#">→ الرئيسية</a></div><div id="adOut"><p class="note2">جارٍ التحميل…</p></div>
     <p class="note2">زياراتك من هذا الهاتف لا تُحتسب.</p></div>`;
   const days=[...Array(14)].map((_,i)=>new Date(Date.now()-(13-i)*864e5));
-  const [users,opens,...per]=await Promise.all([cget("users"),cget("opens"),...days.map(d=>cget(cday(d)))]);
-  const out=$("#adOut");if(!out)return;
-  if(users===null&&opens===null){out.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد. حاول لاحقًا.</p>`;return}
-  const v=x=>x===null?"–":String(x),week=per.slice(-7).reduce((a,x)=>a+(x||0),0),max=Math.max(1,...per.map(x=>x||0));
-  const k=(n,l)=>`<div class="adk"><b>${n}</b><span>${l}</span></div>`;
-  out.innerHTML=`<section class="card adgrid">${k(v(users),"مستخدم منذ البداية")}${k(v(per[13]),"مستخدم اليوم")}${k(String(week),`زيارات يومية آخر ${String(7)} أيام`)}${k(v(opens),"مجموع مرات الفتح")}</section>
-    <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (${String(14)} يومًا)</h2>
-    <section class="card"><div class="adbars">${per.map((x,i)=>`<div class="adb" title="${days[i].toISOString().slice(0,10)}: ${x||0}"><i style="height:${Math.max(2,(x||0)/max*100)}%"></i></div>`).join("")}</div>
-    <div class="adax"><span>${String(days[0].getDate())}/${String(days[0].getMonth()+1)}</span><span>اليوم</span></div></section>
-    <p class="note2">التفاصيل (البلدان، الأجهزة، مصدر الزيارة) متاحة أيضًا في لوحة Vercel ← Analytics إن فعّلتها.</p>`;
+  const draw=(users,opens,per,stamp)=>{const out=$("#adOut");if(!out)return;
+    const v=x=>x===null||x===undefined?"–":String(x),week=per.slice(-7).reduce((a,x)=>a+(x||0),0),max=Math.max(1,...per.map(x=>x||0));
+    const k=(n,l)=>`<div class="adk"><b>${n}</b><span>${l}</span></div>`;
+    out.innerHTML=`<section class="card adgrid">${k(v(users),"مستخدم منذ البداية")}${k(v(per[13]),"مستخدم اليوم")}${k(String(week),"زيارات يومية آخر 7 أيام")}${k(v(opens),"مجموع مرات الفتح")}</section>
+      <h2 class="h2x" style="margin:22px 4px 10px">المستخدمون يوميًا (14 يومًا)</h2>
+      <section class="card"><div class="adbars">${per.map((x,i)=>`<div class="adb" title="${days[i].toISOString().slice(0,10)}: ${x||0}"><i style="height:${Math.max(2,(x||0)/max*100)}%"></i></div>`).join("")}</div>
+      <div class="adax"><span>${days[0].getDate()}/${days[0].getMonth()+1}</span><span>اليوم</span></div></section>
+      <p class="note2">${stamp}</p>`};
+  const saved=store.get("adcache",null);
+  if(saved&&saved.per)draw(saved.users,saved.opens,saved.per,"آخر أرقام محفوظة… جارٍ التحديث");
+  const [users,opens]=await Promise.all([cget("users"),cget("opens")]);
+  if(users===null&&opens===null){if(!saved){const o=$("#adOut");if(o)o.innerHTML=`<p class="note2">تعذّر الاتصال بالعدّاد. حاول لاحقًا.</p>`}else draw(saved.users,saved.opens,saved.per,"تعذّر التحديث، هذه آخر أرقام محفوظة");return}
+  const prev=saved&&saved.per||new Array(14).fill(null);draw(users,opens,prev,"جارٍ تحميل الأيام…");
+  const per=await Promise.all(days.map(d=>cget(cday(d))));
+  store.set("adcache",{users,opens,per});draw(users,opens,per,"محدَّث الآن");
 }
 function renderPrefs(){
   current=0;curPage=0;titleEl.textContent="الإعدادات";document.title="الإعدادات · مصحف التدبر";
