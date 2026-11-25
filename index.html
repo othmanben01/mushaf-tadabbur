@@ -249,7 +249,9 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .rvgo .btn svg{fill:none;stroke-width:1.8}.rvgo .btn.gold svg{fill:currentColor}
 .counter{text-align:center;color:var(--muted);min-height:1.4em}.counter b{color:var(--gold-strong)}
 .hztext{display:flex;flex-direction:column;gap:2px;margin-top:4px}
-.hztext.pick .hzv{cursor:pointer;opacity:.55;border-bottom-color:transparent}
+.hztext.pick .hzv{cursor:pointer;opacity:.28;filter:blur(3.5px);border-bottom-color:transparent;transition:opacity .35s,filter .35s}
+.hztext.pick .hzv.ingrp{filter:none}
+@media (hover:hover){.hztext.pick .hzv:not(.ingrp):hover{opacity:.6;filter:blur(1.5px)}}
 .hztext.pick .hzv.ingrp{opacity:1;background:color-mix(in srgb,var(--gold) 9%,transparent);border-inline-start:3px solid var(--gold);border-radius:0}
 .hztext.pick .hzv.first{border-start-start-radius:10px;border-start-end-radius:10px}.hztext.pick .hzv.lastg{border-end-start-radius:10px;border-end-end-radius:10px}
 .hztext.pick .hzv.reading{opacity:1;background:var(--hl)}
