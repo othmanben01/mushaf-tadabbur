@@ -1173,13 +1173,23 @@ function onVerseClick(e,n,data){
 let swipeDir=0;
 const QL=["","ربع الحزب","نصف الحزب","ثلاثة أرباع الحزب"];
 /* ---------- Madinah mushaf (KFGQPC page fonts V1, 15 lines exactly as printed) ---------- */
-const qpcOn=()=>STANDALONE&&store.get("pfont","madinah")==="madinah";
+const qpcOn=()=>store.get("pfont","madinah")==="madinah";
 const QPC={lay:{},font:{}};
+/* on the Claude link the page fonts are packed 20 per file (the link holds a limited number of files) */
+let QIDX=null;const QBIN={};
+function qbFont(name,url){const m=url.match(/p(\d{3})\.woff2$/);
+  if(!m)return new FontFace(name,`url(${url.replace("qf/","qb/")}) format("woff2")`,{display:"block"});
+  const p=+m[1];return (async()=>{QIDX=QIDX||fetch("qb/idx.json").then(r=>r.json());const [b,o,l]=(await QIDX)[p];
+    QBIN[b]=QBIN[b]||fetch(`qb/b${String(b).padStart(2,"0")}.bin`).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()});
+    return new FontFace(name,(await QBIN[b]).slice(o,o+l),{display:"block"})})()}
 function qpcFont(name,url){if(QPC.font[name])return QPC.font[name];
+  if(!STANDALONE){QPC.font[name]=Promise.resolve(qbFont(name,url)).then(f=>f.load()).then(x=>{document.fonts.add(x);return true}).catch(()=>{delete QPC.font[name];return false});return QPC.font[name]}
   const f=new FontFace(name,`url(${url}) format("woff2")`,{display:"block"});
   QPC.font[name]=f.load().then(x=>{document.fonts.add(x);return true}).catch(()=>{delete QPC.font[name];return false});return QPC.font[name]}
 qpcFont("qbsml","qf/bsml.woff2");
-async function qpcLayout(p){if(QPC.lay[p])return QPC.lay[p];const r=await fetch(`m1/${String(p).padStart(3,"0")}.json`);if(!r.ok)throw new Error("layout");return QPC.lay[p]=await r.json()}
+/* on the Claude link all the page layouts come in one file */
+let QALL=null;async function qpcLayout(p){if(QPC.lay[p])return QPC.lay[p];
+  if(!STANDALONE){QALL=QALL||fetch("m1/all.json").then(r=>{if(!r.ok)throw new Error("layout");return r.json()});try{const all=await QALL;return QPC.lay[p]=all[p-1]}catch(e){QALL=null;throw e}}const r=await fetch(`m1/${String(p).padStart(3,"0")}.json`);if(!r.ok)throw new Error("layout");return QPC.lay[p]=await r.json()}
 /* page data + its font; the next pages are fetched in the background so turning is instant */
 async function qpcPage(p){const [lay,ok]=await Promise.all([qpcLayout(p),qpcFont("qpc"+p,`qf/p${String(p).padStart(3,"0")}.woff2`)]);if(!ok)throw new Error("font");
   setTimeout(()=>{[p+1,p-1,p+2].forEach(n=>{if(n>=1&&n<=604){qpcLayout(n).catch(()=>{});qpcFont("qpc"+n,`qf/p${String(n).padStart(3,"0")}.woff2`)}})},400);return lay}
@@ -1947,7 +1957,7 @@ function renderPrefs(){
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
       <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
-      ${STANDALONE?`<div class="row"><span>خط صفحات المصحف<small>مصحف المدينة: الصفحات والأسطر كما في المصحف المطبوع</small></span><div class="seg sm" id="pfFont"><button type="button" data-f="madinah" aria-pressed="${qpcOn()}">مصحف المدينة</button><button type="button" data-f="app" aria-pressed="${!qpcOn()}">كلمات متباعدة</button></div></div>`:""}
+      ${true?`<div class="row"><span>خط صفحات المصحف<small>مصحف المدينة: الصفحات والأسطر كما في المصحف المطبوع</small></span><div class="seg sm" id="pfFont"><button type="button" data-f="madinah" aria-pressed="${qpcOn()}">مصحف المدينة</button><button type="button" data-f="app" aria-pressed="${!qpcOn()}">كلمات متباعدة</button></div></div>`:""}
       <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat",false)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>فعّله إن سمعت تشويشًا في السيارة أو السماعات؛ قد يظهر فاصل قصير بين الآيات</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
       <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
