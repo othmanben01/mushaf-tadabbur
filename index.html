@@ -964,7 +964,27 @@ function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
 const BUFS=new Map();
 const WA={ctx:null,cur:null,next:null,timer:null,paused:false,on:false,wait:""};
 function waCtx(){if(!WA.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{WA.ctx=new C()}catch(e){return null}
-  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}}return WA.ctx}
+  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
+  const me=WA.ctx;me.onstatechange=()=>{if(WA.ctx===me&&me.state==="running")setTimeout(waProbe,300)}}return WA.ctx}
+/* When the sound moves to the car, Bluetooth or AirPods, the iPhone can change its audio rate; an audio engine created
+   for the old rate then crackles. Compare with the rate a fresh engine would get, and rebuild without losing the place. */
+function waProbe(){if(!WA.ctx||WA.rebuilding||!WA.on)return;const C=window.AudioContext||window.webkitAudioContext;let p=null;
+  try{p=new C()}catch(e){return}const r=p.sampleRate;try{p.close()}catch(e){}
+  if(r&&r!==WA.ctx.sampleRate)waRebuild()}
+async function waRebuild(){
+  const old=WA.ctx;if(!old||WA.rebuilding)return;WA.rebuilding=true;
+  const cur=WA.cur,paused=WA.paused,elapsed=cur?Math.max(0,old.currentTime-cur.start):0;
+  [WA.cur,WA.next].forEach(it=>{if(it&&it.src){try{it.src.stop()}catch(e){}}});WA.next=null;WA.wait="";
+  try{old.close()}catch(e){}WA.ctx=null;BUFS.clear();DEC.clear();
+  const ctx=waCtx();
+  try{if(cur&&WA.on){const b=await ensureBuf(cur.url);
+    if(b&&WA.cur===cur&&WA.ctx===ctx){cur.buf=b;const t=TIMING[cur.url]||{},off=(t.lead||0)+elapsed,len=b.duration-off-(t.tail||0),at=ctx.currentTime+.05;
+      if(len>.1){const src=ctx.createBufferSource();src.buffer=b;src.connect(ctx.destination);src.start(at,off,len);cur.src=src;cur.start=at-elapsed;cur.end=at+len}
+      else{cur.start=at-elapsed;cur.end=at}
+      if(paused)ctx.suspend();else if(ctx.state!=="running")ctx.resume().catch(()=>{})}}}
+  finally{WA.rebuilding=false}}
+try{if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener("devicechange",()=>setTimeout(waProbe,600))}catch(e){}
+setInterval(()=>{if(WA.on&&!WA.paused)waProbe()},12000);
 function decodeTo(url,ab){return new Promise(res=>{const ctx=waCtx();if(!ctx)return res(null);let done=false;
   const ok=buf=>{if(done)return;done=true;BUFS.set(url,buf);
     const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;let a=0,b=d.length-1;
@@ -985,7 +1005,7 @@ function waStart(it){const ctx=waCtx();WA.on=true;WA.paused=false;if(ctx.state!=
 function waPeek(it){if(player.queue){if(!player.queue.length)return null;const [s,v,r]=player.queue[0];return waItem(s,v,false,r)}
   if(!(current===it.s||curPage))return null;const n=nextPlay(it.s,it.v,it.bas);return n?waItem(n.s,n.v,n.bas):null}
 function waTick(){
-  if(!WA.on||WA.paused||!WA.cur)return;const now=WA.ctx.currentTime,cur=WA.cur;
+  if(!WA.on||WA.paused||!WA.cur||!WA.ctx||WA.rebuilding)return;const now=WA.ctx.currentTime,cur=WA.cur;
   if(!WA.next&&cur.end-now<5){const nx=waPeek(cur);
     if(!nx){if(now>=cur.end){const q=player.queue,done=player.onDone,endQ=!q&&(current===cur.s||curPage);if(!cur.bas)recordListen(cur.s,cur.v);stopAudio();if(q&&done)done();if(endQ)toast("صدق الله العظيم")}return}
     const buf=BUFS.get(nx.url);
@@ -1005,7 +1025,7 @@ function waEnter(prev,it){
   setMediaSession(it.s,it.v);if(player.onStep)player.onStep(it.s,it.v,it.rep);markPlaying();prefetchAhead(it.s,it.v,it.bas)}
 const audioPaused=()=>WA.on?WA.paused:(!player.a||player.a.paused);
 function waWake(){if(WA.on&&!WA.paused&&WA.ctx&&WA.ctx.state!=="running"){WA.ctx.resume().catch(()=>{})}}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)waWake()});addEventListener("pageshow",waWake);addEventListener("focus",waWake);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden){waWake();setTimeout(waProbe,500)}});addEventListener("pageshow",waWake);addEventListener("focus",waWake);
 document.addEventListener("touchend",waWake,{passive:true});
 function togglePause(){if(!player.s)return;
   if(WA.on){if(WA.paused){WA.paused=false;WA.ctx.resume()}else{WA.paused=true;WA.ctx.suspend()}updatePlayerBar();return}
@@ -1021,7 +1041,7 @@ function playVerse(s,v,opt){
   const ctx=waCtx();if(ctx&&ctx.state!=="running")ctx.resume(); /* started from the tap, so iOS allows it */
   /* already downloaded: gapless engine at once; otherwise stream the first verse right away (no wait for the whole file)
      while the next ones download, and the gapless engine takes over from the next verse */
-  if(ctx&&(BUFS.has(url)||RAW.has(url))){const tok=player.tok;ensureBuf(url).then(b=>{if(player.tok!==tok)return;if(b){it.buf=b;waStart(it);trimBufs()}else elPlay(url)})}
+  if(ctx&&!store.get("compat",false)&&(BUFS.has(url)||RAW.has(url))){const tok=player.tok;ensureBuf(url).then(b=>{if(player.tok!==tok)return;if(b){it.buf=b;waStart(it);trimBufs()}else elPlay(url)})}
   else elPlay(url);
   prefetchAhead(s,v,it.bas);
   if(!it.bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
@@ -1862,6 +1882,7 @@ function renderPrefs(){
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
       <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
+      <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat",false)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>فعّله إن سمعت تشويشًا في السيارة أو السماعات؛ قد يظهر فاصل قصير بين الآيات</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
       <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
       <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
@@ -1876,6 +1897,7 @@ function renderPrefs(){
     <details class="card fold"><summary>عن التطبيق</summary><p class="note2">النص بالرسم العثماني من موسوعة القرآن الكريم. التفاسير: الميسر، السعدي، ابن كثير. التلاوات من EveryAyah.com. تقسيم الصفحات والأجزاء والأحزاب وفق مصحف المدينة. بياناتك محفوظة على جهازك.</p></details>
   </div>`;
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  $("#pfCompat").onclick=()=>{const on=!store.get("compat",false);store.set("compat",on);$("#pfCompat").setAttribute("aria-checked",String(on));if(player.s){const s=player.s,v=player.v;stopAudio();playVerse(s,v)}toast(on?"التشغيل المتوافق مفعّل":"التشغيل المتصل بلا فواصل مفعّل")};
   $("#pfStrict").onclick=()=>{const on=!store.get("strict",false);store.set("strict",on);$("#pfStrict").setAttribute("aria-checked",String(on));toast(on?"التسميع الصارم مفعّل":"التسميع المتسامح مفعّل")};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
   $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
