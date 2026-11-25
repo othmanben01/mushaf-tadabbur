@@ -225,6 +225,50 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .instov{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
 .instbox{background:var(--surface);color:var(--ink);border:1px solid var(--gold);border-radius:20px;padding:20px;max-width:440px;width:100%;display:flex;flex-direction:column;gap:10px}
 .instbox h3{margin:0;font-size:1.15rem}.instbox p{margin:0;color:var(--muted)}.instbox ol{margin:0;padding-inline-start:22px;display:flex;flex-direction:column;gap:8px;line-height:1.7}.instbox svg{vertical-align:-5px;color:var(--gold-strong)}
+/* memorization v6 */
+.hztabs{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px;padding:5px;border-radius:18px;background:var(--surface);border:1px solid var(--line-strong)}
+.hztabs button{position:relative;display:flex;align-items:center;justify-content:center;gap:7px;padding:11px 6px;border:0;border-radius:13px;background:none;color:var(--ink);font:inherit;font-weight:700;font-size:.98rem;cursor:pointer}
+.hztabs svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:1.8;stroke-linecap:round;stroke-linejoin:round;flex:none}
+.hztabs em{position:absolute;top:4px;inset-inline-start:7px;font-style:normal;font-size:.66rem;font-weight:700;color:var(--muted)}
+.hztabs button[aria-selected="true"]{background:var(--solid);color:var(--solid-ink)}.hztabs button[aria-selected="true"] svg{stroke:var(--gold)}.hztabs button[aria-selected="true"] em{color:var(--gold)}
+.hzgroup{display:flex;flex-direction:column;gap:12px}
+.hzg-main{display:flex;align-items:baseline;justify-content:center;gap:10px}.hzg-main b{font-size:2rem;line-height:1;color:var(--gold-strong);font-variant-numeric:tabular-nums}
+.hzg-main .lbl,.hzrow2 .lbl{font-weight:700;color:var(--ink)}
+.hzg-ctl{display:flex;align-items:center;justify-content:space-between;gap:10px}
+.hzg-ctl .ib{width:44px;height:44px;border-radius:50%;border:1px solid var(--line-strong);background:var(--bg);color:var(--ink);display:grid;place-items:center;cursor:pointer}
+.hzg-ctl .ib svg{width:20px;height:20px;fill:none;stroke:currentColor;stroke-width:2}.hzg-ctl .ib:disabled{opacity:.35}
+.hzgroup .stepper{display:flex;align-items:center;gap:6px;border:1px solid var(--line-strong);border-radius:999px;padding:4px;background:var(--bg)}
+.hzgroup .stepper button{width:38px;height:38px;border-radius:50%;border:0;background:var(--surface);color:var(--ink);font-size:1.3rem;font-weight:700;cursor:pointer}.hzgroup .stepper button:disabled{opacity:.35}
+.hzgroup .stepper span{min-width:76px;text-align:center;font-weight:600}.hzgroup .stepper b{color:var(--gold-strong)}
+.hzprog{height:6px;border-radius:99px;background:var(--line);overflow:hidden}.hzprog i{display:block;height:100%;background:var(--gold);border-radius:99px}
+.hzgroup small{text-align:center}
+.hzact{display:flex;flex-direction:column;gap:14px;align-items:stretch}
+.hzrow2{display:flex;align-items:center;justify-content:space-between;gap:10px;flex-wrap:wrap}
+.btn.big{display:flex;align-items:center;justify-content:center;gap:10px;padding:15px 18px;font-size:1.08rem;font-weight:700;border-radius:16px}
+.btn.big svg,.rvgo .btn svg{width:20px;height:20px;fill:currentColor;stroke:currentColor;stroke-width:1.5}
+.rvgo .btn svg{fill:none;stroke-width:1.8}.rvgo .btn.gold svg{fill:currentColor}
+.counter{text-align:center;color:var(--muted);min-height:1.4em}.counter b{color:var(--gold-strong)}
+.hztext{display:flex;flex-direction:column;gap:2px;margin-top:4px}
+.hzv.cur{background:color-mix(in srgb,var(--gold) 10%,transparent)}
+.nextstep,.result{display:flex;flex-direction:column;gap:10px;align-items:flex-start;border-width:1.5px}
+.nextstep{border-color:var(--gold)}.nextstep b,.result b{font-size:1.1rem}.nextstep p,.result p{margin:0;color:var(--ink);line-height:1.7}
+.result.ok{border-color:#2e7d4f;background:color-mix(in srgb,#2e7d4f 10%,var(--surface))}.result.ok b{color:#2e7d4f}
+.result.ko{border-color:#b3261e;background:color-mix(in srgb,#b3261e 8%,var(--surface))}.result.ko b{color:#b3261e}
+.rechow{margin:0 0 8px;line-height:1.7;color:var(--ink)}
+.rw.hinted{color:var(--gold-strong);--hwc:transparent}
+.recbar .btn.hint{flex:none;padding:10px 12px;background:transparent;color:var(--solid-ink);border-color:color-mix(in srgb,var(--solid-ink) 35%,transparent)}
+.selfcheck{justify-content:center;margin-top:10px}
+.rvcard{display:flex;flex-direction:column;gap:14px}
+.rvopts{display:flex;flex-direction:column;gap:8px}
+.rvopt{display:flex;align-items:center;gap:12px;text-align:right;padding:12px 14px;border-radius:14px;border:1px solid var(--line-strong);background:var(--bg);color:var(--ink);font:inherit;cursor:pointer}
+.rvopt i{flex:none;width:20px;height:20px;border-radius:50%;border:2px solid var(--line-strong)}
+.rvopt span{display:flex;flex-direction:column;gap:2px;min-width:0}.rvopt b{font-size:1rem}.rvopt small{color:var(--muted);font-size:.84rem}
+.rvopt[aria-pressed="true"]{border-color:var(--gold);background:color-mix(in srgb,var(--gold) 9%,var(--bg))}.rvopt[aria-pressed="true"] i{border-color:var(--gold);background:radial-gradient(circle,var(--gold) 0 45%,transparent 50%)}
+.rvopt:disabled{opacity:.45;cursor:default}
+.rvgo{display:grid;grid-template-columns:1fr 1fr;gap:10px}.rvgo .btn{display:flex;align-items:center;justify-content:center;gap:8px;padding:13px;font-weight:700}
+.rvh{margin:14px 4px 4px;font-size:1.05rem}
+.chainhead{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:14px 4px 6px}.chainhead b{font-size:1.15rem}
+.ploop[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-strong)}
 .pplay svg{fill:currentColor;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 @keyframes inNext{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes inPrev{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
@@ -541,6 +585,7 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
   <div class="wrap">
     <button class="pbtn main" type="button" id="plToggle" aria-label="إيقاف مؤقت"></button>
     <div class="pinfo"><b id="plWhat"></b><small id="plWho"></small></div>
+    <button class="pgap ploop" type="button" id="plLoop" aria-label="تكرار السورة" aria-pressed="false"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg><span></span></button>
     <button class="pgap" type="button" id="plGap" aria-label="الفاصل بين الآيات"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="12" cy="13" r="8"/><path d="M12 9v4l2.5 2M9 2h6"/></svg><span></span></button>
     <button class="pbtn x" type="button" id="plStop" aria-label="إيقاف التلاوة"><svg viewBox="0 0 24 24"><path d="M6 6l12 12M18 6 6 18"/></svg></button>
   </div>
@@ -757,6 +802,7 @@ const PAUSE_I='<svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="
 const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
 (function initPlayerBar(){
   $("#plToggle").onclick=()=>togglePause();
+$("#plLoop").onclick=()=>{const on=!loopOn();store.set("plloop",on);updateGapBtn();toast(on?"ستُعاد السورة عند انتهائها":"تنتقل التلاوة إلى السورة التالية")};
   $("#plStop").onclick=()=>stopAudio();
   $("#plGap").onclick=()=>{const i=GAPS.indexOf(gapSec());const g=GAPS[(i+1)%GAPS.length];save("gap",g);updateGapBtn();toast("الفاصل بين الآيات: "+gapLabel(g))};
 })();
@@ -766,7 +812,11 @@ function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.s
   toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)}
 function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
   document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");if(curPage)fitPage()}
-function updateGapBtn(){const b=$("#plGap");if(b)b.querySelector("span").textContent=gapLabel(gapSec())}
+function updateGapBtn(){const b=$("#plGap");if(b)b.querySelector("span").textContent=gapLabel(gapSec());
+  const l=$("#plLoop");if(l){const on=loopOn();l.setAttribute("aria-pressed",String(on));l.querySelector("span").textContent=on?"تكرار السورة":"السورة التالية";l.hidden=!!player.queue}}
+const loopOn=()=>!!store.get("plloop",false);
+/* after the last verse: loop the same surah (from its basmala) when the loop is on */
+function nextPlay(s,v,bas){const nx=nextOf(s,v,bas);if(loopOn()&&!bas&&(!nx||nx.s!==s))return {s,v:1,bas:s!==1&&s!==9};return nx}
 function updatePlayerBar(){updateGapBtn();const pp=$("#pplay");if(pp&&curPage){const on=player.s&&pageOf(player.s,player.v)===curPage;pp.innerHTML=on&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!on)}
   if(!player.s){showPlayer(false);return}
   showPlayer(true);$("#plWho").textContent=reciter.name;$("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
@@ -833,7 +883,7 @@ function trimBufs(){const keep=new Set([WA.cur&&WA.cur.url,WA.next&&WA.next.url]
 async function prefetchAhead(s,v,bas){
   const urls=[];
   if(player.queue&&player.queue.length){for(const q of player.queue.slice(0,AHEAD))urls.push(audioUrl(q[0],q[1]))}
-  else{let c={s,v,bas};for(let i=0;i<AHEAD;i++){c=nextOf(c.s,c.v,c.bas);if(!c)break;urls.push(c.bas&&c.s!==1&&c.s!==9?audioUrl(1,1):audioUrl(c.s,c.v))}}
+  else{let c={s,v,bas};for(let i=0;i<AHEAD;i++){c=nextPlay(c.s,c.v,c.bas);if(!c)break;urls.push(c.bas&&c.s!==1&&c.s!==9?audioUrl(1,1):audioUrl(c.s,c.v))}}
   const todo=[...new Set(urls)].filter(u=>!BUF.has(u));
   for(let i=0;i<todo.length;i+=2)await Promise.all(todo.slice(i,i+2).map(fetchVerse));
 }
@@ -877,7 +927,7 @@ function onVerseEnded(){
   if(s&&!bas)recordListen(s,v);
   if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();afterGap(()=>playVerse(a,b,{keep:true,rep:r}))}else{const done=player.onDone;stopAudio();if(done)done()}return}
   if(!s||!(current===s||curPage)){stopAudio();return}
-  const nx=nextOf(s,v,bas);if(!nx){stopAudio();toast("صدق الله العظيم");return}
+  const nx=nextPlay(s,v,bas);if(!nx){stopAudio();toast("صدق الله العظيم");return}
   /* keep the page in step with the recitation */
   if(curPage){const np=pageOf(nx.s,nx.v);player.s=nx.s;player.v=nx.v;if(np!==curPage)location.replace("#p"+np)}
   else if(nx.s!==s){player.s=nx.s;player.v=1;location.hash="s"+nx.s+"-1"}
@@ -914,7 +964,7 @@ function waStart(it){const ctx=waCtx();WA.on=true;WA.paused=false;if(ctx.state!=
   waSchedule(it,ctx.currentTime+.03);WA.cur=it;WA.next=null;clearInterval(WA.timer);WA.timer=setInterval(waTick,60);updatePlayerBar()}
 /* what follows `it`: the repetition queue first, otherwise the next verse / surah; null when the reader left this surah or the Quran ends */
 function waPeek(it){if(player.queue){if(!player.queue.length)return null;const [s,v,r]=player.queue[0];return waItem(s,v,false,r)}
-  if(!(current===it.s||curPage))return null;const n=nextOf(it.s,it.v,it.bas);return n?waItem(n.s,n.v,n.bas):null}
+  if(!(current===it.s||curPage))return null;const n=nextPlay(it.s,it.v,it.bas);return n?waItem(n.s,n.v,n.bas):null}
 function waTick(){
   if(!WA.on||WA.paused||!WA.cur)return;const now=WA.ctx.currentTime,cur=WA.cur;
   if(!WA.next&&cur.end-now<5){const nx=waPeek(cur);
@@ -1296,85 +1346,232 @@ function daysUntil(k){return Math.round((new Date(k+"T00:00:00")-new Date(today(
 function hzPill(s){const h=HZ[s];if(!h)return "";if(h.st===2)return h.due<=today()?'<span class="pill due">للمراجعة</span>':'<span class="pill mem">محفوظة</span>';return '<span class="pill learn">قيد الحفظ</span>'}
 const STARP='<svg viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z"/></svg>';
 function hzRow(s){const m=META[s-1];return `<li><a class="hzrow" href="#hifz-${s}"><span class="num">${STARP}<b>${an(s)}</b></span><span class="meta"><span class="sname">سورة ${m[1]}</span><br><span class="smeta">${an(m[4])} آية</span></span>${hzPill(s)}</a></li>`}
-let hzS=0,hzQuiz=null;
-function hzRange(N){const r=store.get("hzr"+hzS,null),h=HZ[hzS],at=h&&h.st===1&&h.at?h.at:1;let a=r?r[0]:at,b=r?r[1]:Math.min(N,at+6);a=Math.max(1,Math.min(N,a|0||1));b=Math.max(a,Math.min(N,b|0||a));return [a,b]}
+/* ---------- Memorization of one surah, in three steps: listen (loop) → recite (the app checks) → review ---------- */
+let hzS=0;
 const isMark=w=>!/[ء-يٱ-ۓ]/.test(w);
-function drawHz(data){
-  const N=data.v.length,[a,b]=hzRange(N),tab=store.get("hztab2","rec"),body=$("#hzBody"),n=hzS;
-  if(tab==="mask"){
-    const lvl=store.get("hzlvl","mid");
-    const hide=(i,w)=>!isMark(w)&&(lvl==="hard"||(lvl==="mid"&&i>0)||(lvl==="easy"&&i%3===1));
-    let html="";for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
-      html+=`<p class="hzv" data-sv="${n}:${v}">${ws.map((w,i)=>hide(i,w)?`<span class="hw" role="button" tabindex="0">${esc(w)}</span>`:esc(w)).join(" ")} <span class="ayn">﴿${an(v)}﴾</span></p>`}
-    body.innerHTML=`<div class="chips" id="hzLvl" style="margin-bottom:8px"><button type="button" data-l="easy" aria-pressed="${lvl==="easy"}">سهل</button><button type="button" data-l="mid" aria-pressed="${lvl==="mid"}">متوسط</button><button type="button" data-l="hard" aria-pressed="${lvl==="hard"}">صعب</button></div>
-      <p class="note2" style="margin-bottom:6px">اقرأ من حفظك، ثم المس الكلمة المخفية لتتحقق منها.</p>
-      <div id="hzText">${html}</div>
-      <div class="hzctl"><button class="btn gold" type="button" id="hzNext">الكلمة التالية</button><button class="btn" type="button" id="hzShow">كشف الكل</button><button class="btn" type="button" id="hzReset">إعادة</button></div>`;
-    $("#hzLvl").onclick=e=>{const x=e.target.closest("[data-l]");if(x){store.set("hzlvl",x.dataset.l);drawHz(data)}};
-    const reveal=w=>{if(!w||w.classList.contains("shown"))return;document.querySelectorAll(".hw.just").forEach(z=>z.classList.remove("just"));w.classList.add("shown","just")};
-    $("#hzText").onclick=e=>reveal(e.target.closest(".hw"));
-    $("#hzText").onkeydown=e=>{if((e.key==="Enter"||e.key===" ")&&e.target.classList.contains("hw")){e.preventDefault();reveal(e.target)}};
-    $("#hzNext").onclick=()=>{const w=document.querySelector("#hzText .hw:not(.shown)");if(w){reveal(w);const r=w.getBoundingClientRect();if(r.bottom>innerHeight-120||r.top<80)w.scrollIntoView({block:"center",behavior:"smooth"})}else toast("أحسنت، أتممت المقطع")};
-    $("#hzShow").onclick=()=>document.querySelectorAll("#hzText .hw").forEach(w=>w.classList.add("shown"));
-    $("#hzReset").onclick=()=>drawHz(data);
-  }else if(tab==="rep"){
-    const reps=store.get("hzreps",3),rm=store.get("hzrmode","each");
-    let html="";for(let v=a;v<=b;v++)html+=`<p class="hzv" data-sv="${n}:${v}">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></p>`;
-    body.innerHTML=STANDALONE?`<div class="card" style="display:flex;flex-direction:column;gap:10px">
-        <div class="range"><span>عدد التكرار</span><div class="chips" id="hzReps">${[1,3,5,10].map(r=>`<button type="button" data-r="${r}" aria-pressed="${reps===r}">${an(r)}</button>`).join("")}</div></div>
-        <div class="seg" id="hzRm"><button type="button" data-m="each" aria-pressed="${rm==="each"}">كل آية على حدة</button><button type="button" data-m="all" aria-pressed="${rm==="all"}">المقطع كاملًا</button></div>
-        <p class="note2">القارئ: ${reciter.name} (يُغيَّر من الصفحة الرئيسية)</p>
-        <div class="counter" id="hzCount"></div>
-        <div class="btns" style="justify-content:center"><button class="btn gold" type="button" id="hzPlay">${player.queue?"إيقاف التكرار":"ابدأ التكرار"}</button></div>
-      </div><div>${html}</div>`
-      :`<div class="card"><p class="note2">التكرار الصوتي يعمل في نسخة التطبيق المنشورة على Vercel أو GitHub، لأن هذه الصفحة لا تستطيع تشغيل الصوت من موقع آخر.</p></div><div>${html}</div>`;
-    if(!STANDALONE)return;
-    $("#hzReps").onclick=e=>{const x=e.target.closest("[data-r]");if(x){store.set("hzreps",+x.dataset.r);if(player.queue)stopAudio();drawHz(data)}};
-    $("#hzRm").onclick=e=>{const x=e.target.closest("[data-m]");if(x){store.set("hzrmode",x.dataset.m);if(player.queue)stopAudio();drawHz(data)}};
-    $("#hzPlay").onclick=()=>{
-      if(player.queue||player.s){stopAudio();$("#hzPlay").textContent="ابدأ التكرار";$("#hzCount").textContent="";return}
-      const items=[];if(rm==="each"){for(let v=a;v<=b;v++)for(let r=1;r<=reps;r++)items.push([n,v,r])}else{for(let r=1;r<=reps;r++)for(let v=a;v<=b;v++)items.push([n,v,r])}
-      $("#hzPlay").textContent="إيقاف التكرار";
-      playQueue(items,(s,v,r)=>{const c=$("#hzCount");if(c)c.textContent=`الآية ${an(v)}، التكرار ${an(r)} من ${an(reps)}`;const el=document.querySelector(`.hzv[data-sv="${s}:${v}"]`);if(el){const q=el.getBoundingClientRect();if(q.top<80||q.bottom>innerHeight-90)el.scrollIntoView({block:"center",behavior:"smooth"})}},()=>{const p=$("#hzPlay");if(p)p.textContent="ابدأ التكرار";const c=$("#hzCount");if(c)c.textContent="انتهى التكرار، بارك الله فيك"});
-    };
-  }else if(tab==="rec"){
-    drawRec(data,a,b);
-  }else{
-    drawQuiz(data,a,b);
-  }
+const hzCnt=()=>Math.max(1,Math.min(20,store.get("hzcnt",3)|0||3));
+const hzReps=()=>{const r=store.get("hzreps2",3);return [3,5,7,10].includes(r)?r:3};
+const hzLearned=(n,N)=>{const h=HZ[n];if(!h)return 0;if(h.st===2)return N;return Math.max(0,Math.min(N,(h.at||1)-1))};
+/* the verses being learned: from the saved position (or the group the reader moved to), «count» verses */
+function hzGroup(n,N){const g=store.get("hzg"+n,0),a=Math.max(1,Math.min(N,g||hzLearned(n,N)+1));return [a,Math.min(N,a+hzCnt()-1)]}
+const hzVerses=(n,data,a,b,cls)=>{let h="";for(let v=a;v<=b;v++)h+=`<p class="hzv${cls?" "+cls:""}" data-sv="${n}:${v}">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></p>`;return h};
+const follow=(s,v)=>{const el=document.querySelector(`.hzv[data-sv="${s}:${v}"]`);if(el){const q=el.getBoundingClientRect();if(q.top<90||q.bottom>innerHeight-150)el.scrollIntoView({block:"center",behavior:"smooth"})}};
+function repChips(id,val,opts){return `<div class="chips" id="${id}">${opts.map(r=>`<button type="button" data-r="${r}" aria-pressed="${val===r}">${an(r)}×</button>`).join("")}</div>`}
+const noAudio=`<div class="card"><p class="note2">الاستماع يعمل في نسخة التطبيق على mushaf-tadabbur.vercel.app.</p></div>`;
+
+/* step 1 — listen to the group in a loop */
+function drawListen(n,data){
+  const N=data.v.length,[a,b]=hzGroup(n,N),reps=hzReps(),body=$("#hzBody");
+  body.innerHTML=`${hzGroupCard(n,N,a,b)}
+    ${STANDALONE?`<section class="card hzact">
+      <div class="hzrow2"><span class="lbl">عدد مرات الاستماع</span>${repChips("hzReps",reps,[3,5,7,10])}</div>
+      <button class="btn gold big" type="button" id="hzPlay">${ICON.play}<span>استمع ${an(reps)} مرات</span></button>
+      <div class="counter" id="hzCount" aria-live="polite"></div>
+    </section>`:noAudio}
+    <div class="hztext">${hzVerses(n,data,a,b)}</div><div id="hzAfter"></div>`;
+  bindGroup(n,data,drawListen);if(!STANDALONE)return;
+  $("#hzReps").onclick=e=>{const x=e.target.closest("[data-r]");if(x){store.set("hzreps2",+x.dataset.r);if(player.queue)stopAudio();drawListen(n,data)}};
+  const btn=$("#hzPlay"),label=t=>{btn.querySelector("span").textContent=t;btn.querySelector("svg").outerHTML=player.queue?ICON.pause:ICON.play};
+  btn.onclick=()=>{
+    if(player.queue){stopAudio();label(`استمع ${an(reps)} مرات`);$("#hzCount").textContent="";return}
+    const items=[];for(let r=1;r<=reps;r++)for(let v=a;v<=b;v++)items.push([n,v,r]);
+    $("#hzAfter").innerHTML="";
+    playQueue(items,(s,v,r)=>{const c=$("#hzCount");if(c)c.innerHTML=`المرة <b>${an(r)}</b> من ${an(reps)} · الآية ${an(v)}`;follow(s,v)},
+      ()=>{if(!$("#hzPlay"))return;label("استمع مرة أخرى");$("#hzCount").textContent="";
+        $("#hzAfter").innerHTML=`<section class="card nextstep"><b>انتهى الاستماع</b><p>هل أنت جاهز لتسميع الآيات من حفظك؟</p><button class="btn gold" type="button" id="toRecite">انتقل إلى التسميع ←</button></section>`;
+        $("#toRecite").onclick=()=>hzSwitch("recite");$("#hzAfter").scrollIntoView({block:"center",behavior:"smooth"})});
+    label("إيقاف");
+  };
 }
-function quizStart(t){const ws=t.split(" ");return ws.slice(0,5).join(" ")+(ws.length>5?" …":"")}
-async function drawQuiz(data,a,b){
-  const n=hzS,N=data.v.length,body=$("#hzBody");
-  const pool=[];for(let v=a;v<=Math.min(b,N-1);v++)pool.push(v);
-  if(!pool.length){body.innerHTML=`<div class="card"><p class="note2">اختر مقطعًا من آيتين على الأقل، أو سورة فيها أكثر من آية بعد هذا الموضع.</p></div>`;return}
-  let extra=[];if(N<4){try{const o=await loadSurah(n<114?n+1:n-1);extra=o.v}catch(e){}}
-  if(!hzQuiz){const qs=[];for(let i=0;i<5;i++)qs.push(pool[Math.floor(Math.random()*pool.length)]);hzQuiz={qs,i:0,res:[]}}
-  const Q=hzQuiz;
-  if(Q.i>=Q.qs.length){const sc=Q.res.filter(Boolean).length;
-    body.innerHTML=`<div class="card" style="display:flex;flex-direction:column;gap:10px;align-items:center">
-      <div class="dots">${Q.res.map(r=>`<i class="${r?"ok":"no"}"></i>`).join("")}</div>
-      <p class="big">${an(sc)} من ${an(Q.qs.length)}</p>
-      <p class="note2" style="text-align:center">${sc===Q.qs.length?"ما شاء الله، حفظ متقن. بارك الله فيك.":sc>=3?"أحسنت، واصل المراجعة ليثبت الحفظ.":"لا بأس، كرّر المقطع بإخفاء الكلمات ثم أعد المحاولة."}</p>
-      <button class="btn gold" type="button" id="qzAgain">جولة جديدة</button></div>`;
-    $("#qzAgain").onclick=()=>{hzQuiz=null;drawQuiz(data,a,b)};return}
-  const v=Q.qs[Q.i],right=quizStart(data.v[v]);
-  const cands=[];data.v.forEach((t,i)=>{if(i!==v){const s=quizStart(t);if(s!==right&&!cands.includes(s))cands.push(s)}});extra.forEach(t=>{const s=quizStart(t);if(s!==right&&!cands.includes(s))cands.push(s)});
-  for(let i=cands.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1));[cands[i],cands[j]]=[cands[j],cands[i]]}
-  const opts=[right,...cands.slice(0,2)].sort(()=>Math.random()-.5);
-  body.innerHTML=`<div class="card" style="display:flex;flex-direction:column;gap:12px">
-    <div class="dots">${Q.qs.map((_,i)=>`<i class="${i<Q.res.length?(Q.res[i]?"ok":"no"):i===Q.i?"cur":""}"></i>`).join("")}</div>
-    <p class="note2" style="text-align:center">ما الآية التي تلي:</p>
-    <p class="quizq">${esc(data.v[v-1])} <span class="ayn">﴿${an(v)}﴾</span></p>
-    <div class="opts" id="qzOpts">${opts.map(o=>`<button class="opt" type="button" data-ok="${o===right}">${esc(o)}</button>`).join("")}</div>
-    <div class="btns" style="justify-content:center"><button class="btn solid" type="button" id="qzNext" hidden>التالي</button></div></div>`;
-  $("#qzOpts").onclick=e=>{const x=e.target.closest(".opt");if(!x||x.disabled)return;const ok=x.dataset.ok==="true";
-    document.querySelectorAll("#qzOpts .opt").forEach(o=>{o.disabled=true;if(o.dataset.ok==="true")o.classList.add("ok")});if(!ok)x.classList.add("no");
-    Q.res.push(ok);$("#qzNext").hidden=false;$("#qzNext").focus()};
-  $("#qzNext").onclick=()=>{Q.i++;drawQuiz(data,a,b)};
+/* the group card shared by listen and recite: which verses, how many, previous / next group */
+function hzGroupCard(n,N,a,b){const L=hzLearned(n,N),cnt=hzCnt();
+  return `<section class="card hzgroup">
+    <div class="hzg-main"><span class="lbl">الآيات</span><b>${a===b?an(a):`${an(a)} – ${an(b)}`}</b><span class="muted">من ${an(N)}</span></div>
+    <div class="hzg-ctl">
+      <button class="ib" type="button" data-g="prev" aria-label="الآيات السابقة" ${a<=1?"disabled":""}><svg viewBox="0 0 24 24"><path d="M9 6l6 6-6 6"/></svg></button>
+      <div class="stepper" role="group" aria-label="عدد الآيات"><button type="button" data-c="-1" aria-label="أقل" ${cnt<=1?"disabled":""}>−</button><span><b>${an(cnt)}</b> ${cnt===1?"آية":cnt===2?"آيتان":cnt<=10?"آيات":"آية"}</span><button type="button" data-c="1" aria-label="أكثر" ${cnt>=20?"disabled":""}>+</button></div>
+      <button class="ib" type="button" data-g="next" aria-label="الآيات التالية" ${b>=N?"disabled":""}><svg viewBox="0 0 24 24"><path d="M15 6l-6 6 6 6"/></svg></button>
+    </div>
+    ${HZ[n]&&HZ[n].st===1?`<div class="hzprog"><i style="width:${Math.round(L/N*100)}%"></i></div><small class="muted">حفظتَ ${an(L)} من ${an(N)} آية</small>`:""}
+  </section>`}
+function bindGroup(n,data,redraw){const N=data.v.length,c=$(".hzgroup");if(!c)return;
+  c.onclick=e=>{const x=e.target.closest("button");if(!x||x.disabled)return;const [a,b]=hzGroup(n,N),cnt=hzCnt();
+    if(x.dataset.c){store.set("hzcnt",Math.max(1,Math.min(20,cnt+ +x.dataset.c)))}
+    else if(x.dataset.g==="next")store.set("hzg"+n,Math.min(N,b+1));
+    else if(x.dataset.g==="prev")store.set("hzg"+n,Math.max(1,a-cnt));
+    if(player.queue)stopAudio();stopRec();rec=null;redraw(n,data)}}
+
+/* step 2 — recite the group from memory; passing saves the position and moves to the next verses */
+function drawRecite(n,data){
+  const N=data.v.length,[a,b]=hzGroup(n,N),body=$("#hzBody");
+  body.innerHTML=`${hzGroupCard(n,N,a,b)}<div id="rcBox"></div>`;bindGroup(n,data,drawRecite);
+  reciteView($("#rcBox"),n,data,a,b,{
+    onPass:()=>{const h=HZ[n];let msg="";
+      if(!h||h.st!==2){if(!h){const cur=hzCur();if(!cur||cur===n)setCurrent(n)}
+        const H=HZ[n];if(H&&H.st===1){
+          if(b>=N){HZ[n]={st:2,box:0,due:addDays(BOX[0])};hzSave();store.set("hzg"+n,0);return {msg:`ما شاء الله، أتممت حفظ سورة ${META[n-1][1]}`,next:null}}
+          H.at=Math.max(H.at||1,b+1);hzSave();msg=`حُفظ موضعك: الآية ${an(b+1)}`}}
+      if(b>=N)return {msg:msg||"أتممت آخر السورة",next:null};
+      store.set("hzg"+n,b+1);const nb=Math.min(N,b+hzCnt());
+      return {msg,next:{label:`الآيات التالية (${an(b+1)}${nb>b+1?` – ${an(nb)}`:""}) ←`,go:()=>hzSwitch("listen")}}},
+    onRetry:()=>hzSwitch("listen")});
+}
+/* the reciting box: hidden text, microphone, hint, result. Tolerant by default (strict in the settings). */
+function reciteView(box,n,data,a,b,cb){
+  stopRec();
+  if(!STANDALONE){box.innerHTML=`<div class="card"><p class="note2">التسميع بالميكروفون يعمل في نسخة التطبيق على mushaf-tadabbur.vercel.app.</p></div>`;return}
+  const show=store.get("recshow",false),strict=store.get("strict",false);
+  const words=[];let html="";
+  for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
+    html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
+  box.innerHTML=`<section class="card recinfo">
+      <p class="rechow">${SRC?"اضغط <b>ابدأ</b> ثم اقرأ من حفظك، وتظهر كل كلمة عند نطقها صحيحة.":"المتصفح لا يدعم التعرّف على الصوت: اقرأ من حفظك ثم اكشف النص لتتحقق."}</p>
+      <div class="recopts"><button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>إظهار النص باهتًا</span><i class="sw"></i></button>${strict?'<span class="pill">وضع صارم</span>':""}</div>
+    </section>
+    <div id="recText">${html}</div><div id="recRes"></div>
+    <div class="recbar"><i class="lvl" id="recLvl" aria-hidden="true"></i><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
+      <button class="btn hint" type="button" id="recHint" title="أظهر الكلمة التالية">تلميح</button>
+      <button class="btn gold mic" type="button" id="recBtn">${SRC?`<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ</span>`:"<span>اكشف النص</span>"}</button></div>`;
+  const spans=[...box.querySelectorAll(".rw")],vEls=[...box.querySelectorAll(".hzv")];
+  const vStart={},vEnd={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k;vEnd[v]=k});
+  /* word state: 0 not yet, 1 recited, 2 missed, 3 shown by a hint */
+  let startIdx=0,fixed=new Array(words.length).fill(0),last={st:fixed.slice(),pos:0},lastV=0,running=false,ended=false;
+  const merged=al=>{const st=fixed.slice();for(let k=startIdx;k<st.length;k++)st[k]=al.st[k];return {st,pos:al.pos}};
+  const score=al=>al.st.filter(x=>x===1).length*2+al.pos;
+  const paint=(st,pos,done)=>{spans.forEach((s,k)=>{s.classList.toggle("ok",st[k]===1);s.classList.toggle("hinted",st[k]===3);s.classList.toggle("miss",st[k]===2||(done&&st[k]===0))});
+    const curV=pos<spans.length?vOf[pos]:0;
+    vEls.forEach(e=>{const v=+e.dataset.sv.split(":")[1];e.classList.toggle("cur",!done&&running&&v===curV)});
+    const ok=st.filter(x=>x===1).length;$("#recStat").textContent=`${an(ok)} / ${an(words.length)}`;
+    if(!done&&curV&&curV!==lastV){lastV=curV;const el=vEls.find(e=>+e.dataset.sv.split(":")[1]===curV);if(el){const q=el.getBoundingClientRect();if(q.top<90||q.bottom>innerHeight-170)el.scrollIntoView({block:"center",behavior:"smooth"})}}};
+  const btnLabel=t=>{const s=$("#recBtn span");if(s)s.textContent=t};
+  const setLive=on=>{running=on;document.body.classList.toggle("reclive",on);$("#recBtn").classList.toggle("live",on)};
+  const result=()=>{const st=last.st,T=words.length,ok=st.filter(x=>x===1).length,err=T-ok;
+    const allowed=strict?0:Math.max(1,Math.round(T*.1));return {ok,err,T,pass:err<=allowed}};
+  const finish=()=>{stopRec();rec=null;setLive(false);ended=true;paint(last.st,last.pos,true);btnLabel("أعد");$("#recHeard").textContent="";
+    const r=result(),res=$("#recRes");
+    if(r.pass){const out=cb.onPass?cb.onPass():{};
+      res.innerHTML=`<section class="card result ok"><b>${r.err?"أحسنت":"ما شاء الله، تسميع متقن"}</b><p>${an(r.ok)} من ${an(r.T)} كلمة صحيحة${r.err?` (${an(r.err)} ${r.err===1?"خطأ صغير":"أخطاء صغيرة"})`:""}.${out&&out.msg?`<br>${out.msg}`:""}</p>${out&&out.next?`<button class="btn gold" type="button" id="resNext">${out.next.label}</button>`:""}</section>`;
+      if(out&&out.next)$("#resNext").onclick=out.next.go;toast(r.err?"أحسنت":"ما شاء الله")}
+    else{if(cb.onFail)cb.onFail();
+      res.innerHTML=`<section class="card result ko"><b>تحتاج إلى مراجعة</b><p>${an(r.err)} ${r.err===1?"كلمة":"كلمات"} لم تُقرأ صحيحة (بالأحمر). استمع إليها مرة أخرى ثم أعد التسميع.</p><div class="btns">${cb.onRetry?'<button class="btn gold" type="button" id="resListen">أعد الاستماع</button>':""}<button class="btn" type="button" id="resAgain">أعد المحاولة</button></div></section>`;
+      if(cb.onRetry)$("#resListen").onclick=cb.onRetry;$("#resAgain").onclick=()=>reciteView(box,n,data,a,b,cb)}
+    res.scrollIntoView({block:"center",behavior:"smooth"})};
+  $("#recShow").onclick=()=>{store.set("recshow",!show);reciteView(box,n,data,a,b,cb)};
+  /* tap a verse to continue from it */
+  $("#recText").onclick=e=>{const p=e.target.closest(".hzv");if(!p||!running)return;const v=+p.dataset.sv.split(":")[1];if(vStart[v]===undefined)return;
+    startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;lastV=0;last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);
+    if(rec){try{rec.r.abort()}catch(x){}}toast(`أتابع معك من الآية ${an(v)}`)};
+  /* hint: show the next word (it counts as a small mistake) */
+  $("#recHint").onclick=()=>{if(ended)return;const k=last.pos;if(k>=words.length)return;fixed=last.st.slice();fixed[k]=3;startIdx=k+1;last={st:fixed.slice(),pos:startIdx};paint(last.st,last.pos,false);
+    if(startIdx>=words.length&&!SRC)finish()};
+  const toWords=t=>t.split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
+  const commit=(ws,final)=>{const al=alignRec(ws,words,startIdx,final);for(let k=startIdx;k<al.pos;k++)fixed[k]=al.st[k];startIdx=al.pos;return final?ws.length:al.used};
+  $("#recBtn").onclick=()=>{
+    if(!SRC){if(ended){reciteView(box,n,data,a,b,cb);return}
+      spans.forEach(s=>s.classList.add("peek"));box.querySelector(".recbar").outerHTML=`<div class="btns selfcheck"><button class="btn gold" type="button" id="scOk">قرأتها صحيحة</button><button class="btn" type="button" id="scKo">أخطأت</button></div>`;
+      $("#scOk").onclick=()=>{last={st:new Array(words.length).fill(1),pos:words.length};ended=true;const out=cb.onPass?cb.onPass():{};$("#recRes").innerHTML=`<section class="card result ok"><b>أحسنت</b><p>${out&&out.msg||""}</p>${out&&out.next?`<button class="btn gold" type="button" id="resNext">${out.next.label}</button>`:""}</section>`;if(out&&out.next)$("#resNext").onclick=out.next.go};
+      $("#scKo").onclick=()=>{if(cb.onFail)cb.onFail();if(cb.onRetry)cb.onRetry();else reciteView(box,n,data,a,b,cb)};return}
+    if(rec){finish();return}
+    if(player.s)stopAudio();
+    if(ended){reciteView(box,n,data,a,b,cb);setTimeout(()=>{const nb=$("#recBtn");if(nb)nb.click()},50);return}
+    lastV=0;last={st:fixed.slice(),pos:startIdx};setLive(true);paint(last.st,startIdx,false);$("#recHeard").textContent="أستمع إليك…";$("#recRes").innerHTML="";
+    const r=new SRC();r.lang="ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=3;
+    rec={r,want:true};btnLabel("إنهاء");
+    /* recognised words are locked in, so new speech is only compared with the rest of the passage */
+    const used={};
+    r.onresult=e=>{let pending=[],raw=[];
+      for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i],u=used[i]||0;
+        let best=res[0].transcript,bs=-1;for(let j=0;j<res.length;j++){const t=res[j].transcript;const sc=score(alignRec(toWords(t).slice(u),words,startIdx,res.isFinal));if(sc>bs){bs=sc;best=t}}
+        const ws=toWords(best),rest=ws.slice(Math.min(u,ws.length));
+        if(res.isFinal){commit(rest,true);used[i]=ws.length}
+        else{const k=rest.length>1?commit(rest.slice(0,-1),false):0;used[i]=Math.min(u,ws.length)+k;pending.push(...rest.slice(k));raw.push(...best.split(/\s+/).filter(Boolean).slice(used[i]))}}
+      last=merged(alignRec(pending,words,startIdx,false));paint(last.st,last.pos,false);
+      $("#recHeard").textContent=raw.join(" ");
+      if(last.pos>=words.length||startIdx>=words.length)setTimeout(()=>{if(rec)finish()},350)};
+    r.onerror=e=>{if(e.error==="no-speech"||e.error==="aborted")return;rec&&(rec.want=false);
+      toast(e.error==="not-allowed"||e.error==="service-not-allowed"?"اسمح للمتصفح باستعمال الميكروفون والتعرّف على الكلام، ثم أعد المحاولة":"تعذّر التعرّف على الصوت. تحقّق من الاتصال وأعد المحاولة");
+      btnLabel("ابدأ");setLive(false);rec=null};
+    r.onend=()=>{for(const k in used)delete used[k];if(rec&&rec.want){try{r.start()}catch(e){setTimeout(()=>{if(rec&&rec.want)try{r.start()}catch(x){}},250)}}};
+    try{r.start()}catch(e){toast("تعذّر تشغيل الميكروفون");rec=null;setLive(false);btnLabel("ابدأ")}
+  };
 }
 
-/* ---------- Recitation check (speech recognition, approximate) ---------- */
+/* step 3 — review: the whole surah, up to my position, the last verses before it, or a chain to An-Nas */
+let rvChain=null;
+function drawReview(n,data){
+  const N=data.v.length,L=hzLearned(n,N),body=$("#hzBody"),cur=HZ[n]&&HZ[n].st===1;
+  let mode=store.get("rvmode","full");if((mode==="upto"||mode==="last")&&!(cur&&L>0))mode="full";
+  const k=[3,5,10].includes(store.get("rvlast",3))?store.get("rvlast",3):3,reps=[1,3,5,7].includes(store.get("rvreps",1))?store.get("rvreps",1):1;
+  const opt=(m,t,sub,dis)=>`<button type="button" class="rvopt" data-m="${m}" aria-pressed="${mode===m}" ${dis?"disabled":""}><i></i><span><b>${t}</b><small>${sub}</small></span></button>`;
+  const lastA=Math.max(1,L-k+1);
+  body.innerHTML=`<section class="card rvcard">
+      <div class="rvopts">
+        ${opt("full","السورة كاملة",`الآيات ${an(1)} – ${an(N)}`)}
+        ${opt("upto","من البداية إلى موضعي",cur&&L>0?`الآيات ${an(1)} – ${an(L)}`:"حين تبدأ حفظ هذه السورة",!(cur&&L>0))}
+        ${opt("last","آخر ما حفظت",cur&&L>0?`الآيات ${an(lastA)} – ${an(L)}`:"حين تبدأ حفظ هذه السورة",!(cur&&L>0))}
+        ${opt("chain","تسلسل حتى سورة الناس",n>=114?"هذه آخر سورة":`${META[n-1][1]} ثم ${n+1<114?`${META[n][1]}، ${META[n+1][1]}… حتى الناس`:"الناس"}`)}
+      </div>
+      ${mode==="last"?`<div class="hzrow2"><span class="lbl">عدد الآيات</span><div class="chips" id="rvK">${[3,5,10].map(x=>`<button type="button" data-k="${x}" aria-pressed="${k===x}">${an(x)}</button>`).join("")}</div></div>`:""}
+      ${STANDALONE&&mode!=="chain"?`<div class="hzrow2"><span class="lbl">التكرار</span>${repChips("rvReps",reps,[1,3,5,7])}</div>`:""}
+      <div class="btns rvgo">${STANDALONE?`<button class="btn gold" type="button" id="rvListen">${ICON.play}<span>استمع</span></button>`:""}<button class="btn" type="button" id="rvRecite"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>سمّع</span></button></div>
+      <div class="counter" id="rvCount" aria-live="polite"></div>
+    </section><div id="rvBox"></div>`;
+  body.querySelector(".rvopts").onclick=e=>{const x=e.target.closest("[data-m]");if(!x||x.disabled)return;store.set("rvmode",x.dataset.m);rvChain=null;if(player.queue)stopAudio();stopRec();rec=null;drawReview(n,data)};
+  const rk=$("#rvK");if(rk)rk.onclick=e=>{const x=e.target.closest("[data-k]");if(x){store.set("rvlast",+x.dataset.k);drawReview(n,data)}};
+  const rr=$("#rvReps");if(rr)rr.onclick=e=>{const x=e.target.closest("[data-r]");if(x){store.set("rvreps",+x.dataset.r);if(player.queue)stopAudio();drawReview(n,data)}};
+  const range=mode==="upto"?[1,L]:mode==="last"?[lastA,L]:[1,N];
+  const box=$("#rvBox");
+  const showText=(s,d,a,b)=>{box.innerHTML=`<h3 class="rvh">سورة ${META[s-1][1]}</h3><div class="hztext">${hzVerses(s,d,a,b)}</div>`};
+  if(mode==="chain"){chainStart(n,data,N,L,cur);return}
+  showText(n,data,range[0],range[1]);
+  const lb=$("#rvListen");if(lb)lb.onclick=()=>{
+    if(player.queue){stopAudio();lb.querySelector("span").textContent="استمع";$("#rvCount").textContent="";return}
+    const items=[];for(let r=1;r<=reps;r++)for(let v=range[0];v<=range[1];v++)items.push([n,v,r]);
+    lb.querySelector("span").textContent="إيقاف";
+    playQueue(items,(s,v,r)=>{const c=$("#rvCount");if(c)c.innerHTML=`${reps>1?`المرة <b>${an(r)}</b> من ${an(reps)} · `:""}الآية ${an(v)}`;follow(s,v)},
+      ()=>{const l=$("#rvListen");if(l)l.querySelector("span").textContent="استمع";const c=$("#rvCount");if(c)c.textContent="انتهت المراجعة، بارك الله فيك"})};
+  $("#rvRecite").onclick=()=>{if(player.queue)stopAudio();reciteView(box,n,data,range[0],range[1],{
+    onPass:()=>{if(HZ[n]&&HZ[n].st===2)hzReview(n,true);return {msg:HZ[n]&&HZ[n].st===2?"سُجّلت مراجعتك":""}},
+    onFail:()=>{if(HZ[n]&&HZ[n].st===2)hzReview(n,false)},onRetry:null});box.scrollIntoView({block:"start",behavior:"smooth"})};
+  /* chain: this surah (up to my position when I am learning it), then the following surahs one by one, pausing after each */
+  function chainStart(){
+    rvChain={i:0,list:[]};for(let s=n;s<=114;s++)rvChain.list.push(s);
+    const lb=$("#rvListen");if(lb)lb.onclick=()=>chainPlay();
+    $("#rvRecite").onclick=()=>chainRecite();
+    chainShow();
+  }
+  async function chainData(){const s=rvChain.list[rvChain.i],d=s===n?data:await loadSurah(s),M=d.v.length;
+    const b=s===n&&cur&&L>0?L:M;return {s,d,a:1,b}}
+  async function chainShow(note){const c=await chainData();if(!rvChain)return;
+    box.innerHTML=`<div class="chainhead"><span class="muted">${an(rvChain.i+1)} من ${an(rvChain.list.length)}</span><b>سورة ${META[c.s-1][1]}</b>${c.b<c.d.v.length?`<small class="muted">حتى الآية ${an(c.b)}</small>`:""}</div>
+      ${note||""}<div class="hztext">${hzVerses(c.s,c.d,c.a,c.b)}</div>`}
+  function chainChoices(c){const last=rvChain.i>=rvChain.list.length-1;
+    return `<section class="card nextstep"><b>انتهت سورة ${META[c.s-1][1]}</b><div class="btns">
+      <button class="btn" type="button" data-ch="again">أعد الاستماع</button><button class="btn" type="button" data-ch="recite">سمّعها</button>
+      ${last?"":`<button class="btn gold" type="button" data-ch="next">${META[rvChain.list[rvChain.i+1]-1][1]} ←</button>`}</div></section>`}
+  function bindChoices(c){box.querySelectorAll("[data-ch]").forEach(x=>x.onclick=()=>{const a=x.dataset.ch;
+    if(a==="again")chainPlay();else if(a==="recite")chainRecite();else{rvChain.i++;chainPlay()}})}
+  async function chainPlay(){if(player.queue){stopAudio();const l=$("#rvListen");if(l)l.querySelector("span").textContent="استمع";return}
+    const c=await chainData();if(!rvChain)return;await chainShow();
+    const items=[];for(let v=c.a;v<=c.b;v++)items.push([c.s,v,1]);
+    const l=$("#rvListen");if(l)l.querySelector("span").textContent="إيقاف";
+    playQueue(items,(s,v)=>{const cc=$("#rvCount");if(cc)cc.innerHTML=`سورة ${META[s-1][1]} · الآية ${an(v)}`;follow(s,v)},
+      ()=>{const l2=$("#rvListen");if(l2)l2.querySelector("span").textContent="استمع";const cc=$("#rvCount");if(cc)cc.textContent="";
+        box.insertAdjacentHTML("beforeend",chainChoices(c));bindChoices(c);box.lastElementChild.scrollIntoView({block:"center",behavior:"smooth"})})}
+  async function chainRecite(){if(player.queue)stopAudio();const c=await chainData();if(!rvChain)return;
+    box.innerHTML=`<div class="chainhead"><span class="muted">${an(rvChain.i+1)} من ${an(rvChain.list.length)}</span><b>تسميع سورة ${META[c.s-1][1]}</b></div><div id="chRec"></div>`;
+    reciteView($("#chRec"),c.s,c.d,c.a,c.b,{
+      onPass:()=>{if(HZ[c.s]&&HZ[c.s].st===2)hzReview(c.s,true);const last=rvChain.i>=rvChain.list.length-1;
+        return {msg:"",next:last?null:{label:`${META[rvChain.list[rvChain.i+1]-1][1]} ←`,go:()=>{rvChain.i++;chainPlay()}}}},
+      onFail:()=>{if(HZ[c.s]&&HZ[c.s].st===2)hzReview(c.s,false)},
+      onRetry:()=>chainPlay()})}
+}
+function hzSwitch(t){store.set("hztab3",t);if(player.queue)stopAudio();stopRec();rec=null;
+  const tb=$("#hzTab");if(tb)tb.querySelectorAll("button").forEach(z=>z.setAttribute("aria-selected",String(z.dataset.t===t)));
+  const d=cache[hzS];if(!d)return;({listen:drawListen,recite:drawRecite,review:drawReview}[t]||drawListen)(hzS,d);window.scrollTo({top:0,behavior:"smooth"})}
+let rec=null;
+function stopRec(){if(rec){rec.want=false;try{rec.r.stop()}catch(e){}}document.body.classList.remove("reclive")}
+
 const SRC=window.SpeechRecognition||window.webkitSpeechRecognition;
 const skel=w=>norm(w).replace(/[اء]/g,"");
 function lev(a,b){if(a===b)return 0;const m=a.length,n=b.length;if(!m)return n;if(!n)return m;let p=Array.from({length:n+1},(_,j)=>j);
@@ -1405,158 +1602,6 @@ function alignRec(spoken,target,start,final){const T=target.length,st=new Array(
     if(hit<0)return false;mark(i,hit);st[hit]=1;i=hit+1;return true}
   }
   return {st,pos:i,used}}
-let rec=null;
-function stopRec(){if(rec){rec.want=false;try{rec.r.stop()}catch(e){}}document.body.classList.remove("reclive")}
-/* ---------- Accurate engine: Quran-tuned Whisper (Tarteel whisper-base-ar-quran, ONNX) running on the device ---------- */
-/* Uses the phone's GPU (WebGPU) when available: much faster, and fast enough to show the text while you recite. */
-const QASR={model:"iqbalaesthetic/Basira",lib:"https://cdn.jsdelivr.net/npm/@huggingface/transformers@3.8.1",worker:null,ready:false,dev:"",loading:null,busy:0,cbs:{},id:0,onProgress:null,files:{}};
-function qasrWorker(){
-  if(QASR.worker)return QASR.worker;
-  const code=`import {pipeline,env} from "${QASR.lib}";
-env.allowLocalModels=false;
-let asr=null;
-const load=(device,dtype,cb)=>pipeline("automatic-speech-recognition",self.__m,{device,dtype,progress_callback:cb});
-self.onmessage=async e=>{const m=e.data;
-  if(m.type==="load"){self.__m=m.model;const cb=p=>self.postMessage({type:"progress",p});let dev="wasm",dt="q8";
-    try{if(m.gpu&&self.navigator&&navigator.gpu){const ad=await navigator.gpu.requestAdapter();if(ad){dev="webgpu";dt=ad.features.has("shader-f16")?"fp16":"q4"}}}catch(x){}
-    try{asr=await load(dev,dt,cb)}catch(err){if(dev==="wasm"){self.postMessage({type:"error",msg:String(err&&err.message||err)});return}
-      try{dev="wasm";asr=await load("wasm","q8",cb)}catch(err2){self.postMessage({type:"error",msg:String(err2&&err2.message||err2)});return}}
-    self.postMessage({type:"ready",dev})}
-  if(m.type==="run"){let text="";try{let out;try{out=await asr(m.audio,{language:"arabic",task:"transcribe"})}catch(x){out=await asr(m.audio)}text=(out&&out.text)||""}catch(err){}
-    self.postMessage({type:"text",id:m.id,text})}};`;
-  const url=URL.createObjectURL(new Blob([code],{type:"text/javascript"}));
-  QASR.worker=new Worker(url,{type:"module"});
-  QASR.worker.onmessage=e=>{const m=e.data;
-    if(m.type==="progress"&&m.p&&m.p.file){if(m.p.total)QASR.files[m.p.file]={l:m.p.loaded||0,t:m.p.total};if(m.p.status==="done"&&QASR.files[m.p.file])QASR.files[m.p.file].l=QASR.files[m.p.file].t;
-      let l=0,t=0;for(const f of Object.values(QASR.files)){l+=f.l;t+=f.t}QASR.onProgress&&QASR.onProgress(t?l/t:0,t)}
-    if(m.type==="ready"){QASR.ready=true;QASR.dev=m.dev;store.set("qasr",m.dev);QASR.loading&&QASR.loading.res()}
-    if(m.type==="error"){const L=QASR.loading;QASR.loading=null;QASR.worker.terminate();QASR.worker=null;L&&L.rej(new Error(m.msg))}
-    if(m.type==="text"){QASR.busy=Math.max(0,QASR.busy-1);const cb=QASR.cbs[m.id];delete QASR.cbs[m.id];cb&&cb(m.text)}};
-  QASR.worker.onerror=()=>{const L=QASR.loading;QASR.loading=null;if(QASR.worker)QASR.worker.terminate();QASR.worker=null;L&&L.rej(new Error("worker"))};
-  return QASR.worker}
-function qasrLoad(onProgress){QASR.onProgress=onProgress;if(QASR.ready)return Promise.resolve();if(QASR.loading)return QASR.loading.p;
-  let res,rej;const p=new Promise((a,b)=>{res=a;rej=b});QASR.loading={p,res,rej};QASR.files={};
-  try{qasrWorker().postMessage({type:"load",model:QASR.model,gpu:true})}catch(e){QASR.loading=null;return Promise.reject(e)}return p}
-function qasrRun(audio){return new Promise(res=>{const id=++QASR.id;QASR.cbs[id]=res;QASR.busy++;QASR.worker.postMessage({type:"run",id,audio},[audio.buffer])})}
-function resample(buf,from,to){if(from===to)return buf.slice();const r=from/to,n=Math.floor(buf.length/r),out=new Float32Array(n);
-  for(let i=0;i<n;i++){const x=i*r,j=Math.floor(x),f=x-j;out[i]=buf[j]*(1-f)+(buf[j+1]||0)*f}return out}
-/* Microphone cut into phrases at each short pause (energy-based voice detection).
-   onPhrase(audio16k) at each pause; onPartial(audio16k) while you are still reciting (only used when the GPU is fast enough);
-   onLevel(0..1) for the meter. */
-async function micPhrases(opt){
-  const stream=await navigator.mediaDevices.getUserMedia({audio:{channelCount:1,echoCancellation:true,noiseSuppression:true,autoGainControl:true}});
-  const Ctx=window.AudioContext||window.webkitAudioContext,ctx=new Ctx();if(ctx.state==="suspended")await ctx.resume();
-  const src=ctx.createMediaStreamSource(stream),proc=ctx.createScriptProcessor(2048,1,1),mute=ctx.createGain();mute.gain.value=0;
-  const sr=ctx.sampleRate,ms=2048/sr*1000,pause=opt.pauseMs||550,maxMs=opt.maxMs||9000;
-  let chunks=[],pre=[],speaking=false,speech=0,sil=0,nf=.008,sincePartial=0;
-  const join=()=>{let n=0;for(const c of chunks)n+=c.length;const buf=new Float32Array(n);let o=0;for(const c of chunks){buf.set(c,o);o+=c.length}return resample(buf,sr,16000)};
-  const emit=()=>{if(speech>=300)opt.onPhrase(join());chunks=[];speaking=false;speech=0;sil=0;sincePartial=0};
-  proc.onaudioprocess=e=>{const d=new Float32Array(e.inputBuffer.getChannelData(0));let s=0;for(let i=0;i<d.length;i++)s+=d[i]*d[i];
-    const rms=Math.sqrt(s/d.length),loud=rms>Math.max(.012,nf*2.5);opt.onLevel&&opt.onLevel(Math.min(1,rms*8));
-    if(!speaking){nf=nf*.95+rms*.05;pre.push(d);if(pre.length>8)pre.shift();if(loud){speaking=true;chunks=pre;pre=[];speech=ms;sil=0}}
-    else{chunks.push(d);if(loud){speech+=ms;sil=0}else{sil+=ms;if(sil>=pause){emit();return}}
-      if(speech+sil>=maxMs){emit();return}
-      sincePartial+=ms;if(opt.onPartial&&sincePartial>=1200&&speech>=600){sincePartial=0;opt.onPartial(join())}}};
-  src.connect(proc);proc.connect(mute);mute.connect(ctx.destination);
-  return {stop(flush){try{proc.disconnect();src.disconnect()}catch(e){}stream.getTracks().forEach(t=>t.stop());if(flush&&speaking)emit();try{ctx.close()}catch(e){}}};
-}
-
-function drawRec(data,a,b){
-  const n=hzS,body=$("#hzBody");stopRec();
-  if(!STANDALONE){body.innerHTML=`<div class="card"><p class="note2">التسميع بالميكروفون يعمل في نسخة التطبيق المنشورة على Vercel أو GitHub، لأن هذه الصفحة لا تستطيع استعمال الميكروفون.</p></div>`;return}
-  const engine=SRC?store.get("recengine","fast"):"exact";
-  const show=store.get("recshow",false);
-  const words=[];let html="";
-  for(let v=a;v<=b;v++){const ws=data.v[v-1].split(" ");
-    html+=`<p class="hzv" data-sv="${n}:${v}">`+ws.map(w=>{if(isMark(w))return esc(w);const k=words.length;words.push(skel(w));return `<span class="rw${show?" peek":""}" data-k="${k}">${esc(w)}</span>`}).join(" ")+` <span class="ayn">﴿${an(v)}﴾</span></p>`}
-  body.innerHTML=`<div class="card recinfo">
-      <div class="recopts">
-        <div class="seg sm" id="recEng" aria-label="طريقة التعرّف">${SRC?`<button type="button" data-e="fast" aria-pressed="${engine==="fast"}">سريع</button>`:""}<button type="button" data-e="exact" aria-pressed="${engine==="exact"}">دقيق</button></div>
-        <button class="swbtn" type="button" id="recShow" role="switch" aria-checked="${show}"><span>النص باهتًا</span><i class="sw"></i></button>
-      </div>
-    </div>
-    <div id="recText">${html}</div>
-    <div class="recbar"><i class="lvl" id="recLvl" aria-hidden="true"></i><div class="recstat"><b id="recStat">${an(0)} / ${an(words.length)}</b><span class="heard" id="recHeard" aria-live="polite"></span></div>
-      <button class="btn gold mic" type="button" id="recBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>ابدأ</span></button></div>`;
-  const spans=[...document.querySelectorAll("#recText .rw")],vEls=[...document.querySelectorAll("#recText .hzv")];
-  const vStart={},vEnd={},vOf=[];spans.forEach((sp,k)=>{const v=+sp.closest(".hzv").dataset.sv.split(":")[1];vOf[k]=v;if(vStart[v]===undefined)vStart[v]=k;vEnd[v]=k});
-  let startIdx=0,fixed=new Array(words.length).fill(0),finals=[],last={st:fixed.slice(),pos:0},lastV=0,running=false;
-  const merged=al=>{const st=fixed.slice();for(let k=startIdx;k<st.length;k++)st[k]=al.st[k];return {st,pos:al.pos}};
-  const score=al=>al.st.filter(x=>x===1).length*2+al.pos;
-  const paint=(st,pos,done)=>{spans.forEach((s,k)=>{s.classList.toggle("ok",st[k]===1);s.classList.toggle("miss",st[k]===2||(done&&st[k]===0))});
-    const curV=pos<spans.length?vOf[pos]:0;
-    vEls.forEach(e=>{const v=+e.dataset.sv.split(":")[1];e.classList.toggle("cur",!done&&v===curV);
-      let full=true;for(let k=vStart[v];k<=vEnd[v];k++)if(st[k]!==1){full=false;break}e.classList.toggle("done",!done&&running&&full&&v!==curV)});
-    const ok=st.filter(x=>x===1).length,miss=st.filter(x=>x===2).length;
-    $("#recStat").textContent=done?`${an(ok)} من ${an(words.length)} صحيحة`:`${an(ok)} / ${an(words.length)}${miss?`، ${an(miss)} فاتتك`:""}`;
-    if(!done&&curV&&curV!==lastV){lastV=curV;const el=vEls.find(e=>+e.dataset.sv.split(":")[1]===curV);if(el)el.scrollIntoView({block:"start",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"})}};
-  const btnLabel=t=>{$("#recBtn span").textContent=t};
-  const setLive=on=>{running=on;document.body.classList.toggle("reclive",on);$("#recBtn").classList.toggle("live",on)};
-  const finish=()=>{stopRec();rec=null;setLive(false);btnLabel("أعد");paint(last.st,last.pos,true);
-    const ok=last.st.filter(x=>x===1).length;$("#recHeard").textContent=ok===words.length?"ما شاء الله، تسميع متقن":ok/words.length>=.8?"أحسنت، راجع الكلمات الحمراء":"كرّر المقطع ثم أعد المحاولة";
-    if(ok===words.length)toast("ما شاء الله، تسميع متقن")};
-  $("#recText").onclick=e=>{const p=e.target.closest(".hzv");if(!p)return;const v=+p.dataset.sv.split(":")[1];if(vStart[v]===undefined)return;
-    startIdx=vStart[v];fixed=last.st.slice();for(let k=startIdx;k<fixed.length;k++)fixed[k]=0;finals=[];lastV=0;
-    last={st:fixed.slice(),pos:startIdx};paint(last.st,startIdx,false);$("#recHeard").textContent="";
-    if(rec){try{rec.r.abort()}catch(x){}}
-    toast(`أتابع معك من الآية ${an(v)}`)};
-  $("#recShow").onclick=()=>{store.set("recshow",!show);drawRec(data,a,b)};
-  $("#recEng").onclick=e=>{const x=e.target.closest("[data-e]");if(!x||rec)return;store.set("recengine",x.dataset.e);drawRec(data,a,b)};
-  const toWords=t=>t.split(/\s+/).filter(Boolean).map(skel).filter(Boolean);
-  const commit=(ws,final)=>{const al=alignRec(ws,words,startIdx,final);for(let k=startIdx;k<al.pos;k++)fixed[k]=al.st[k];startIdx=al.pos;return final?ws.length:al.used};
-  /* accurate engine: each phrase (cut at a pause) is transcribed on the device, then compared with what remains */
-  const startExact=async()=>{
-    const me={want:true,exact:true,mic:null,r:{stop(){if(me.mic)me.mic.stop(false)},abort(){}}};rec=me;btnLabel("إنهاء");
-    $("#recHeard").textContent=QASR.ready?"":"جارٍ تجهيز النموذج…";
-    try{await qasrLoad((f,t)=>{if(rec===me)$("#recHeard").textContent=`تنزيل النموذج ${an(Math.round(f*100))}٪${t?` من ${an(Math.round(t/1048576))} ميغابايت`:""}`})}
-    catch(e){if(rec===me){rec=null;setLive(false);btnLabel("ابدأ")}toast("تعذّر تنزيل النموذج. تحقّق من الاتصال وأعد المحاولة، أو استعمل الطريقة السريعة");return}
-    if(rec!==me)return;
-    const heard=$("#recHeard"),lvl=$("#recLvl");let phraseNo=0;
-    try{me.mic=await micPhrases({
-      onLevel:v=>{lvl.style.setProperty("--lv",v.toFixed(2))},
-      /* GPU only: transcribe the phrase so far, to show the words while you recite (not counted until the pause) */
-      onPartial:QASR.dev==="webgpu"?async seg=>{if(QASR.busy>0||rec!==me)return;const no=phraseNo;const text=(await qasrRun(seg)).trim();
-        if(rec!==me||no!==phraseNo||!text)return;heard.textContent=text;heard.classList.add("live");last=merged(alignRec(toWords(text),words,startIdx,false));paint(last.st,last.pos,false)}:null,
-      onPhrase:async seg=>{if(rec!==me&&!me.closing)return;phraseNo++;if(QASR.dev!=="webgpu")heard.textContent="أتحقق…";
-        const text=(await qasrRun(seg)).trim();if(rec!==me&&!me.closing)return;
-        if(text){commit(toWords(text),true);last={st:fixed.slice(),pos:startIdx};paint(last.st,last.pos,false)}
-        heard.classList.remove("live");heard.textContent=text||"لم أسمع بوضوح، أعد الجملة";
-        if(startIdx>=words.length&&rec===me)setTimeout(()=>{if(rec===me)finish()},300)}})}
-    catch(e){if(rec===me){rec=null;setLive(false);btnLabel("ابدأ")}toast("اسمح للمتصفح باستعمال الميكروفون، ثم أعد المحاولة");return}
-    if(rec!==me){me.mic.stop(false);return}
-    heard.textContent=QASR.dev==="webgpu"?"أستمع إليك…":"أستمع إليك… توقّف لحظة بعد كل جملة";
-  };
-  const finishExact=async()=>{const me=rec;me.closing=true;btnLabel("…");if(me.mic)me.mic.stop(true);
-    const t0=Date.now();while(QASR.busy>0&&Date.now()-t0<15000)await new Promise(r=>setTimeout(r,150));if(rec===me)finish()};
-  $("#recBtn").onclick=()=>{
-    if(rec){if(rec.exact)finishExact();else finish();return}
-    if(player.s)stopAudio();
-    if(last.pos>=words.length||$("#recBtn span").textContent==="أعد"){startIdx=0;fixed=new Array(words.length).fill(0)}
-    finals=[];lastV=0;last={st:fixed.slice(),pos:startIdx};setLive(true);paint(last.st,startIdx,false);$("#recHeard").textContent="أستمع إليك…";
-    if(engine==="exact"){startExact();return}
-    const r=new SRC();r.lang="ar-SA";r.continuous=true;r.interimResults=true;r.maxAlternatives=3;
-    rec={r,want:true};btnLabel("إنهاء");
-    /* Words that are recognised are locked in and dropped from the transcript, so new speech is only
-       compared with the rest of the passage. used[i] = words of result i already consumed. */
-    const used={};
-    r.onresult=e=>{let pending=[],raw=[];
-      for(let i=e.resultIndex;i<e.results.length;i++){const res=e.results[i],u=used[i]||0;
-        /* among the recogniser's alternatives, keep the one that fits what remains best */
-        let best=res[0].transcript,bs=-1;for(let j=0;j<res.length;j++){const t=res[j].transcript;const sc=score(alignRec(toWords(t).slice(u),words,startIdx,res.isFinal));if(sc>bs){bs=sc;best=t}}
-        const ws=toWords(best),rest=ws.slice(Math.min(u,ws.length));
-        if(res.isFinal){commit(rest,true);used[i]=ws.length}
-        else{const n=rest.length>1?commit(rest.slice(0,-1),false):0;used[i]=Math.min(u,ws.length)+n;pending.push(...rest.slice(n));raw.push(...best.split(/\s+/).filter(Boolean).slice(used[i]))}}
-      last=merged(alignRec(pending,words,startIdx,false));paint(last.st,last.pos,false);
-      $("#recHeard").textContent=raw.join(" ");
-      if(last.pos>=words.length||startIdx>=words.length)setTimeout(()=>{if(rec)finish()},350)};
-    r.onerror=e=>{if(e.error==="no-speech"||e.error==="aborted")return;rec&&(rec.want=false);
-      toast(e.error==="not-allowed"||e.error==="service-not-allowed"?"اسمح للمتصفح باستعمال الميكروفون والتعرّف على الكلام، ثم أعد المحاولة":"تعذّر التعرّف على الصوت. تحقّق من الاتصال وأعد المحاولة");
-      btnLabel("ابدأ");setLive(false);rec=null};
-    r.onend=()=>{for(const k in used)delete used[k];if(rec&&rec.want){try{r.start()}catch(e){setTimeout(()=>{if(rec&&rec.want)try{r.start()}catch(x){}},250)}}};
-    try{r.start()}catch(e){toast("تعذّر تشغيل الميكروفون");rec=null;setLive(false);btnLabel("ابدأ")}
-  };
-}
-
 /* ---------- Settings ---------- */
 /* ---------- Statistics page (v4: today first, daily goal in pages) ---------- */
 const LPP=538.7; /* average letters per mushaf page (325 386 letters / 604 pages) */
@@ -1642,6 +1687,9 @@ function renderStats(){
 /* ---------- Memorization home (v4: review first, filters, live search) ---------- */
 let hzF=store.get("hzf","all"),hzQ="";
 const ICO={
+  listen:'<svg viewBox="0 0 24 24"><path d="M4 15v-3a8 8 0 0 1 16 0v3"/><rect x="3" y="14" width="4" height="6" rx="1.5"/><rect x="17" y="14" width="4" height="6" rx="1.5"/></svg>',
+  recite:'<svg viewBox="0 0 24 24"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg>',
+  review:'<svg viewBox="0 0 24 24"><path d="M3 12a9 9 0 1 0 3-6.7"/><path d="M3 4v4h4"/><path d="M12 8v4l3 2"/></svg>',
   mask:'<svg viewBox="0 0 24 24"><path d="M3 12s3.5-6 9-6 9 6 9 6-3.5 6-9 6-9-6-9-6z"/><path d="M4 4l16 16"/></svg>',
   rep:'<svg viewBox="0 0 24 24"><path d="M17 2l3 3-3 3"/><path d="M4 11V9a4 4 0 0 1 4-4h12"/><path d="M7 22l-3-3 3-3"/><path d="M20 13v2a4 4 0 0 1-4 4H4"/></svg>',
   quiz:'<svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9.5 9.5a2.5 2.5 0 1 1 3.5 2.3c-.6.3-1 .9-1 1.6v.6"/><circle cx="12" cy="17" r=".6"/></svg>',
@@ -1650,7 +1698,7 @@ const ICO={
 const hzCur=()=>{const k=Object.keys(HZ).find(s=>HZ[s].st===1);return k?+k:0};
 function setCurrent(s){const prev=hzCur();Object.keys(HZ).forEach(k=>{if(HZ[k].st===1&&+k!==s)delete HZ[k]});
   HZ[s]={st:1,at:(HZ[s]&&HZ[s].st===1&&HZ[s].at)||1};hzSave();return prev&&prev!==s?prev:0}
-function hzContinue(s){const h=HZ[s],N=META[s-1][4],at=Math.min(N,(h&&h.at)||1);store.set("hzr"+s,[at,Math.min(N,at+6)]);location.hash="hifz-"+s}
+function hzContinue(s){store.set("hzg"+s,0);store.set("hztab3","listen");location.hash="hifz-"+s}
 function renderHifzHome(){
   current=0;curPage=0;titleEl.textContent="الحفظ";document.title="الحفظ والمراجعة · مصحف التدبر";
   const desc=store.get("order","asc")==="desc",ids=Object.keys(HZ).map(Number),mem=ids.filter(s=>HZ[s].st===2).sort((a,b)=>desc?b-a:a-b),due=hzDue(),cur=hzCur();
@@ -1718,44 +1766,30 @@ function openPicker(modeP){
     hzSave();closePicker();toast(added||removed?`تم: ${added?`أُضيفت ${an(added)}`:""}${added&&removed?"، ":""}${removed?`أُزيلت ${an(removed)}`:""}`:"لم يتغيّر شيء");renderHifzHome()};
 }
 
-/* ---------- Memorization surah page (v4: compact head, range presets, icon tools) ---------- */
+/* ---------- Memorization surah page (v6: three steps — استماع, تسميع, مراجعة) ---------- */
 async function renderHifzSurah(n){
-  current=0;curPage=0;hzS=n;hzQuiz=null;const m=META[n-1];titleEl.textContent="حفظ "+m[1];document.title="حفظ سورة "+m[1]+" · مصحف التدبر";
+  current=0;curPage=0;hzS=n;rvChain=null;const m=META[n-1];titleEl.textContent="حفظ "+m[1];document.title="حفظ سورة "+m[1]+" · مصحف التدبر";
   view.innerHTML=`<div class="wrap"><div class="loading">جارٍ التحميل…</div></div>`;
   let data;try{data=await loadSurah(n)}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر التحميل. تحقّق من الاتصال.</div></div>`;return}
   if(hzS!==n)return;
-  const N=data.v.length,[a,b]=hzRange(N),h=HZ[n],st=h?h.st:0,tab=store.get("hztab2","rec");
+  const N=data.v.length,h=HZ[n],st=h?h.st:0;let tab=store.get("hztab3","listen");if(!["listen","recite","review"].includes(tab))tab="listen";
   const due=h&&h.st===2&&h.due<=today();
-  const nextTxt=h&&h.st===2&&!due?`المراجعة القادمة بعد ${an(daysUntil(h.due))} يوم`:"";
+  const sub=st===1?`سورتك الحالية · حفظتَ ${an(hzLearned(n,N))} من ${an(N)}`:st===2?(due?"حان وقت مراجعتها":`محفوظة · المراجعة بعد ${an(daysUntil(h.due))} يوم`):`${an(N)} آية`;
   view.innerHTML=`<div class="wrap pgx hzpage">
     <div class="hzhead">
       <a class="back" href="#hifz">→ الحفظ</a>
-      <div class="hzname"><span class="sname">سورة ${m[1]}</span><small>${an(N)} آية${st===1?"، سورتك الحالية":""}${nextTxt?`، ${nextTxt}`:""}</small></div>
+      <div class="hzname"><span class="sname">سورة ${m[1]}</span><small>${sub}</small></div>
     </div>
-    ${due?`<section class="card duecard"><h2>حان وقت المراجعة</h2><p class="note2" style="margin-bottom:10px">راجع السورة بإحدى الأدوات أدناه، ثم قيّم حفظك:</p><div class="btns"><button class="btn gold" type="button" id="rvOk">أتقنتها</button><button class="btn" type="button" id="rvNo">أحتاج مراجعة</button></div></section>`:""}
     <div class="seg" id="hzSt"><button type="button" data-st="0" aria-pressed="${st===0}">لم أبدأ</button><button type="button" data-st="1" aria-pressed="${st===1}">أحفظها الآن</button><button type="button" data-st="2" aria-pressed="${st===2}">حفظتها</button></div>
-    <section class="card tight">
-      <div class="range"><span>المقطع</span><label class="sr" for="hzFrom">من الآية</label><input id="hzFrom" type="number" inputmode="numeric" min="1" max="${N}" value="${a}"><span>إلى</span><label class="sr" for="hzTo">إلى الآية</label><input id="hzTo" type="number" inputmode="numeric" min="1" max="${N}" value="${b}"></div>
-      ${st===1?`<div class="atrow"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 3h12v18l-6-4-6 4z"/></svg><label for="hzAt">وصلتُ إلى الآية</label><input id="hzAt" type="number" inputmode="numeric" min="1" max="${N}" value="${Math.min(N,h.at||1)}"><button class="btn gold sm" type="button" id="hzAtSave">حفظ موضعي</button></div>`:""}
-      <div class="chips" id="hzPre"><button type="button" data-p="prev" ${a<=1?"disabled":""}>→ السابق</button><button type="button" data-p="next" ${b>=N?"disabled":""}>التالي ←</button><button type="button" data-p="all" aria-pressed="${a===1&&b===N}">كل السورة</button></div>
-    </section>
-    <div class="tooltabs" id="hzTab" role="tablist">
-      ${[["rec","تسميع"],["rep","مراجعة"],["mask","إخفاء"],["quiz","اختبار"]].map(([k,l])=>`<button type="button" role="tab" data-t="${k}" aria-pressed="${tab===k}">${ICO[k]}<span>${l}</span></button>`).join("")}
+    <div class="hztabs" id="hzTab" role="tablist">
+      ${[["listen","استماع","١"],["recite","تسميع","٢"],["review","مراجعة",""]].map(([k,l,num])=>`<button type="button" role="tab" data-t="${k}" aria-selected="${tab===k}">${num?`<em>${an(k==="listen"?1:2)}</em>`:""}${ICO[k]}<span>${l}</span></button>`).join("")}
     </div>
     <div id="hzBody"></div>
   </div>`;
   $("#hzSt").onclick=e=>{const x=e.target.closest("[data-st]");if(!x)return;const v=+x.dataset.st,prev=setHzStatus(n,v);
     toast(v===1?(prev?`أصبحت سورتك الحالية (أُزيلت ${META[prev-1][1]})`:"أصبحت سورتك الحالية، بالتوفيق"):["أُزيلت من الحفظ","","ما شاء الله، أُضيفت إلى المحفوظات"][v]);renderHifzSurah(n)};
-  const atS=$("#hzAtSave");if(atS)atS.onclick=()=>{const v=Math.max(1,Math.min(N,+$("#hzAt").value||1));$("#hzAt").value=v;HZ[n].at=v;hzSave();toast(`حُفظ موضعك: الآية ${an(v)}`)};
-  if($("#rvOk")){$("#rvOk").onclick=()=>{hzReview(n,true);toast("أحسنت، بارك الله فيك");renderHifzSurah(n)};$("#rvNo").onclick=()=>{hzReview(n,false);toast("سنذكّرك بمراجعتها غدًا");renderHifzSurah(n)}}
-  const setR=(x,y)=>{x=Math.max(1,Math.min(N,x));y=Math.max(x,Math.min(N,y));$("#hzFrom").value=x;$("#hzTo").value=y;store.set("hzr"+n,[x,y]);hzQuiz=null;stopRec();rec=null;if(player.queue)stopAudio();
-    const pre=$("#hzPre");pre.querySelector('[data-p="prev"]').disabled=x<=1;pre.querySelector('[data-p="next"]').disabled=y>=N;pre.querySelector('[data-p="all"]').setAttribute("aria-pressed",String(x===1&&y===N));drawHz(data)};
-  const onR=()=>setR(+$("#hzFrom").value||1,+$("#hzTo").value||+$("#hzFrom").value||1);
-  $("#hzFrom").onchange=onR;$("#hzTo").onchange=onR;
-  $("#hzPre").onclick=e=>{const x=e.target.closest("[data-p]");if(!x||x.disabled)return;const [c,d]=hzRange(N),len=d-c+1;
-    if(x.dataset.p==="all")setR(1,N);else if(x.dataset.p==="next")setR(d+1,Math.min(N,d+len));else setR(Math.max(1,c-len),c-1)};
-  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;store.set("hztab2",x.dataset.t);$("#hzTab").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));if(player.queue)stopAudio();stopRec();rec=null;drawHz(data)};
-  drawHz(data);window.scrollTo(0,0);
+  $("#hzTab").onclick=e=>{const x=e.target.closest("[data-t]");if(x)hzSwitch(x.dataset.t)};
+  ({listen:drawListen,recite:drawRecite,review:drawReview}[tab])(n,data);window.scrollTo(0,0);
 }
 
 /* ---------- Settings (v4: grouped rows, live preview) ---------- */
@@ -1790,6 +1824,7 @@ function renderPrefs(){
     <section class="card">
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
+      <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
       <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
       <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
@@ -1804,6 +1839,7 @@ function renderPrefs(){
     <details class="card fold"><summary>عن التطبيق</summary><p class="note2">النص بالرسم العثماني من موسوعة القرآن الكريم. التفاسير: الميسر، السعدي، ابن كثير. التلاوات من EveryAyah.com. تقسيم الصفحات والأجزاء والأحزاب وفق مصحف المدينة. بياناتك محفوظة على جهازك.</p></details>
   </div>`;
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  $("#pfStrict").onclick=()=>{const on=!store.get("strict",false);store.set("strict",on);$("#pfStrict").setAttribute("aria-checked",String(on));toast(on?"التسميع الصارم مفعّل":"التسميع المتسامح مفعّل")};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
   $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
   $("#pfGap").onclick=e=>{const x=e.target.closest("[data-g]");if(!x)return;save("gap",+x.dataset.g);$("#pfGap").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));updateGapBtn()};
