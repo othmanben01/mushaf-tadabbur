@@ -1920,7 +1920,7 @@ try{if(sessionStorage.getItem("mt_migr")){sessionStorage.removeItem("mt_migr");s
 
 /* audience: anonymous counts (one per phone, one per opening, one per phone per day); the owner's phone is not counted */
 try{if(STANDALONE&&/\.vercel\.app$/.test(location.hostname)){
-  const va=document.createElement("script");va.defer=true;va.src="/_vercel/insights/script.js";document.head.appendChild(va);
+  window.va=window.va||function(){(window.vaq=window.vaq||[]).push(arguments)};const va=document.createElement("script");va.defer=true;va.src="/_vercel/insights/script.js";document.head.appendChild(va);
   if(!store.get("owner",0)&&location.hash!=="#admin"){const hit=k=>fetch(`${CNT}/hit/${CNS}/${k}`,{keepalive:true}).catch(()=>{});
     if(!store.get("counted",0)){store.set("counted",1);hit("users")}
     if(!sessionStorage.getItem("mt_hit")){sessionStorage.setItem("mt_hit","1");hit("opens")}
