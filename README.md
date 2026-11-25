@@ -41,3 +41,7 @@ Ouvre l'adresse GitHub Pages du projet. Sur téléphone, ajoute-la à l'écran d
 - Police : Amiri Quran (licence SIL OFL, voir `fonts/`)
 - Audio : [EveryAyah.com](https://everyayah.com) (fichiers verset par verset)
 - Reconnaissance « دقيق » : [tarteel-ai/whisper-base-ar-quran](https://huggingface.co/tarteel-ai/whisper-base-ar-quran) (Apache-2.0), export ONNX [iqbalaesthetic/Basira](https://huggingface.co/iqbalaesthetic/Basira), via [Transformers.js](https://huggingface.co/docs/transformers.js)
+
+## Mushaf de Médine
+
+Le mode page utilise les polices officielles du Complexe du Roi Fahd (QPC V1, une police par page, dossier `qf/`) et la mise en page ligne par ligne des 604 pages (dossier `m1/`, tirée du jeu de données [zonetecde/mushaf-layout](https://github.com/zonetecde/mushaf-layout), d'après Quran.com). Les polices sont distribuées gratuitement par le Complexe du Roi Fahd ([conditions](http://dm.qurancomplex.gov.sa/copyright-2/)).

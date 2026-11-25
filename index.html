@@ -206,6 +206,16 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .pbody{flex:1;min-height:0;overflow:hidden;display:flex;flex-direction:column;font-size:20px;-webkit-user-select:none;user-select:none;-webkit-touch-callout:none}
 .pinner{margin-block:auto;padding-block:2px}
 .ptext{font-family:var(--f-quran);font-size:1em;line-height:2.02;text-align:justify;text-align-last:center;margin:0}
+.pbody.isqpc{display:block;font-size:inherit}
+.qpage{height:100%;display:flex;flex-direction:column;justify-content:space-between;color:var(--ink);font-feature-settings:normal;--lh:2em}
+.ql{height:var(--lh);display:flex;align-items:center;white-space:nowrap;line-height:1}
+.qt{justify-content:space-between}.qt.short{justify-content:center;gap:.28em}
+.qpage.opening{justify-content:center}.qpage.opening .qt.short{gap:.45em}
+.qpage.measure .ql{display:block;width:max-content;height:auto}.qpage.measure .qt.short{gap:0}
+.qw{padding:0 .02em;border-radius:3px;display:inline-block;line-height:1.55}
+.qh{justify-content:center}.qh .cartouche{font-family:var(--f-quran);font-size:.82em;padding:.02em 1.1em;line-height:1.45;box-shadow:0 0 0 1px var(--solid),0 0 0 3px var(--surface),0 0 0 4px var(--gold)}
+.qb{justify-content:center}.qbs{direction:ltr;unicode-bidi:isolate;font-family:qbsml,serif;font-size:1.05em;margin:0;line-height:1.3;padding:0 .4em;border-radius:6px}
+.qw.stopped{box-shadow:inset 0 -2px 0 var(--gold);border-radius:0}
 .pv{cursor:pointer;border-radius:4px;transition:background .45s;-webkit-tap-highlight-color:transparent}
 .pv.pressing,.pv.sel,.pv.reading,.pv.flash{background:var(--hl)}
 .pv.stopped{box-shadow:inset 0 -2px 0 var(--gold);border-radius:0}
@@ -871,7 +881,7 @@ function markPlaying(){
   clearPlayingUI();updatePlayerBar();if(!player.s)return;
   if(player.bas){const bm=document.querySelector(`.basmala[data-bas="${player.s}"]`);if(bm)bm.classList.add("reading");return}
   document.querySelectorAll(`.hzv[data-sv="${player.s}:${player.v}"]`).forEach(x=>x.classList.add("reading"));
-  if(curPage){const el=document.querySelector(`.pv[data-sv="${player.s}:${player.v}"]`);if(el)el.classList.add("reading");
+  if(curPage){document.querySelectorAll(`.pv[data-sv="${player.s}:${player.v}"]`).forEach(el=>el.classList.add("reading"));
     const sb=document.querySelector('#sheet [data-act="play"]');if(sb&&sheetAt&&sheetAt[0]===player.s&&sheetAt[1]===player.v){sb.classList.add("playing");sb.setAttribute("aria-pressed","true");sb.innerHTML=ICON.pause+"<span>إيقاف</span>"}
     return}
   if(current!==player.s)return;
@@ -1162,6 +1172,31 @@ function onVerseClick(e,n,data){
 /* ---------- Page (mushaf) view ---------- */
 let swipeDir=0;
 const QL=["","ربع الحزب","نصف الحزب","ثلاثة أرباع الحزب"];
+/* ---------- Madinah mushaf (KFGQPC page fonts V1, 15 lines exactly as printed) ---------- */
+const qpcOn=()=>STANDALONE&&store.get("pfont","madinah")==="madinah";
+const QPC={lay:{},font:{}};
+function qpcFont(name,url){if(QPC.font[name])return QPC.font[name];
+  const f=new FontFace(name,`url(${url}) format("woff2")`,{display:"block"});
+  QPC.font[name]=f.load().then(x=>{document.fonts.add(x);return true}).catch(()=>{delete QPC.font[name];return false});return QPC.font[name]}
+qpcFont("qbsml","qf/bsml.woff2");
+async function qpcLayout(p){if(QPC.lay[p])return QPC.lay[p];const r=await fetch(`m1/${String(p).padStart(3,"0")}.json`);if(!r.ok)throw new Error("layout");return QPC.lay[p]=await r.json()}
+/* page data + its font; the next pages are fetched in the background so turning is instant */
+async function qpcPage(p){const [lay,ok]=await Promise.all([qpcLayout(p),qpcFont("qpc"+p,`qf/p${String(p).padStart(3,"0")}.woff2`)]);if(!ok)throw new Error("font");
+  setTimeout(()=>{[p+1,p-1,p+2].forEach(n=>{if(n>=1&&n<=604){qpcLayout(n).catch(()=>{});qpcFont("qpc"+n,`qf/p${String(n).padStart(3,"0")}.woff2`)}})},400);return lay}
+function qpcHtml(p,lay){let h="";
+  for(const l of lay.l){
+    if(l.h){h+=`<div class="ql qh"><span class="cartouche"><i></i>سورة ${META[l.h-1][1]}<i></i></span></div>`;continue}
+    if(l.b){const s=(lay.l[lay.l.indexOf(l)+1]||{}).w;const su=s&&s[0]?+s[0][0].split(":")[0]:0;h+=`<div class="ql qb"><span class="basmala qbs"${su?basAttr(su):""}>${esc(l.b)}</span></div>`;continue}
+    h+=`<div class="ql qt">`+l.w.map(([k,ws])=>{const [a,b]=k.split(":").map(Number);const st=isStop(a,b)?" stopped":"";
+      return ws.map(w=>`<span class="pv qw${st}" data-sv="${k}">${esc(w)}</span>`).join("")}).join("")+`</div>`}
+  return `<div class="qpage${p<=2?" opening":""}" style="font-family:qpc${p},serif">${h}</div>`}
+/* size the 15 lines to the page: same line height for all, width set by the widest line */
+function fitQPC(){const body=$("#pbody"),qp=body&&body.querySelector(".qpage");if(!qp)return;
+  const open=qp.classList.contains("opening"),lines=[...qp.querySelectorAll(".ql")],n=open?lines.length+3:Math.max(15,lines.length),H=body.clientHeight,W=body.clientWidth*(open?.78:1);
+  qp.classList.add("measure");qp.style.fontSize="40px";let max=1;qp.querySelectorAll(".qt").forEach(l=>{max=Math.max(max,l.scrollWidth)});qp.classList.remove("measure");
+  const lh=H/n,fs=Math.min(40*W/max*.985,lh/1.62);qp.style.fontSize=fs.toFixed(2)+"px";qp.style.setProperty("--lh",lh.toFixed(2)+"px");
+  /* short lines (end of a surah, first pages) stay centered with natural spacing */
+  qp.querySelectorAll(".qt").forEach(l=>{l.classList.toggle("short",open||l.scrollWidth<W*.72)})}
 async function renderPage(p){
   p=Math.max(1,Math.min(604,p));
   if(current)current=0;
@@ -1170,12 +1205,15 @@ async function renderPage(p){
   titleEl.textContent="الصفحة "+an(p);document.title="الصفحة "+p+" · مصحف التدبر";
   if(!$("#mpage"))view.innerHTML=`<div class="wrap"><div class="loading">جارٍ تحميل الصفحة…</div></div>`;
   const need=[];for(let s=s1;s<=s2;s++)need.push(s);
-  let datas;try{datas=await Promise.all(need.map(loadSurah))}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر تحميل الصفحة. تحقّق من الاتصال ثم أعد المحاولة.</div></div>`;return}
+  let qlay=null;if(qpcOn()){try{qlay=await qpcPage(p)}catch(e){qlay=null}}
+  let datas=[];if(!qlay){try{datas=await Promise.all(need.map(loadSurah))}catch(e){view.innerHTML=`<div class="wrap"><div class="loading">تعذّر تحميل الصفحة. تحقّق من الاتصال ثم أعد المحاولة.</div></div>`;return}}
+  else need.forEach(s=>loadSurah(s).catch(()=>{})); /* verse text for the sheet, copy, search */
   if(curPage!==p)return;
   const juz=juzOf(first),q=idxLE(HQ,first),hizb=Math.ceil(q/4);
   let qMark="";for(let k=q;k<HQ.length&&HQ[k]<=last;k++){if(HQ[k]>=first&&HQ[k]>1&&(k-1)%4){qMark=QL[(k-1)%4];}}
   let html="",open=false;
-  for(let id=first;id<=last;id++){
+  if(qlay)html=qpcHtml(p,qlay);
+  else for(let id=first;id<=last;id++){
     const [s,v]=sv(id);const data=datas[s-s1];
     if(v===1){if(open){html+="</p>";open=false}
       html+=`<div class="psura"><div class="cartouche"><i></i>سورة ${META[s-1][1]}<i></i></div>${(s!==1&&s!==9)?`<div class="basmala"${basAttr(s)}>بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</div>`:""}</div>`}
@@ -1187,7 +1225,7 @@ async function renderPage(p){
   view.innerHTML=`<div class="wrap pview">
     <article class="mpage${swipeDir>0?" in-next":swipeDir<0?" in-prev":""}" id="mpage"><div class="mpage-in">
       <header class="phead"><span class="ps">سورة ${META[s1-1][1]}</span><span class="pj">الجزء <b>${an(juz)}</b>، الحزب <b>${an(hizb)}</b>${qMark?`، <b>۞ ${qMark}</b>`:""}</span></header>
-      <div class="pbody" id="pbody"><div class="pinner">${html}</div></div>
+      <div class="pbody${qlay?" isqpc":""}" id="pbody">${qlay?html:`<div class="pinner">${html}</div>`}</div>
       <footer class="pfoot">
         <button class="parrow" type="button" data-page="${p-1}" aria-label="الصفحة السابقة" ${p<=1?"disabled":""}>${ICON.prev}</button>
         <div class="pmid">${STANDALONE?`<button class="ribbon pplay" type="button" id="pplay" aria-label="استمع إلى الصفحة" title="استمع إلى الصفحة">${ICON.play}</button>`:""}<span class="pnum">${an(p)}</span><button class="ribbon" type="button" id="pstop" aria-label="توقفت هنا" title="توقفت هنا">${ICON.stop}</button></div>
@@ -1223,6 +1261,7 @@ function fitPage(){
   const pl=$("#player").hidden?0:$("#player").offsetHeight;
   const h=Math.max(360,Math.floor(window.innerHeight-top-padB-16-pl));
   mp.style.height=h+"px";mp.style.maxWidth=Math.round(Math.max(300,h*0.7))+"px";
+  if(body.classList.contains("isqpc")){fitQPC();return}
   let lo=12,hi=34;
   for(let i=0;i<10;i++){const mid=(lo+hi)/2;body.style.fontSize=mid+"px";if(body.scrollHeight<=body.clientHeight+1)lo=mid;else hi=mid}
   body.style.fontSize=lo.toFixed(2)+"px";
@@ -1231,9 +1270,9 @@ let fitT=null;addEventListener("resize",()=>{clearTimeout(fitT);fitT=setTimeout(
 /* Long press on a verse opens its actions */
 function bindLongPress(root){
   let timer=null,x=0,y=0,el=null;
-  const cancel=()=>{clearTimeout(timer);timer=null;if(el)el.classList.remove("pressing");el=null};
+  const cancel=()=>{clearTimeout(timer);timer=null;if(el){el.classList.remove("pressing");root.querySelectorAll(".qw.pressing").forEach(z=>z.classList.remove("pressing"))}el=null};
   root.addEventListener("pointerdown",e=>{const t=e.target.closest(".pv");if(!t||(e.pointerType==="mouse"&&e.button!==0))return;cancel();
-    el=t;x=e.clientX;y=e.clientY;t.classList.add("pressing");
+    el=t;x=e.clientX;y=e.clientY;t.classList.add("pressing");if(t.classList.contains("qw"))root.querySelectorAll(`.qw[data-sv="${t.dataset.sv}"]`).forEach(z=>z.classList.add("pressing"));
     timer=setTimeout(()=>{const t2=el;cancel();if(!t2)return;try{navigator.vibrate&&navigator.vibrate(12)}catch(_){}
       const [s,v]=t2.dataset.sv.split(":").map(Number);openSheet(s,v)},480)});
   let bx=null;root.addEventListener("pointerdown",e=>{bx=e.target.closest("[data-bas]")?[e.clientX,e.clientY,Date.now()]:null});
@@ -1271,9 +1310,9 @@ async function openSheet(s,v){
   sh.querySelector(".vbar").onclick=e=>{const b=e.target.closest("[data-act]");if(!b)return;const act=b.dataset.act;
     if(act==="mark"){toggleMark(s,v);const on=isMarked(s,v);b.classList.toggle("saved",on);b.setAttribute("aria-pressed",on);b.querySelector("span").textContent=on?"محفوظة":"علامة"}
     if(act==="play"){if(player.s===s&&player.v===v)stopAudio();else playFrom(s,v)}
-    if(act==="stop"){document.querySelectorAll(".pv.stopped").forEach(x=>x.classList.remove("stopped"));
+    if(act==="stop"){document.querySelectorAll(".pv.stopped").forEach(x=>x.classList.remove("stopped"));const allW=()=>document.querySelectorAll(`.pv[data-sv="${s}:${v}"]`).forEach(x=>x.classList.add("stopped"));
       if(isStop(s,v)){stopAt=null;save("stop",null);toast("تم حذف موضع التوقف")}
-      else{stopAt=[s,v];save("stop",stopAt);if(el)el.classList.add("stopped");toast(`حُفظ موضع توقفك: ${META[s-1][1]} ${an(v)}`)}
+      else{stopAt=[s,v];save("stop",stopAt);allW();toast(`حُفظ موضع توقفك: ${META[s-1][1]} ${an(v)}`)}
       const on=isStop(s,v);b.classList.toggle("here",on);b.setAttribute("aria-pressed",String(on));updatePageStop()}
     if(act==="copy"){const txt=`${data.v[v-1]} ﴿${an(v)}﴾ [${META[s-1][1]}: ${an(v)}]`;const lbl=b.lastChild;
       try{navigator.clipboard.writeText(txt).then(()=>{lbl.textContent="نُسخت";setTimeout(()=>lbl.textContent="نسخ",1400)},()=>{})}catch(err){}}
@@ -1908,6 +1947,7 @@ function renderPrefs(){
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
       <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
+      ${STANDALONE?`<div class="row"><span>خط صفحات المصحف<small>مصحف المدينة: الصفحات والأسطر كما في المصحف المطبوع</small></span><div class="seg sm" id="pfFont"><button type="button" data-f="madinah" aria-pressed="${qpcOn()}">مصحف المدينة</button><button type="button" data-f="app" aria-pressed="${!qpcOn()}">كلمات متباعدة</button></div></div>`:""}
       <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat",false)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>فعّله إن سمعت تشويشًا في السيارة أو السماعات؛ قد يظهر فاصل قصير بين الآيات</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
       <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
@@ -1923,6 +1963,7 @@ function renderPrefs(){
     <details class="card fold"><summary>عن التطبيق</summary><p class="note2">النص بالرسم العثماني من موسوعة القرآن الكريم. التفاسير: الميسر، السعدي، ابن كثير. التلاوات من EveryAyah.com. تقسيم الصفحات والأجزاء والأحزاب وفق مصحف المدينة. بياناتك محفوظة على جهازك.</p></details>
   </div>`;
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
+  const pff=$("#pfFont");if(pff)pff.onclick=e=>{const x=e.target.closest("[data-f]");if(!x)return;store.set("pfont",x.dataset.f);pff.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));toast(x.dataset.f==="madinah"?"خط مصحف المدينة في وضع الصفحات":"الخط ذو الكلمات المتباعدة في وضع الصفحات")};
   $("#pfCompat").onclick=()=>{const on=!store.get("compat",false);store.set("compat",on);$("#pfCompat").setAttribute("aria-checked",String(on));if(player.s){const s=player.s,v=player.v;stopAudio();playVerse(s,v)}toast(on?"التشغيل المتوافق مفعّل":"التشغيل المتصل بلا فواصل مفعّل")};
   $("#pfStrict").onclick=()=>{const on=!store.get("strict",false);store.set("strict",on);$("#pfStrict").setAttribute("aria-checked",String(on));toast(on?"التسميع الصارم مفعّل":"التسميع المتسامح مفعّل")};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};

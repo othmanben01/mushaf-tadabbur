@@ -25,7 +25,7 @@
       ]
     },
     {
-      "source": "/(s|tm|ts|tk|fonts)/(.*)",
+      "source": "/(s|tm|ts|tk|fonts|m1|qf)/(.*)",
       "headers": [
         {
           "key": "Cache-Control",
