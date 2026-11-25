@@ -1180,7 +1180,7 @@ let QIDX=null;const QBIN={};
 function qbFont(name,url){const m=url.match(/p(\d{3})\.woff2$/);
   if(!m)return new FontFace(name,`url(${url.replace("qf/","qb/")}) format("woff2")`,{display:"block"});
   const p=+m[1];return (async()=>{QIDX=QIDX||fetch("qb/idx.json").then(r=>r.json());const [b,o,l]=(await QIDX)[p];
-    QBIN[b]=QBIN[b]||fetch(`qb/b${String(b).padStart(2,"0")}.bin`).then(r=>{if(!r.ok)throw 0;return r.arrayBuffer()});
+    QBIN[b]=QBIN[b]||fetch(`qb/b${String(b).padStart(2,"0")}.txt`).then(r=>{if(!r.ok)throw 0;return r.text()}).then(t=>{const bin=atob(t.trim()),u=new Uint8Array(bin.length);for(let i=0;i<bin.length;i++)u[i]=bin.charCodeAt(i);return u.buffer});
     return new FontFace(name,(await QBIN[b]).slice(o,o+l),{display:"block"})})()}
 function qpcFont(name,url){if(QPC.font[name])return QPC.font[name];
   if(!STANDALONE){QPC.font[name]=Promise.resolve(qbFont(name,url)).then(f=>f.load()).then(x=>{document.fonts.add(x);return true}).catch(()=>{delete QPC.font[name];return false});return QPC.font[name]}
