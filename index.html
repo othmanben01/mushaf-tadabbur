@@ -237,6 +237,12 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .ribbon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
 .ribbon.here{color:#111;background:var(--gold);border-color:var(--gold)}
 .ribbon.here svg{fill:currentColor}
+.instic{flex:none;width:46px;height:46px;border-radius:12px}
+.instnudge{position:fixed;z-index:30;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;align-items:center;gap:10px;padding:10px 10px 10px 12px;border-radius:18px;background:var(--surface);color:var(--ink);border:1px solid var(--gold);box-shadow:0 14px 40px -12px rgba(0,0,0,.55);transform:translateY(-140%);opacity:0;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s}
+.instnudge.in{transform:none;opacity:1}
+.instnudge img{flex:none;width:44px;height:44px;border-radius:11px}
+.instnudge>div{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.45}.instnudge b{font-size:.98rem}.instnudge span{font-size:.8rem;color:var(--muted)}
+.instnudge .btn{flex:none;padding:8px 14px}
 .instcard{display:flex;align-items:center;gap:12px;border-color:var(--gold)}.instcard>div{flex:1;min-width:0;display:flex;flex-direction:column;gap:2px}.instcard span{font-size:.85rem;color:var(--muted)}
 .instx{background:none;border:0;color:var(--muted);font-size:1.4rem;line-height:1;padding:4px 6px;cursor:pointer}
 .instov{position:fixed;inset:0;z-index:80;background:rgba(0,0,0,.55);display:flex;align-items:flex-end;justify-content:center;padding:16px max(16px,env(safe-area-inset-left,0px)) calc(16px + env(safe-area-inset-bottom,0px))}
@@ -2074,9 +2080,21 @@ function installCard(){
   if(!STANDALONE||isInstalled()||store.get("instno",0)||$("#instCard")||!(isIOS||installEvt))return;
   const w=document.querySelector("#view .wrap");if(!w)return;
   const c=document.createElement("section");c.className="card instcard";c.id="instCard";
-  c.innerHTML=`<div><b>اقرأ بملء الشاشة</b><span>ثبّت المصحف على الشاشة الرئيسية لإخفاء أشرطة المتصفح.</span></div><button class="btn" type="button" id="instGo">ثبّت</button><button class="instx" type="button" aria-label="إخفاء">×</button>`;
+  c.innerHTML=`<img class="instic" src="apple-touch-icon.png" alt=""><div><b>ثبّت التطبيق على هاتفك</b><span>مجاني، يفتح بملء الشاشة ويعمل دون إنترنت.</span></div><button class="btn" type="button" id="instGo">ثبّت</button><button class="instx" type="button" aria-label="إخفاء">×</button>`;
   w.prepend(c);$("#instGo").onclick=installHelp;c.querySelector(".instx").onclick=()=>{store.set("instno",1);c.remove()}}
 {const _rh=renderHome;renderHome=function(){_rh.apply(this,arguments);installCard()};if(!current&&!curPage&&!/^#./.test(location.hash))installCard()}
+/* a gentle notice a few seconds after opening, on any screen: «install the app»; «later» hides it for 3 days, twice «later» for good */
+function installNudge(){
+  if(!STANDALONE||isInstalled()||!(isIOS||installEvt)||$("#instNudge")||$(".instov"))return;
+  const until=store.get("instsnooze",0),n=store.get("instnudges",0);if(n>=3||Date.now()<until)return;
+  const b=document.createElement("div");b.className="instnudge";b.id="instNudge";b.setAttribute("role","dialog");b.setAttribute("aria-label","تثبيت التطبيق");
+  b.innerHTML=`<img src="apple-touch-icon.png" alt=""><div><b>مصحف التدبر على هاتفك</b><span>ثبّته كتطبيق: مجاني، بملء الشاشة، ويعمل دون إنترنت</span></div><button class="btn gold" type="button">تثبيت</button><button class="instx" type="button" aria-label="لاحقًا">×</button>`;
+  document.body.appendChild(b);requestAnimationFrame(()=>b.classList.add("in"));
+  const close=()=>{b.classList.remove("in");setTimeout(()=>b.remove(),300)};
+  b.querySelector(".btn").onclick=()=>{close();installHelp()};
+  b.querySelector(".instx").onclick=()=>{store.set("instsnooze",Date.now()+3*864e5);store.set("instnudges",n+1);close()};
+  setTimeout(()=>{if(b.isConnected)close()},20000)}
+setTimeout(installNudge,7000);addEventListener("beforeinstallprompt",()=>setTimeout(installNudge,7000));
 </script>
 </body>
 </html>
