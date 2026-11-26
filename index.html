@@ -306,19 +306,6 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .mkref{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}.mkref b{font-size:1.05rem}.mkref small{color:var(--gold-strong)}
 .mktxt{font-family:var(--f-quran);font-size:1.25rem;line-height:2;color:var(--muted);display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
 .mkdel{flex:none;width:44px;border:0;border-inline-start:1px solid var(--line);background:none;color:var(--muted);font-size:1.4rem;cursor:pointer}
-/* app-style bottom tab bar */
-:root{--tb:calc(60px + env(safe-area-inset-bottom,0px))}
-.bar{display:none!important}
-body{padding-bottom:var(--tb)}
-.tabbar{position:fixed;inset:auto 0 0 0;z-index:17;height:var(--tb);padding:0 max(8px,env(safe-area-inset-left,0px)) env(safe-area-inset-bottom,0px) max(8px,env(safe-area-inset-right,0px));display:grid;grid-template-columns:repeat(4,1fr);background:color-mix(in srgb,var(--surface) 94%,transparent);backdrop-filter:blur(12px);-webkit-backdrop-filter:blur(12px);border-top:1px solid var(--line-strong)}
-.tabbar a,.tabbar button{display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;border:0;background:none;color:var(--muted);text-decoration:none;font-family:var(--f-head);font-size:.74rem;cursor:pointer;-webkit-tap-highlight-color:transparent}
-.tabbar svg{width:24px;height:24px;fill:none;stroke:currentColor;stroke-width:1.7;stroke-linecap:round;stroke-linejoin:round}
-.tabbar .on{color:var(--gold-strong)}.tabbar .on svg{stroke-width:2.1}
-.player{bottom:var(--tb)!important;padding-bottom:0!important}
-.menu.fromtab{top:auto;left:0;right:0;bottom:var(--tb);min-width:0;max-height:70vh;overflow-y:auto;border-radius:20px 20px 0 0;border:0;border-top:2px solid var(--gold);padding:10px max(14px,env(safe-area-inset-left,0px)) 12px max(14px,env(safe-area-inset-right,0px));box-shadow:0 -12px 40px -10px rgba(0,0,0,.5);animation:sheetup .22s ease-out}
-.menu.fromtab::before{content:"";display:block;width:40px;height:4px;border-radius:9px;background:var(--line-strong);margin:0 auto 8px}
-.menu.fromtab a,.menu.fromtab button{padding:13px 12px;font-size:1rem}
-@keyframes sheetup{from{transform:translateY(30px);opacity:0}to{transform:none;opacity:1}}
 .pplay svg{fill:currentColor;stroke:currentColor;stroke-width:2.4;stroke-linecap:round;stroke-linejoin:round}
 @keyframes inNext{from{opacity:0;transform:translateX(-24px)}to{opacity:1;transform:none}}
 @keyframes inPrev{from{opacity:0;transform:translateX(24px)}to{opacity:1;transform:none}}
@@ -327,7 +314,7 @@ html.pagemode .top{display:none}
 
 /* Verse sheet */
 .scrim{position:fixed;inset:0;z-index:15;background:rgba(0,0,0,.35)}
-.sheet{position:fixed;inset:auto 0 calc(var(--pl) + var(--tb)) 0;z-index:16;background:var(--surface);border-top:2px solid var(--gold);border-radius:18px 18px 0 0;max-height:78vh;overflow-y:auto;
+.sheet{position:fixed;inset:auto 0 var(--pl) 0;z-index:16;background:var(--surface);border-top:2px solid var(--gold);border-radius:18px 18px 0 0;max-height:78vh;overflow-y:auto;
   padding-bottom:calc(14px + env(safe-area-inset-bottom,0px));box-shadow:0 -8px 30px rgba(0,0,0,.18)}
 .sheet .wrap{padding-block:10px 0}
 .sgrip{width:40px;height:4px;border-radius:2px;background:var(--line-strong);margin:0 auto 8px}
@@ -356,8 +343,8 @@ html.pagemode .top{display:none}
 .srec span{font-family:var(--f-head);font-size:.85rem;color:var(--muted)}
 .srec select{flex:1;min-width:0;appearance:none;-webkit-appearance:none;background:transparent;color:var(--ink);border:0;font:inherit;font-size:.95rem;padding:2px 22px 2px 0;
   background-image:linear-gradient(45deg,transparent 50%,var(--gold) 50%),linear-gradient(135deg,var(--gold) 50%,transparent 50%);background-position:6px 55%,11px 55%;background-size:5px 5px;background-repeat:no-repeat}
-.toast{bottom:calc(22px + var(--pl) + var(--tb))!important}
-.top{bottom:calc(18px + var(--pl) + var(--tb))!important}
+.toast{bottom:calc(22px + var(--pl) + env(safe-area-inset-bottom,0px))!important}
+.top{bottom:calc(18px + var(--pl) + env(safe-area-inset-bottom,0px))!important}
 .src{color:var(--muted);font-size:.76rem;text-align:center;padding-block:10px 30px}
 /* ===== v3: menu, pages, stats, hifz ===== */
 input[type=number]::-webkit-outer-spin-button,
@@ -465,7 +452,7 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 .hw{--hwc:color-mix(in srgb,var(--gold) 22%,var(--line));cursor:pointer;color:transparent;background:linear-gradient(var(--hwc),var(--hwc)) 50% 58%/100% .95em no-repeat;border-radius:4px;transition:color .25s;-webkit-tap-highlight-color:transparent}
 .hw.shown{color:inherit;--hwc:transparent;cursor:default}
 .hw.shown.just{--hwc:var(--gold-soft)}
-.hzctl{position:sticky;bottom:calc(10px + var(--pl) + var(--tb));display:flex;justify-content:center;gap:8px;padding:8px;margin-top:6px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line-strong);border-radius:999px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3}
+.hzctl{position:sticky;bottom:calc(10px + var(--pl) + env(safe-area-inset-bottom,0px));display:flex;justify-content:center;gap:8px;padding:8px;margin-top:6px;background:color-mix(in srgb,var(--surface) 92%,transparent);border:1px solid var(--line-strong);border-radius:999px;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:3}
 .chips{display:flex;flex-wrap:wrap;gap:6px}
 .chips button{border:1px solid var(--line-strong);background:var(--surface);border-radius:999px;padding:4px 14px;font-family:var(--f-head);font-size:.85rem;color:var(--muted)}
 .chips button[aria-pressed="true"]{border-color:var(--gold);color:var(--gold-strong);background:var(--gold-soft)}
@@ -584,7 +571,7 @@ html.pagemode .mpage,html.pagemode .mpage *{-webkit-user-select:none!important;u
 
 /* ===== v6: recitation layout ===== */
 .recinfo{display:flex;flex-direction:column;gap:10px;margin-bottom:6px}
-.recbar{position:sticky;bottom:calc(10px + var(--pl) + var(--tb));z-index:4;display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 8px 8px 14px;border-radius:999px;background:var(--solid);color:var(--solid-ink);border:1px solid var(--gold);box-shadow:0 10px 30px -12px rgba(0,0,0,.4)}
+.recbar{position:sticky;bottom:calc(10px + var(--pl) + env(safe-area-inset-bottom,0px));z-index:4;display:flex;align-items:center;gap:10px;margin-top:10px;padding:8px 8px 8px 14px;border-radius:999px;background:var(--solid);color:var(--solid-ink);border:1px solid var(--gold);box-shadow:0 10px 30px -12px rgba(0,0,0,.4)}
 .recstat{flex:1;min-width:0;display:flex;flex-direction:column;line-height:1.35}
 .recstat b{font-family:var(--f-head);font-weight:500;color:var(--gold);font-size:.95rem}
 .recbar .heard{text-align:right;color:color-mix(in srgb,var(--solid-ink) 70%,transparent);font-size:.82rem;min-height:1.2em}
@@ -625,15 +612,7 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
 </div><div class="progress" id="progress" hidden><i></i></div></header>
 
 <main id="view"></main>
-<nav class="tabbar" id="tabbar" aria-label="التنقل">
-  <a href="#" data-tab="home"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M3 10.5 12 3l9 7.5V20a1 1 0 0 1-1 1h-5v-6h-6v6H4a1 1 0 0 1-1-1z"/></svg><span>الرئيسية</span></a>
-  <a href="#read" data-tab="read"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M12 6.5C10 5 7 4.5 3.5 5v14c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5zM12 6.5v14"/></svg><span>القراءة</span></a>
-  <a href="#hifz" data-tab="hifz"><svg viewBox="0 0 24 24" aria-hidden="true"><rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0M12 18v3"/></svg><span>الحفظ</span></a>
-  <button type="button" data-tab="more" id="tabMore" aria-haspopup="true"><svg viewBox="0 0 24 24" aria-hidden="true"><circle cx="5" cy="12" r="1.4"/><circle cx="12" cy="12" r="1.4"/><circle cx="19" cy="12" r="1.4"/></svg><span>المزيد</span></button>
-</nav>
 <nav class="menu" id="menu" hidden aria-label="المزيد">
-  <button type="button" id="mMode"><svg viewBox="0 0 24 24"><path d="M12 6.5C10 5 7 4.5 3.5 5v14c3.5-.5 6.5 0 8.5 1.5 2-1.5 5-2 8.5-1.5V5C17 4.5 14 5 12 6.5zM12 6.5v14"/></svg><span></span></button>
-  <button type="button" id="mSearch"><svg viewBox="0 0 24 24"><circle cx="11" cy="11" r="7"/><path d="m20 20-4-4"/></svg>البحث في القرآن</button>
   <a href="#hifz"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>الحفظ والمراجعة</a>
   <a href="#stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>الإحصائيات</a>
   <a href="#marks"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>العلامات المحفوظة</a>
@@ -731,8 +710,7 @@ let mode=store.get("mode","ayat")==="pages"?"pages":"ayat";
 let curPage=0,pendingFlash=null;
 function updateModeBtn(){const b=$("#btnMode");if(!b)return;const pg=mode==="pages";
   b.innerHTML=pg?ICON.list:ICON.book;b.setAttribute("aria-pressed",String(pg));b.setAttribute("aria-label",pg?"عرض الآيات":"عرض الصفحات");b.title=pg?"عرض الآيات":"عرض الصفحات";
-  document.querySelectorAll(".modeseg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mode===mode)));
-  const mm=$("#mMode span");if(mm)mm.textContent=mode==="pages"?"القراءة آية بآية":"القراءة بصفحات المصحف"}
+  document.querySelectorAll(".modeseg button").forEach(x=>x.setAttribute("aria-pressed",String(x.dataset.mode===mode)))}
 function setMode(m){if(m===mode)return;mode=m;save("mode",m);updateModeBtn();
   if(player.s&&(curPage||current)){go(player.s,player.bas?1:player.v);return}
   if(curPage){const id=PG[curPage];const [s,v]=sv(id);location.hash="s"+s+"-"+v}
@@ -818,7 +796,7 @@ function renderHome(){
     `<button class="continue" type="button" data-go="1-1"><div><b>ابدأ القراءة</b><span>سورة الفاتحة، الآية ${an(1)}</span></div><span class="go">‹</span></button>`;
   const ORN='<svg class="orn" viewBox="0 0 40 40" aria-hidden="true"><path d="M20 2l5.3 5.9 7.4.8.8 7.4L39.4 20l-5.9 5.3-.8 7.4-7.4.8L20 39.4l-5.3-5.9-7.4-.8-.8-7.4L.6 20l5.9-5.3.8-7.4 7.4-.8z" fill="none" stroke="var(--gold)" stroke-width="1.2"/><path d="M20 9l3 4.3 5 1-3.4 4 .6 5.2L20 21.4l-5.2 2.1.6-5.2-3.4-4 5-1z" fill="var(--gold)"/></svg>';
   view.innerHTML=`<section class="cover"><div class="wrap"><div class="frame"><div class="frame-in">
-      ${ORN}<h1>مصحف التدبر</h1><p class="purpose">اقرأ القرآن واحفظه</p><p>استمع، ثم سمّع من حفظك والتطبيق يصحّح لك، وتدبّر كل آية بتفسيرها.</p>
+      ${ORN}<h1>القرآن الكريم</h1><p class="purpose">اقرأ القرآن واحفظه</p><p>استمع، ثم سمّع من حفظك والتطبيق يصحّح لك، وتدبّر كل آية بتفسيرها.</p>
       ${hifzHome()}
       ${lastHtml}
       ${STANDALONE&&listenAt?`<button class="resume" type="button" id="resumeBtn"><svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5v14l11-7z"/></svg><div><b>استئناف الاستماع</b><span>سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}</span></div></button>`:""}
@@ -1233,7 +1211,7 @@ async function renderPage(p){
   p=Math.max(1,Math.min(604,p));
   if(current)current=0;
   const first=PG[p],last=PG[p+1]-1;const [s1]=sv(first),[s2]=sv(last);
-  curPage=p;document.documentElement.classList.add("pagemode");store.set("lastpg",p);
+  curPage=p;document.documentElement.classList.add("pagemode");
   titleEl.textContent="الصفحة "+an(p);document.title="الصفحة "+p+" · مصحف التدبر";
   if(!$("#mpage"))view.innerHTML=`<div class="wrap"><div class="loading">جارٍ تحميل الصفحة…</div></div>`;
   const need=[];for(let s=s1;s<=s2;s++)need.push(s);
@@ -1289,9 +1267,9 @@ async function renderPage(p){
 function fitPage(){
   const mp=$("#mpage"),body=$("#pbody");if(!mp||!body)return;
   const cs=getComputedStyle(document.documentElement);const padB=parseFloat(cs.paddingBottom)||0;
-  const top=$("#view").getBoundingClientRect().top;
+  const top=$(".bar").getBoundingClientRect().bottom;
   const pl=$("#player").hidden?0:$("#player").offsetHeight;
-  const tb=$("#tabbar").offsetHeight||0;const h=Math.max(360,Math.floor(window.innerHeight-top-padB-12-pl-tb));
+  const h=Math.max(360,Math.floor(window.innerHeight-top-padB-16-pl));
   mp.style.height=h+"px";mp.style.maxWidth=Math.round(Math.max(300,h*0.7))+"px";
   if(body.classList.contains("isqpc")){fitQPC();return}
   let lo=12,hi=34;
@@ -1388,8 +1366,6 @@ async function runSearch(q){
 }
 let st=null;$("#q").addEventListener("input",e=>{clearTimeout(st);st=setTimeout(()=>runSearch(e.target.value),250)});
 $("#btnSearch").onclick=()=>{$("#panel").hidden=false;$("#q").focus();ensureIndex().catch(()=>{})};
-$("#mMode").onclick=()=>{closeMenu();setMode(mode==="pages"?"ayat":"pages")};
-$("#mSearch").onclick=()=>{closeMenu();$("#btnSearch").onclick()};
 $("#closeSearch").onclick=()=>{$("#panel").hidden=true};
 document.addEventListener("keydown",e=>{if(e.key==="Escape")$("#panel").hidden=true});
 
@@ -2017,7 +1993,7 @@ function renderPrefs(){
 }
 
 /* ---------- More menu ---------- */
-function closeMenu(){const m=$("#menu");if(!m.hidden){m.hidden=true;m.classList.remove("fromtab");$("#btnMore").setAttribute("aria-expanded","false")}}
+function closeMenu(){const m=$("#menu");if(!m.hidden){m.hidden=true;$("#btnMore").setAttribute("aria-expanded","false")}}
 $("#btnMore").onclick=e=>{e.stopPropagation();const m=$("#menu");m.hidden=!m.hidden;$("#btnMore").setAttribute("aria-expanded",String(!m.hidden));
   const r=$(".bar").getBoundingClientRect();m.style.top=(r.bottom+6)+"px"};
 document.addEventListener("click",e=>{if(!e.target.closest("#menu")&&!e.target.closest("#btnMore"))closeMenu()});
@@ -2034,14 +2010,7 @@ document.addEventListener("click",e=>{const pb=e.target.closest("[data-page]");i
   const b=e.target.closest("[data-go]");if(!b)return;const [s,v]=b.dataset.go.split("-").map(Number);go(s,v)});
 function basTap(n){if(player.s===n&&player.bas){stopAudio();return}playVerse(n,1,{bas:true})}
 $("#home").onclick=()=>{if(location.hash){location.hash=""}else renderHome()};
-/* the tab bar: which tab is current, and «reading» reopens where the reader was */
-function tabMark(){const h=location.hash;const t=/^#hifz/.test(h)?"hifz":/^#(stats|marks|prefs|admin)/.test(h)?"more":(curPage||/^#s\d/.test(h))?"read":"home";
-  document.querySelectorAll("#tabbar [data-tab]").forEach(a=>a.classList.toggle("on",a.dataset.tab===t))}
-function readTarget(){const st=stopAt;if(st&&st[0]===0&&st[1])return mode==="pages"?"#p"+st[1]:"#s"+sv(PG[st[1]]).join("-");
-  if(st&&st[0])return mode==="pages"?"#p"+pageOf(st[0],st[1]):"#s"+st[0]+"-"+st[1];
-  const lp=store.get("lastpg",1);return mode==="pages"?"#p"+lp:"#s"+sv(PG[lp]).join("-")}
-function route(){if(location.hash==="#read"){location.replace(readTarget());return}
-  closeMenu();closePicker();stopRec();rec=null;const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
+function route(){closeMenu();closePicker();stopRec();rec=null;const pm=location.hash.match(/^#p(\d{1,3})$/);if(pm){renderPage(+pm[1]);return}
   curPage=0;document.documentElement.classList.remove("pagemode");
   const h=location.hash;
   if(h==="#admin"){closeSheet();stopAudio();current=0;renderAdmin();return}
@@ -2052,8 +2021,7 @@ function route(){if(location.hash==="#read"){location.replace(readTarget());retu
   /* in mushaf mode a verse address (Back button, old link, audio crossing a surah) opens its page, never the line view */
   if(m&&mode==="pages"&&+m[1]>=1&&+m[1]<=114){const s=+m[1],v=Math.max(1,Math.min(+m[2],META[s-1][4]));pendingFlash=v>1?[s,v]:null;location.replace("#p"+pageOf(s,v));return}
   if(m&&+m[1]>=1&&+m[1]<=114)renderSurah(+m[1],+m[2]);else{current=0;stopAudio();renderHome()}}
-window.addEventListener("hashchange",route);window.addEventListener("hashchange",()=>setTimeout(tabMark,0));setTimeout(tabMark,0);
-$("#tabMore").onclick=e=>{e.stopPropagation();const m=$("#menu");const open=m.hidden;m.hidden=!open;m.classList.toggle("fromtab",open);$("#btnMore").setAttribute("aria-expanded",String(open))};
+window.addEventListener("hashchange",route);
 const prog=$("#progress"),toTop=$("#toTop");
 function onScroll(){if(curPage){prog.hidden=false;prog.firstChild.style.width=(curPage/604*100)+"%";toTop.hidden=scrollY<900;return}
   const reading=!!current&&!!$("#verses");prog.hidden=!reading;
