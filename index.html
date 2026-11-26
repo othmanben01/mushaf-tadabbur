@@ -237,6 +237,11 @@ html.pagemode,html.pagemode body{overflow:hidden;overscroll-behavior:none}
 .ribbon svg{width:15px;height:15px;stroke:currentColor;fill:none;stroke-width:1.8}
 .ribbon.here{color:#111;background:var(--gold);border-color:var(--gold)}
 .ribbon.here svg{fill:currentColor}
+.insttabs{align-self:center;margin-bottom:4px}
+.insthead{display:flex;align-items:center;gap:12px}.insthead img{flex:none;width:48px;height:48px;border-radius:12px}
+.instbox h4{margin:6px 0 0;font-size:.95rem;color:var(--gold-strong)}
+.instbox .instgo{align-self:stretch;padding:12px;font-weight:700}.instbox .instok{align-self:stretch}
+.instdone{color:var(--gold-strong)!important;font-weight:700}
 .instic{flex:none;width:46px;height:46px;border-radius:12px}
 .instnudge{position:fixed;z-index:30;left:max(12px,env(safe-area-inset-left,0px));right:max(12px,env(safe-area-inset-right,0px));top:calc(env(safe-area-inset-top,0px) + 10px);display:flex;align-items:center;gap:10px;padding:10px 10px 10px 12px;border-radius:18px;background:var(--surface);color:var(--ink);border:1px solid var(--gold);box-shadow:0 14px 40px -12px rgba(0,0,0,.55);transform:translateY(-140%);opacity:0;transition:transform .35s cubic-bezier(.2,.8,.2,1),opacity .35s}
 .instnudge.in{transform:none;opacity:1}
@@ -622,6 +627,7 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
   <a href="#hifz"><svg viewBox="0 0 24 24"><path d="M12 3l2.6 5.3 5.9.9-4.3 4.1 1 5.8L12 16.4 6.8 19.1l1-5.8L3.5 9.2l5.9-.9z"/></svg>الحفظ والمراجعة</a>
   <a href="#stats"><svg viewBox="0 0 24 24"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>الإحصائيات</a>
   <a href="#marks"><svg viewBox="0 0 24 24"><path d="M6 3h12v18l-6-4-6 4z"/></svg>العلامات المحفوظة</a>
+  <button type="button" id="mInstall"><svg viewBox="0 0 24 24"><rect x="6" y="2.5" width="12" height="19" rx="2.5"/><path d="M12 7v7M9 11l3 3 3-3"/></svg>تثبيت التطبيق</button>
   <a href="#prefs"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="3"/><path d="M12 2v3M12 19v3M2 12h3M19 12h3M4.9 4.9l2.1 2.1M17 17l2.1 2.1M4.9 19.1 7 17M17 7l2.1-2.1"/></svg>الإعدادات</a>
   <hr>
   <button type="button" id="mTheme" role="switch" aria-checked="false"><svg viewBox="0 0 24 24"><path d="M20 14.5A8 8 0 1 1 9.5 4a6.5 6.5 0 0 0 10.5 10.5z"/></svg>الوضع الليلي<i class="sw"></i></button>
@@ -2000,6 +2006,7 @@ function renderPrefs(){
 
 /* ---------- More menu ---------- */
 function closeMenu(){const m=$("#menu");if(!m.hidden){m.hidden=true;$("#btnMore").setAttribute("aria-expanded","false")}}
+$("#mInstall").onclick=()=>{closeMenu();installHelp()};
 $("#btnMore").onclick=e=>{e.stopPropagation();const m=$("#menu");m.hidden=!m.hidden;$("#btnMore").setAttribute("aria-expanded",String(!m.hidden));
   const r=$(".bar").getBoundingClientRect();m.style.top=(r.bottom+6)+"px"};
 document.addEventListener("click",e=>{if(!e.target.closest("#menu")&&!e.target.closest("#btnMore"))closeMenu()});
@@ -2066,16 +2073,41 @@ let installEvt=null;addEventListener("beforeinstallprompt",e=>{e.preventDefault(
 function carryData(){try{const d={};for(let i=0;i<localStorage.length;i++){const k=localStorage.key(i);if(k&&k.startsWith("mt_")&&k!=="mt_owner"&&k!=="mt_counted"&&k!=="mt_cday")d[k]=localStorage.getItem(k)}
   if(!Object.keys(d).length)return;const enc=btoa(unescape(encodeURIComponent(JSON.stringify(d)))).replace(/\+/g,"-").replace(/\//g,"_").replace(/=+$/,"");
   history.replaceState(null,"",location.pathname+"#mig="+enc)}catch(e){}}
+/* install guide in Arabic, English and French (tabs) */
+const SHARE_IC=`<svg viewBox="0 0 24 24" width="20" height="20" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg>`;
+const DOTS_IC=`<b>⋮</b>`;
+const INST={
+ ar:{dir:"rtl",tab:"العربية",t:"ثبّت مصحف التدبر على هاتفك",p:"مجاني، يفتح بملء الشاشة بلا أشرطة المتصفح، ويعمل دون إنترنت. وتنتقل معه قراءتك وإعداداتك.",
+  ios:[`افتح الموقع في <b>Safari</b> واضغط زر <b>المشاركة</b> ${SHARE_IC}`,`اختر <b>«إضافة إلى الشاشة الرئيسية»</b> (قد تحتاج إلى التمرير للأسفل)`,`اضغط <b>«إضافة»</b>، ثم افتح المصحف من أيقونته`],
+  and:[`افتح الموقع في <b>Chrome</b> واضغط القائمة ${DOTS_IC}`,`اختر <b>«تثبيت التطبيق»</b> أو <b>«إضافة إلى الشاشة الرئيسية»</b>`,`أكّد، ثم افتح المصحف من أيقونته`],
+  ios_h:"على iPhone", and_h:"على Android", go:"ثبّت الآن", ok:"حسنًا", done:"التطبيق مثبّت على هذا الجهاز ✓"},
+ en:{dir:"ltr",tab:"English",t:"Install Mushaf Tadabbur on your phone",p:"Free, opens full screen without the browser bars, and works offline. Your reading and settings come with it.",
+  ios:[`Open the site in <b>Safari</b> and tap the <b>Share</b> button ${SHARE_IC}`,`Choose <b>“Add to Home Screen”</b> (you may need to scroll down)`,`Tap <b>“Add”</b>, then open the Mushaf from its icon`],
+  and:[`Open the site in <b>Chrome</b> and tap the menu ${DOTS_IC}`,`Choose <b>“Install app”</b> or <b>“Add to Home screen”</b>`,`Confirm, then open the Mushaf from its icon`],
+  ios_h:"On iPhone", and_h:"On Android", go:"Install now", ok:"OK", done:"The app is installed on this device ✓"},
+ fr:{dir:"ltr",tab:"Français",t:"Installez Mushaf Tadabbur sur votre téléphone",p:"Gratuite, elle s’ouvre en plein écran sans les barres du navigateur et fonctionne hors connexion. Votre lecture et vos réglages suivent.",
+  ios:[`Ouvrez le site dans <b>Safari</b> et touchez le bouton <b>Partager</b> ${SHARE_IC}`,`Choisissez <b>« Sur l’écran d’accueil »</b> (faites défiler si besoin)`,`Touchez <b>« Ajouter »</b>, puis ouvrez le Mushaf depuis son icône`],
+  and:[`Ouvrez le site dans <b>Chrome</b> et touchez le menu ${DOTS_IC}`,`Choisissez <b>« Installer l’application »</b> ou <b>« Ajouter à l’écran d’accueil »</b>`,`Confirmez, puis ouvrez le Mushaf depuis son icône`],
+  ios_h:"Sur iPhone", and_h:"Sur Android", go:"Installer maintenant", ok:"D’accord", done:"L’application est installée sur cet appareil ✓"}};
 function installHelp(){
-  if(installEvt){installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;const c=$("#instCard");if(c)c.remove()});return}
-  carryData();
-  const box=document.createElement("div");box.className="instov";box.innerHTML=`<div class="instbox" role="dialog" aria-label="التثبيت على الشاشة الرئيسية">
-    <h3>أضف المصحف إلى الشاشة الرئيسية</h3><p>يفتح بملء الشاشة بلا أشرطة Safari، وتنتقل معه قراءتك وإعداداتك.</p>
-    <ol><li>اضغط زر <b>المشاركة</b> <svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3v12M8 7l4-4 4 4M5 12v7a2 2 0 0 0 2 2h10a2 2 0 0 0 2-2v-7"/></svg> في شريط Safari</li>
-    <li>اختر <b>«إضافة إلى الشاشة الرئيسية»</b> (قد تحتاج إلى التمرير للأسفل)</li><li>اضغط <b>«إضافة»</b>، ثم افتح المصحف من أيقونته</li></ol>
-    <button class="btn" type="button">حسنًا</button></div>`;
-  document.body.appendChild(box);const close=()=>{box.remove();if(/^#mig=/.test(location.hash))history.replaceState(null,"",location.pathname)};
-  box.querySelector("button").onclick=close;box.onclick=e=>{if(e.target===box)close()};setTimeout(()=>{if(box.isConnected)close()},180000)}
+  if(STANDALONE)carryData();
+  const isAnd=/Android/i.test(navigator.userAgent);
+  let lang=store.get("instlang","ar");if(!INST[lang])lang="ar";
+  const box=document.createElement("div");box.className="instov";
+  const draw=()=>{const L=INST[lang];
+    const steps=(arr)=>`<ol>${arr.map(x=>`<li>${x}</li>`).join("")}</ol>`;
+    const body=isInstalled()?`<p class="instdone">${L.done}</p>`:
+      (installEvt?`<button class="btn gold instgo" type="button">${L.go}</button>`:"")+
+      (isIOS?steps(L.ios):isAnd?steps(L.and):`<h4>${L.ios_h}</h4>${steps(L.ios)}<h4>${L.and_h}</h4>${steps(L.and)}`);
+    box.innerHTML=`<div class="instbox" role="dialog" aria-label="${L.t}" dir="${L.dir}" lang="${lang}">
+      <div class="seg sm insttabs" role="tablist">${Object.keys(INST).map(k=>`<button type="button" role="tab" data-l="${k}" aria-pressed="${k===lang}">${INST[k].tab}</button>`).join("")}</div>
+      <div class="insthead"><img src="apple-touch-icon.png" alt=""><h3>${L.t}</h3></div><p>${L.p}</p>${body}
+      <button class="btn instok" type="button">${L.ok}</button></div>`;
+    box.querySelectorAll("[data-l]").forEach(b=>b.onclick=()=>{lang=b.dataset.l;store.set("instlang",lang);draw()});
+    const g=box.querySelector(".instgo");if(g)g.onclick=()=>{installEvt.prompt();installEvt.userChoice.finally(()=>{installEvt=null;const c=$("#instCard");if(c)c.remove();close()})};
+    box.querySelector(".instok").onclick=close};
+  const close=()=>{box.remove();if(/^#mig=/.test(location.hash))history.replaceState(null,"",location.pathname)};
+  draw();document.body.appendChild(box);box.onclick=e=>{if(e.target===box)close()};setTimeout(()=>{if(box.isConnected)close()},300000)}
 function installCard(){
   if(!STANDALONE||isInstalled()||store.get("instno",0)||$("#instCard")||!(isIOS||installEvt))return;
   const w=document.querySelector("#view .wrap");if(!w)return;
