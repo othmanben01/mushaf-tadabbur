@@ -1968,6 +1968,7 @@ function renderPrefs(){
     <section class="card">
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
+      <div class="row"><button class="swbtn" type="button" id="pfAwake" role="switch" aria-checked="${store.get("awake",true)}"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة والحفظ فقط</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
       ${true?`<div class="row"><span>خط صفحات المصحف<small>مصحف المدينة: الصفحات والأسطر كما في المصحف المطبوع</small></span><div class="seg sm" id="pfFont"><button type="button" data-f="madinah" aria-pressed="${qpcOn()}">مصحف المدينة</button><button type="button" data-f="app" aria-pressed="${!qpcOn()}">كلمات متباعدة</button></div></div>`:""}
       <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat",false)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>فعّله إن سمعت تشويشًا في السيارة أو السماعات؛ قد يظهر فاصل قصير بين الآيات</small></span><i class="sw"></i></button></div>
@@ -1987,6 +1988,7 @@ function renderPrefs(){
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
   const pff=$("#pfFont");if(pff)pff.onclick=e=>{const x=e.target.closest("[data-f]");if(!x)return;store.set("pfont",x.dataset.f);pff.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));toast(x.dataset.f==="madinah"?"خط مصحف المدينة في وضع الصفحات":"الخط ذو الكلمات المتباعدة في وضع الصفحات")};
   $("#pfCompat").onclick=()=>{const on=!store.get("compat",false);store.set("compat",on);$("#pfCompat").setAttribute("aria-checked",String(on));if(player.s){const s=player.s,v=player.v;stopAudio();playVerse(s,v)}toast(on?"التشغيل المتوافق مفعّل":"التشغيل المتصل بلا فواصل مفعّل")};
+  $("#pfAwake").onclick=()=>{const on=!store.get("awake",true);store.set("awake",on);$("#pfAwake").setAttribute("aria-checked",String(on));awakeSync();toast(on?"تبقى الشاشة مضاءة أثناء القراءة والحفظ":"تنطفئ الشاشة كالمعتاد")};
   $("#pfStrict").onclick=()=>{const on=!store.get("strict",false);store.set("strict",on);$("#pfStrict").setAttribute("aria-checked",String(on));toast(on?"التسميع الصارم مفعّل":"التسميع المتسامح مفعّل")};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
   $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
@@ -2128,6 +2130,18 @@ function installNudge(){
   b.querySelector(".instx").onclick=()=>{store.set("instsnooze",Date.now()+3*864e5);store.set("instnudges",n+1);close()};
   setTimeout(()=>{if(b.isConnected)close()},20000)}
 
+
+/* keep the screen on while reading (verse view or mushaf pages) and while memorizing; elsewhere it sleeps normally */
+const WL={lock:null,busy:false};
+const wantAwake=()=>store.get("awake",true)&&!document.hidden&&(!!current||!!curPage||/^#hifz-\d/.test(location.hash));
+async function awakeSync(){
+  if(!("wakeLock" in navigator)||WL.busy)return;WL.busy=true;
+  try{if(wantAwake()){if(!WL.lock||WL.lock.released){WL.lock=await navigator.wakeLock.request("screen");WL.lock.addEventListener("release",()=>{WL.lock=null})}}
+    else if(WL.lock){await WL.lock.release();WL.lock=null}}catch(e){}finally{WL.busy=false}}
+addEventListener("hashchange",()=>setTimeout(awakeSync,300));document.addEventListener("visibilitychange",()=>setTimeout(awakeSync,300));
+/* Safari may refuse until the reader touches the screen once */
+["touchend","click"].forEach(ev=>document.addEventListener(ev,()=>{if(wantAwake()&&!WL.lock)awakeSync()},{passive:true}));
+setTimeout(awakeSync,800);
 </script>
 </body>
 </html>
