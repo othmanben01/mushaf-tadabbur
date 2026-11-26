@@ -1049,7 +1049,8 @@ function decodeTo(url,ab){return new Promise(res=>{const ctx=waCtx();if(!ctx)ret
   try{const p=ctx.decodeAudioData(ab,ok,ko);if(p&&p.then)p.then(ok,ko)}catch(e){ko()}})}
 function waItem(s,v,bas,rep){const b=!!bas&&s!==1&&s!==9;return {s,v,bas:b,rep:rep||1,url:b?audioUrl(1,1):audioUrl(s,v)}}
 function waSchedule(it,when){const ctx=WA.ctx,t=TIMING[it.url]||{},off=t.lead||0,len=Math.max(.05,it.buf.duration-off-(t.tail||0));
-  const src=ctx.createBufferSource();src.buffer=it.buf;src.connect(ctx.destination);src.start(when,off,len);it.src=src;it.start=when;it.end=when+len;return it}
+  const src=ctx.createBufferSource();src.buffer=it.buf;src.connect(ctx.destination);src.start(when,off,len);it.src=src;it.start=when;it.end=when+len;
+  src.onended=()=>{if(WA.on&&!WA.rebuilding){waTick();const g=gapSec();if(g)setTimeout(waTick,g*1000+30)}};return it}
 function waStopAll(){[WA.cur,WA.next].forEach(it=>{if(it&&it.src){try{it.src.stop()}catch(e){}}});WA.cur=WA.next=null;WA.wait="";
   clearInterval(WA.timer);WA.timer=null;WA.on=false;WA.fail="";if(WA.paused&&WA.ctx){WA.ctx.resume()}WA.paused=false}
 function waStart(it){const ctx=waCtx();WA.on=true;WA.paused=false;if(ctx.state!=="running")ctx.resume();
@@ -1059,11 +1060,11 @@ function waPeek(it){if(player.queue){if(!player.queue.length)return null;const [
   if(!(current===it.s||curPage))return null;const n=nextPlay(it.s,it.v,it.bas);return n?waItem(n.s,n.v,n.bas):null}
 function waTick(){
   if(!WA.on||WA.paused||!WA.cur||!WA.ctx||WA.rebuilding)return;const now=WA.ctx.currentTime,cur=WA.cur;
-  if(!WA.next&&cur.end-now<5){const nx=waPeek(cur);
+  if(!WA.next){const nx=waPeek(cur);
     if(!nx){if(now>=cur.end){const q=player.queue,done=player.onDone,endQ=!q&&(current===cur.s||curPage);if(!cur.bas)recordListen(cur.s,cur.v);stopAudio();if(q&&done)done();if(endQ)toast("صدق الله العظيم")}return}
     const buf=BUFS.get(nx.url);
-    if(buf){if(cur.end-now<1.5){nx.buf=buf;if(player.queue)player.queue.shift();waSchedule(nx,Math.max(now+.02,cur.end+gapSec()));WA.next=nx}}
-    else if(WA.wait!==nx.url){WA.wait=nx.url;WA.fail="";ensureBuf(nx.url).then(b=>{if(!b&&WA.wait===nx.url)WA.fail=nx.url})}
+    if(buf){nx.buf=buf;if(player.queue)player.queue.shift();waSchedule(nx,Math.max(now+.02,cur.end+gapSec()));WA.next=nx}
+    else if(WA.wait!==nx.url){WA.wait=nx.url;WA.fail="";ensureBuf(nx.url).then(b=>{if(!b&&WA.wait===nx.url)WA.fail=nx.url;else if(b)waTick()})}
     /* this verse cannot be decoded: once the current one ends, continue with the <audio> element */
     else if(WA.fail===nx.url&&now>=cur.end){if(player.queue)player.queue.shift();waStopAll();waEnter(cur,nx);elPlay(nx.url)}}
   if(WA.next&&now>=WA.next.start-.01){const prev=cur;WA.cur=WA.next;WA.next=null;WA.wait="";waEnter(prev,WA.cur);trimBufs()}
