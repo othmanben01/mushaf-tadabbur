@@ -2109,11 +2109,12 @@ function installHelp(){
   const close=()=>{box.remove();if(/^#mig=/.test(location.hash))history.replaceState(null,"",location.pathname)};
   draw();document.body.appendChild(box);box.onclick=e=>{if(e.target===box)close()};setTimeout(()=>{if(box.isConnected)close()},300000)}
 function installCard(){
-  if(!STANDALONE||isInstalled()||store.get("instno",0)||$("#instCard")||!(isIOS||installEvt))return;
+  if(!STANDALONE||isInstalled()||store.get("instno",0)||store.get("instnudges",0)>=3||Date.now()<store.get("instsnooze",0)||$("#instCard")||!(isIOS||installEvt))return;
   const w=document.querySelector("#view .wrap");if(!w)return;
   const c=document.createElement("section");c.className="card instcard";c.id="instCard";
   c.innerHTML=`<img class="instic" src="apple-touch-icon.png" alt=""><div><b>ثبّت التطبيق على هاتفك</b><span>مجاني، يفتح بملء الشاشة ويعمل دون إنترنت.</span></div><button class="btn" type="button" id="instGo">ثبّت</button><button class="instx" type="button" aria-label="إخفاء">×</button>`;
-  w.prepend(c);$("#instGo").onclick=installHelp;c.querySelector(".instx").onclick=()=>{store.set("instno",1);c.remove()}}
+  w.prepend(c);$("#instGo").onclick=installHelp;/* «×»: hidden for 3 days; after 3 refusals it does not come back */
+  c.querySelector(".instx").onclick=()=>{store.set("instsnooze",Date.now()+3*864e5);store.set("instnudges",store.get("instnudges",0)+1);c.remove()}}
 {const _rh=renderHome;renderHome=function(){_rh.apply(this,arguments);installCard()};if(!current&&!curPage&&!/^#./.test(location.hash))installCard()}
 /* a gentle notice a few seconds after opening, on any screen: «install the app»; «later» hides it for 3 days, twice «later» for good */
 function installNudge(){
@@ -2126,7 +2127,7 @@ function installNudge(){
   b.querySelector(".btn").onclick=()=>{close();installHelp()};
   b.querySelector(".instx").onclick=()=>{store.set("instsnooze",Date.now()+3*864e5);store.set("instnudges",n+1);close()};
   setTimeout(()=>{if(b.isConnected)close()},20000)}
-setTimeout(installNudge,7000);addEventListener("beforeinstallprompt",()=>setTimeout(installNudge,7000));
+
 </script>
 </body>
 </html>
