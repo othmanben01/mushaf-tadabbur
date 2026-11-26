@@ -877,7 +877,7 @@ function updateGapBtn(){const b=$("#plGap");if(b)b.querySelector("span").textCon
 const loopOn=()=>!!store.get("plloop",false);
 /* after the last verse: loop the same surah (from its basmala) when the loop is on */
 function nextPlay(s,v,bas){const nx=nextOf(s,v,bas);if(loopOn()&&!bas&&(!nx||nx.s!==s))return {s,v:1,bas:s!==1&&s!==9};return nx}
-function updatePlayerBar(){updateGapBtn();keepSync();const pp=$("#pplay");if(pp&&curPage){const on=player.s&&pageOf(player.s,player.v)===curPage;pp.innerHTML=on&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!on)}
+function updatePlayerBar(){updateGapBtn();msState();const pp=$("#pplay");if(pp&&curPage){const on=player.s&&pageOf(player.s,player.v)===curPage;pp.innerHTML=on&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!on)}
   if(!player.s){showPlayer(false);return}
   showPlayer(true);$("#plWho").textContent=reciter.name;$("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
   const paused=audioPaused();$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
@@ -927,7 +927,7 @@ function fetchVerse(url){
     if(!proxyOff){try{r=await fetch(proxied(url));if(!r.ok||!/audio|octet/.test(r.headers.get("content-type")||"")){r=null;proxyOff=true}}catch(e){r=null;proxyOff=true}}
     if(!r&&directCors){try{r=await fetch(url,{mode:"cors"});if(!r.ok)r=null}catch(e){r=null;directCors=false}}
     if(!r){BUF.delete(url);return null}
-    const ab=await r.arrayBuffer();RAW.set(url,ab);if(!TIMING[url]&&store.get("compat2",true))measureFrom(url,ab.slice(0));
+    const ab=await r.arrayBuffer();RAW.set(url,ab);
     while(RAW.size>16){const k=RAW.keys().next().value;RAW.delete(k);BUF.delete(k)}
     return ab})().catch(()=>{BUF.delete(url);return null});
   BUF.set(url,p);return p}
@@ -951,43 +951,23 @@ let handT=null;
 /* jump over the leading silence of the verse that has just started */
 function skipLead(el){if(!el||el!==player.a||!player.s)return;const t=TIMING[el.dataset.url];if(t&&t.lead>.04&&el.currentTime<Math.min(.25,t.lead-.02)){try{el.currentTime=t.lead}catch(e){}}}
 function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a;if(!a||!player.s||a.paused||!a.duration||!isFinite(a.duration))return;
-    if(a.duration-a.currentTime<8)prepareNext();
     const t=TIMING[a.dataset.url];const tail=t&&t.tail!==undefined?t.tail:.2;
     if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},40)}
-/* two <audio> players take turns: while one recites, the other already holds the next verse, loaded and
-   placed just after its opening silence, so it starts the moment the reciter's voice ends */
-const AEL=[];
 function audioEls(){
-  if(AEL.length)return AEL;
-  for(let i=0;i<2;i++){const el=new Audio();el.preload="auto";AEL.push(el);
-  el.addEventListener("ended",()=>{if(el!==player.a)return;const key=(el.dataset.url||"")+"#"+player.s+":"+player.v;if(player.s&&player.handed!==key){player.handed=key;onVerseEnded()}});
-  el.addEventListener("error",()=>{if(!el.getAttribute("src"))return;
-    if(el!==player.a){el.dataset.url="";return} /* the verse being prepared failed: it will simply load normally */
-    if(!player.s)return;
+  if(player.a)return [player.a];
+  const el=new Audio();el.preload="auto";player.a=el;
+  el.addEventListener("ended",()=>{const key=(el.dataset.url||"")+"#"+player.s+":"+player.v;if(player.s&&player.handed!==key){player.handed=key;onVerseEnded()}});
+  el.addEventListener("error",()=>{if(!player.s||!el.getAttribute("src"))return;
     /* a downloaded copy failed: try the file from the network once */
     const url=el.dataset.url;if(url&&el.src.startsWith("blob:")){READY.delete(url);BUF.delete(url);el.src=proxyOff?url:proxied(url);el.play().catch(()=>{});return}
     if(url&&el.src.indexOf("/audio/")>-1){proxyOff=true;el.src=url;el.play().catch(()=>{});return}
     toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
-  el.addEventListener("loadedmetadata",()=>{if(el===player.a)skipLead(el);else cueLead(el)});
-  el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",()=>{if(el===player.a)updatePlayerBar()})}
-  player.a=AEL[0];return AEL}
-const spareEl=()=>{audioEls();return AEL[0]===player.a?AEL[1]:AEL[0]};
-function cueLead(el){const t=TIMING[el.dataset.url];if(t&&t.lead>.04){try{el.currentTime=t.lead}catch(e){}}el.dataset.cued=t?"1":""}
-function srcFor(url){let mem=READY.get(url);const raw=RAW.get(url);
-  if(!mem&&raw){const keep=new Set(AEL.map(e=>e.src));for(const [k,o] of READY){if(!keep.has(o)){URL.revokeObjectURL(o);READY.delete(k)}}mem=URL.createObjectURL(new Blob([raw],{type:"audio/mpeg"}));READY.set(url,mem)}
-  return mem||(proxyOff?url:proxied(url))}
-/* the url that will play after the current one, or "" */
-function upcomingUrl(){if(!player.s)return "";
-  if(player.queue){if(!player.queue.length)return "";const [s,v]=player.queue[0];return audioUrl(s,v)}
-  if(!(current===player.s||curPage))return "";const n=nextPlay(player.s,player.v,player.bas);if(!n)return "";
-  return n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
-function prepareNext(){const url=upcomingUrl();if(!url)return;const sp=spareEl();
-  if(sp.dataset.url===url){if(sp.readyState>=1&&!sp.dataset.cued&&TIMING[url])cueLead(sp);return}
-  if(!RAW.has(url))return; /* prepare only once the file is downloaded: no network wait at the switch */
-  sp.pause();sp.dataset.url=url;sp.dataset.cued="";sp.src=srcFor(url);try{sp.load()}catch(e){}}
+  el.addEventListener("loadedmetadata",()=>skipLead(el));
+  el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",updatePlayerBar);
+  return [el]}
 function unlockAudio(){}
 function stopAudio(){waStopAll();clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
-  AEL.forEach(e=>{e.pause();e.removeAttribute("src");e.dataset.url="";try{e.load()}catch(err){}});clearPlayingUI();updatePlayerBar()}
+  if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.dataset.url="";try{player.a.load()}catch(e){}}clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
 function nextOf(s,v,bas){
@@ -1031,8 +1011,6 @@ function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
   if(!setMediaSession.done){setMediaSession.done=true;const ms=navigator.mediaSession,on=(k,f)=>{try{ms.setActionHandler(k,f)}catch(e){}};
     on("play",()=>{if(audioPaused())togglePause()});on("pause",()=>{if(!audioPaused())togglePause()});
     on("nexttrack",msNext);on("previoustrack",msPrev);on("seekbackward",msRestart);on("stop",()=>stopAudio())}}catch(e){}}
-function keepSync(){try{
-  if("mediaSession" in navigator){navigator.mediaSession.playbackState=player.s?(audioPaused()?"paused":"playing"):"none";if(!player.s)navigator.mediaSession.metadata=null}}catch(e){}}
 /* ---- Gapless engine (Web Audio): verses already in memory are decoded and scheduled back to back,
    each one trimmed of its silences, so the next verse starts exactly when the reciter's voice ends (+ the chosen pause).
    The <audio> element is only a fallback when a verse cannot be kept in memory. ---- */
@@ -1059,7 +1037,7 @@ async function waRebuild(){
       if(paused)ctx.suspend();else if(ctx.state!=="running")ctx.resume().catch(()=>{})}}}
   finally{WA.rebuilding=false}}
 try{if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener("devicechange",()=>setTimeout(waProbe,600))}catch(e){}
-
+setInterval(()=>{if(WA.on&&!WA.paused)waProbe()},12000);
 function decodeTo(url,ab){return new Promise(res=>{const ctx=waCtx();if(!ctx)return res(null);let done=false;
   const ok=buf=>{if(done)return;done=true;BUFS.set(url,buf);
     const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;let a=0,b=d.length-1;
@@ -1105,22 +1083,18 @@ document.addEventListener("touchend",waWake,{passive:true});
 function togglePause(){if(!player.s)return;
   if(WA.on){if(WA.paused){WA.paused=false;WA.ctx.resume()}else{WA.paused=true;WA.ctx.suspend()}updatePlayerBar();return}
   if(player.a){if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()}}
-function elPlay(url){audioEls();
-  const sp=spareEl();let el;
-  if(sp.dataset.url===url&&sp.getAttribute("src")){el=sp;if(!sp.dataset.cued)cueLead(sp);AEL.forEach(e=>{if(e!==sp)e.pause()});player.a=sp}
-  else{el=player.a;el.dataset.url=url;el.src=srcFor(url);const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}}
-  watchEnd();el.play().catch(()=>{});setTimeout(prepareNext,1500)}
+function elPlay(url){const el=audioEls()[0];
+  let mem=READY.get(url);const raw=RAW.get(url);if(!mem&&raw){for(const [k,o] of READY){if(el.src!==o)URL.revokeObjectURL(o);READY.delete(k)}mem=URL.createObjectURL(new Blob([raw],{type:"audio/mpeg"}));READY.set(url,mem)}el.dataset.url=url;el.src=mem||(proxyOff?url:proxied(url));
+  const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}watchEnd();el.play().catch(()=>{})}
 function playVerse(s,v,opt){
   opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
-  waStopAll();audioEls().forEach(e=>{if(e.dataset.url!==waItem(s,v,opt.bas).url)e.pause()});clearInterval(handT);
+  waStopAll();const el=audioEls()[0];el.pause();clearInterval(handT);
   const it=waItem(s,v,opt.bas,opt.rep),url=it.url;
   player.s=s;player.v=v;player.bas=it.bas;player.handed="";
-  const compat=store.get("compat2",true);
-  /* compatible player (default): no live Web Audio engine is opened, so nothing else holds the car / Bluetooth output */
-  const ctx=compat?null:waCtx();if(ctx&&ctx.state!=="running")ctx.resume(); /* started from the tap, so iOS allows it */
+  const ctx=waCtx();if(ctx&&ctx.state!=="running")ctx.resume(); /* started from the tap, so iOS allows it */
   /* already downloaded: gapless engine at once; otherwise stream the first verse right away (no wait for the whole file)
      while the next ones download, and the gapless engine takes over from the next verse */
-  if(ctx&&(BUFS.has(url)||RAW.has(url))){const tok=player.tok;ensureBuf(url).then(b=>{if(player.tok!==tok)return;if(b){it.buf=b;waStart(it);trimBufs()}else elPlay(url)})}
+  if(ctx&&!store.get("compat",false)&&(BUFS.has(url)||RAW.has(url))){const tok=player.tok;ensureBuf(url).then(b=>{if(player.tok!==tok)return;if(b){it.buf=b;waStart(it);trimBufs()}else elPlay(url)})}
   else elPlay(url);
   prefetchAhead(s,v,it.bas);
   if(!it.bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
@@ -1129,6 +1103,7 @@ function playVerse(s,v,opt){
   markPlaying();
 }
 
+function msState(){setTimeout(()=>{if(typeof awakeSync==="function")awakeSync()},400);try{if("mediaSession" in navigator){navigator.mediaSession.playbackState=player.s?(audioPaused()?"paused":"playing"):"none";if(!player.s)navigator.mediaSession.metadata=null}}catch(e){}}
 /* ---------- Reader ---------- */
 let current=0, observer=null;
 function mountTafsir(box,n,i){
@@ -2010,7 +1985,7 @@ function renderPrefs(){
       <div class="row"><button class="swbtn" type="button" id="pfAwake" role="switch" aria-checked="${store.get("awake",true)}"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة والحفظ فقط</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
       ${true?`<div class="row"><span>خط صفحات المصحف<small>مصحف المدينة: الصفحات والأسطر كما في المصحف المطبوع</small></span><div class="seg sm" id="pfFont"><button type="button" data-f="madinah" aria-pressed="${qpcOn()}">مصحف المدينة</button><button type="button" data-f="app" aria-pressed="${!qpcOn()}">كلمات متباعدة</button></div></div>`:""}
-      <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat2",true)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>مفعّل افتراضيًا: صوت نقي في السيارة والسماعات. أوقفه لتشغيل متصل بلا فواصل</small></span><i class="sw"></i></button></div>
+      <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat",false)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>فعّله إن سمعت تشويشًا في السيارة أو السماعات؛ قد يظهر فاصل قصير بين الآيات</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
       <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
       <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
@@ -2026,7 +2001,7 @@ function renderPrefs(){
   </div>`;
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
   const pff=$("#pfFont");if(pff)pff.onclick=e=>{const x=e.target.closest("[data-f]");if(!x)return;store.set("pfont",x.dataset.f);pff.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));toast(x.dataset.f==="madinah"?"خط مصحف المدينة في وضع الصفحات":"الخط ذو الكلمات المتباعدة في وضع الصفحات")};
-  $("#pfCompat").onclick=()=>{const on=!store.get("compat2",true);store.set("compat2",on);$("#pfCompat").setAttribute("aria-checked",String(on));if(player.s){const s=player.s,v=player.v;stopAudio();playVerse(s,v)}toast(on?"التشغيل المتوافق مفعّل":"التشغيل المتصل بلا فواصل مفعّل")};
+  $("#pfCompat").onclick=()=>{const on=!store.get("compat",false);store.set("compat",on);$("#pfCompat").setAttribute("aria-checked",String(on));if(player.s){const s=player.s,v=player.v;stopAudio();playVerse(s,v)}toast(on?"التشغيل المتوافق مفعّل":"التشغيل المتصل بلا فواصل مفعّل")};
   $("#pfAwake").onclick=()=>{const on=!store.get("awake",true);store.set("awake",on);$("#pfAwake").setAttribute("aria-checked",String(on));awakeSync();toast(on?"تبقى الشاشة مضاءة أثناء القراءة والحفظ":"تنطفئ الشاشة كالمعتاد")};
   $("#pfStrict").onclick=()=>{const on=!store.get("strict",false);store.set("strict",on);$("#pfStrict").setAttribute("aria-checked",String(on));toast(on?"التسميع الصارم مفعّل":"التسميع المتسامح مفعّل")};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
@@ -2172,7 +2147,7 @@ function installNudge(){
 
 /* keep the screen on while reading (verse view or mushaf pages) and while memorizing; elsewhere it sleeps normally */
 const WL={lock:null,busy:false};
-const wantAwake=()=>store.get("awake",true)&&!document.hidden&&(!!current||!!curPage||/^#hifz-\d/.test(location.hash));
+const wantAwake=()=>store.get("awake",true)&&!document.hidden&&!(player.s&&!audioPaused())&&(!!current||!!curPage||/^#hifz-\d/.test(location.hash));
 async function awakeSync(){
   if(!("wakeLock" in navigator)||WL.busy)return;WL.busy=true;
   try{if(wantAwake()){if(!WL.lock||WL.lock.released){WL.lock=await navigator.wakeLock.request("screen");WL.lock.addEventListener("release",()=>{WL.lock=null})}}
