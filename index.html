@@ -2147,7 +2147,8 @@ function installNudge(){
 
 /* keep the screen on while reading (verse view or mushaf pages) and while memorizing; elsewhere it sleeps normally */
 const WL={lock:null,busy:false};
-const wantAwake=()=>store.get("awake",true)&&!document.hidden&&!(player.s&&!audioPaused())&&(!!current||!!curPage||/^#hifz-\d/.test(location.hash));
+/* memorization: always on; reading (verse or page): on only while the reciter is not playing */
+const wantAwake=()=>store.get("awake",true)&&!document.hidden&&(/^#hifz-\d/.test(location.hash)||((!!current||!!curPage)&&!(player.s&&!audioPaused())));
 async function awakeSync(){
   if(!("wakeLock" in navigator)||WL.busy)return;WL.busy=true;
   try{if(wantAwake()){if(!WL.lock||WL.lock.released){WL.lock=await navigator.wakeLock.request("screen");WL.lock.addEventListener("release",()=>{WL.lock=null})}}
