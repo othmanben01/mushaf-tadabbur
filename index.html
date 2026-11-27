@@ -917,8 +917,7 @@ function measureFrom(url,ab){
       let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
       TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};skipLead(player.a)};
     const p=ctx.decodeAudioData(ab,done,()=>{});if(p&&p.then)p.then(done,()=>{})}catch(e){}}
-/* RAW keeps the downloaded (compressed, small) files; only the verse playing and the next one are decoded,
-   because decoded audio is ~10x larger and too many of them made Safari reload the page */
+/* RAW keeps the downloaded files of the next verses */
 const RAW=new Map();
 function fetchVerse(url){
   if(BUF.has(url))return BUF.get(url);
@@ -927,18 +926,10 @@ function fetchVerse(url){
     if(!proxyOff){try{r=await fetch(proxied(url));if(!r.ok||!/audio|octet/.test(r.headers.get("content-type")||"")){r=null;proxyOff=true}}catch(e){r=null;proxyOff=true}}
     if(!r&&directCors){try{r=await fetch(url,{mode:"cors"});if(!r.ok)r=null}catch(e){r=null;directCors=false}}
     if(!r){BUF.delete(url);return null}
-    const ab=await r.arrayBuffer();RAW.set(url,ab);
+    const ab=await r.arrayBuffer();RAW.set(url,ab);if(!TIMING[url])measureFrom(url,ab.slice(0));
     while(RAW.size>16){const k=RAW.keys().next().value;RAW.delete(k);BUF.delete(k)}
     return ab})().catch(()=>{BUF.delete(url);return null});
   BUF.set(url,p);return p}
-/* decoded buffer for a verse: from memory, or downloaded then decoded */
-const DEC=new Map();
-function ensureBuf(url){
-  if(BUFS.has(url))return Promise.resolve(BUFS.get(url));
-  if(DEC.has(url))return DEC.get(url);
-  const p=(async()=>{const ab=RAW.get(url)||await fetchVerse(url);if(!ab)return null;return decodeTo(url,ab.slice(0))})().catch(()=>null).finally(()=>DEC.delete(url));
-  DEC.set(url,p);return p}
-function trimBufs(){const keep=new Set([WA.cur&&WA.cur.url,WA.next&&WA.next.url]);for(const k of [...BUFS.keys()])if(!keep.has(k))BUFS.delete(k)}
 /* download the next verses (or the next items of a repetition), two at a time */
 async function prefetchAhead(s,v,bas){
   const urls=[];
@@ -966,7 +957,7 @@ function audioEls(){
   el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",updatePlayerBar);
   return [el]}
 function unlockAudio(){}
-function stopAudio(){waStopAll();clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
+function stopAudio(){clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
   if(player.a){player.a.pause();player.a.removeAttribute("src");player.a.dataset.url="";try{player.a.load()}catch(e){}}clearPlayingUI();updatePlayerBar()}
 function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
@@ -1011,99 +1002,27 @@ function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
   if(!setMediaSession.done){setMediaSession.done=true;const ms=navigator.mediaSession,on=(k,f)=>{try{ms.setActionHandler(k,f)}catch(e){}};
     on("play",()=>{if(audioPaused())togglePause()});on("pause",()=>{if(!audioPaused())togglePause()});
     on("nexttrack",msNext);on("previoustrack",msPrev);on("seekbackward",msRestart);on("stop",()=>stopAudio())}}catch(e){}}
-/* ---- Gapless engine (Web Audio): verses already in memory are decoded and scheduled back to back,
-   each one trimmed of its silences, so the next verse starts exactly when the reciter's voice ends (+ the chosen pause).
-   The <audio> element is only a fallback when a verse cannot be kept in memory. ---- */
-const BUFS=new Map();
-const WA={ctx:null,cur:null,next:null,timer:null,paused:false,on:false,wait:""};
-function waCtx(){if(!WA.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{WA.ctx=new C()}catch(e){return null}
-  try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
-  }return WA.ctx}
-/* When the sound moves to the car, Bluetooth or AirPods, the iPhone can change its audio rate; an audio engine created
-   for the old rate then crackles. Compare with the rate a fresh engine would get, and rebuild without losing the place. */
-function waProbe(){if(!WA.ctx||WA.rebuilding||!WA.on)return;const C=window.AudioContext||window.webkitAudioContext;let p=null;
-  try{p=new C()}catch(e){return}const r=p.sampleRate;try{p.close()}catch(e){}
-  if(r&&r!==WA.ctx.sampleRate)waRebuild()}
-async function waRebuild(){
-  const old=WA.ctx;if(!old||WA.rebuilding)return;WA.rebuilding=true;
-  const cur=WA.cur,paused=WA.paused,elapsed=cur?Math.max(0,old.currentTime-cur.start):0;
-  [WA.cur,WA.next].forEach(it=>{if(it&&it.src){try{it.src.stop()}catch(e){}}});WA.next=null;WA.wait="";
-  try{old.close()}catch(e){}WA.ctx=null;BUFS.clear();DEC.clear();
-  const ctx=waCtx();
-  try{if(cur&&WA.on){const b=await ensureBuf(cur.url);
-    if(b&&WA.cur===cur&&WA.ctx===ctx){cur.buf=b;const t=TIMING[cur.url]||{},off=(t.lead||0)+elapsed,len=b.duration-off-(t.tail||0),at=ctx.currentTime+.05;
-      if(len>.1){const src=ctx.createBufferSource();src.buffer=b;src.connect(ctx.destination);src.start(at,off,len);cur.src=src;cur.start=at-elapsed;cur.end=at+len}
-      else{cur.start=at-elapsed;cur.end=at}
-      if(paused)ctx.suspend();else if(ctx.state!=="running")ctx.resume().catch(()=>{})}}}
-  finally{WA.rebuilding=false}}
-try{if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener("devicechange",()=>setTimeout(waProbe,600))}catch(e){}
-
-function decodeTo(url,ab){return new Promise(res=>{const ctx=waCtx();if(!ctx)return res(null);let done=false;
-  const ok=buf=>{if(done)return;done=true;BUFS.set(url,buf);
-    const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;let a=0,b=d.length-1;
-    while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
-    TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};
-    if(BUFS.size>3){for(const k of BUFS.keys()){if((WA.cur&&WA.cur.url===k)||(WA.next&&WA.next.url===k)||k===url)continue;BUFS.delete(k);break}}
-    res(buf)};
-  const ko=()=>{if(!done){done=true;res(null)}};
-  try{const p=ctx.decodeAudioData(ab,ok,ko);if(p&&p.then)p.then(ok,ko)}catch(e){ko()}})}
-function waItem(s,v,bas,rep){const b=!!bas&&s!==1&&s!==9;return {s,v,bas:b,rep:rep||1,url:b?audioUrl(1,1):audioUrl(s,v)}}
-function waSchedule(it,when){const ctx=WA.ctx,t=TIMING[it.url]||{},off=t.lead||0,len=Math.max(.05,it.buf.duration-off-(t.tail||0));
-  const src=ctx.createBufferSource();src.buffer=it.buf;src.connect(ctx.destination);src.start(when,off,len);it.src=src;it.start=when;it.end=when+len;return it}
-function waStopAll(){[WA.cur,WA.next].forEach(it=>{if(it&&it.src){try{it.src.stop()}catch(e){}}});WA.cur=WA.next=null;WA.wait="";
-  clearInterval(WA.timer);WA.timer=null;WA.on=false;WA.fail="";if(WA.paused&&WA.ctx){WA.ctx.resume()}WA.paused=false}
-function waStart(it){const ctx=waCtx();WA.on=true;WA.paused=false;if(ctx.state!=="running")ctx.resume();
-  waSchedule(it,ctx.currentTime+.03);WA.cur=it;WA.next=null;clearInterval(WA.timer);WA.timer=setInterval(waTick,60);updatePlayerBar()}
-/* what follows `it`: the repetition queue first, otherwise the next verse / surah; null when the reader left this surah or the Quran ends */
-function waPeek(it){if(player.queue){if(!player.queue.length)return null;const [s,v,r]=player.queue[0];return waItem(s,v,false,r)}
-  if(!(current===it.s||curPage))return null;const n=nextPlay(it.s,it.v,it.bas);return n?waItem(n.s,n.v,n.bas):null}
-function waTick(){
-  if(!WA.on||WA.paused||!WA.cur||!WA.ctx||WA.rebuilding)return;const now=WA.ctx.currentTime,cur=WA.cur;
-  if(!WA.next&&cur.end-now<5){const nx=waPeek(cur);
-    if(!nx){if(now>=cur.end){const q=player.queue,done=player.onDone,endQ=!q&&(current===cur.s||curPage);if(!cur.bas)recordListen(cur.s,cur.v);stopAudio();if(q&&done)done();if(endQ)toast("صدق الله العظيم")}return}
-    const buf=BUFS.get(nx.url);
-    if(buf){if(cur.end-now<1.5){nx.buf=buf;if(player.queue)player.queue.shift();waSchedule(nx,Math.max(now+.02,cur.end+gapSec()));WA.next=nx}}
-    else if(WA.wait!==nx.url){WA.wait=nx.url;WA.fail="";ensureBuf(nx.url).then(b=>{if(!b&&WA.wait===nx.url)WA.fail=nx.url})}
-    /* this verse cannot be decoded: once the current one ends, continue with the <audio> element */
-    else if(WA.fail===nx.url&&now>=cur.end){if(player.queue)player.queue.shift();waStopAll();waEnter(cur,nx);elPlay(nx.url)}}
-  if(WA.next&&now>=WA.next.start-.01){const prev=cur;WA.cur=WA.next;WA.next=null;WA.wait="";waEnter(prev,WA.cur);trimBufs()}
-}
-/* the reader-visible side of moving to the next verse: stats, page/surah in step, player bar, highlight, prefetch */
-function waEnter(prev,it){
-  if(!prev.bas)recordListen(prev.s,prev.v);
-  if(curPage){const np=pageOf(it.s,it.v);player.s=it.s;player.v=it.v;if(np!==curPage)location.replace("#p"+np)}
-  else if(current&&it.s!==prev.s){player.s=it.s;player.v=it.v;location.hash="s"+it.s+"-"+it.v}
-  player.s=it.s;player.v=it.v;player.bas=it.bas;
-  if(!it.bas){listenAt=[it.s,it.v,reciter.id];store.set("listen",listenAt)}
-  setMediaSession(it.s,it.v);if(player.onStep)player.onStep(it.s,it.v,it.rep);markPlaying();prefetchAhead(it.s,it.v,it.bas)}
-const audioPaused=()=>WA.on?WA.paused:(!player.a||player.a.paused);
-function waWake(){if(WA.on&&!WA.paused&&WA.ctx&&WA.ctx.state!=="running"){WA.ctx.resume().catch(()=>{})}}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden)waWake()});addEventListener("pageshow",waWake);addEventListener("focus",waWake);
-document.addEventListener("touchend",waWake,{passive:true});
+/* ---- One simple player: the iPhone's own <audio>, one verse after the other ---- */
+const audioPaused=()=>!player.a||player.a.paused;
 function togglePause(){if(!player.s)return;
-  if(WA.on){if(WA.paused){WA.paused=false;WA.ctx.resume()}else{WA.paused=true;WA.ctx.suspend()}updatePlayerBar();return}
   if(player.a){if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()}}
 function elPlay(url){const el=audioEls()[0];
   let mem=READY.get(url);const raw=RAW.get(url);if(!mem&&raw){for(const [k,o] of READY){if(el.src!==o)URL.revokeObjectURL(o);READY.delete(k)}mem=URL.createObjectURL(new Blob([raw],{type:"audio/mpeg"}));READY.set(url,mem)}el.dataset.url=url;el.src=mem||(proxyOff?url:proxied(url));
   const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}watchEnd();el.play().catch(()=>{})}
 function playVerse(s,v,opt){
   opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
-  waStopAll();const el=audioEls()[0];el.pause();clearInterval(handT);
-  const it=waItem(s,v,opt.bas,opt.rep),url=it.url;
-  player.s=s;player.v=v;player.bas=it.bas;player.handed="";
-  const ctx=waCtx();if(ctx&&ctx.state!=="running")ctx.resume(); /* started from the tap, so iOS allows it */
-  /* already downloaded: gapless engine at once; otherwise stream the first verse right away (no wait for the whole file)
-     while the next ones download, and the gapless engine takes over from the next verse */
-  if(ctx&&!store.get("compat",false)&&(BUFS.has(url)||RAW.has(url))){const tok=player.tok;ensureBuf(url).then(b=>{if(player.tok!==tok)return;if(b){it.buf=b;waStart(it);trimBufs()}else elPlay(url)})}
-  else elPlay(url);
-  prefetchAhead(s,v,it.bas);
-  if(!it.bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
+  const el=audioEls()[0];el.pause();clearInterval(handT);
+  const bas=!!opt.bas&&s!==1&&s!==9,url=bas?audioUrl(1,1):audioUrl(s,v);
+  player.s=s;player.v=v;player.bas=bas;player.handed="";
+  elPlay(url);
+  prefetchAhead(s,v,bas);
+  if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
   setMediaSession(s,v);
   if(player.onStep)player.onStep(s,v,opt.rep||1);
   markPlaying();
 }
 
-function msState(){setTimeout(()=>{if(typeof awakeSync==="function")awakeSync()},400);try{if("mediaSession" in navigator){navigator.mediaSession.playbackState=player.s?(audioPaused()?"paused":"playing"):"none";if(!player.s)navigator.mediaSession.metadata=null}}catch(e){}}
+function msState(){try{if("mediaSession" in navigator){navigator.mediaSession.playbackState=player.s?(audioPaused()?"paused":"playing"):"none";if(!player.s)navigator.mediaSession.metadata=null}}catch(e){}}
 /* ---------- Reader ---------- */
 let current=0, observer=null;
 function mountTafsir(box,n,i){
@@ -1408,7 +1327,7 @@ function verseText(s,v){const d=cache[s];return d&&d.v[v-1]||""}
 /* ---------- Page-turn sound (synthesised paper) ---------- */
 let actx=null;
 function pageSound(){
-  if(!store.get("pagesound",true))return;
+  if(!store.get("pagesound",true)||(player.s&&!audioPaused()))return;
   try{
     actx=actx||new (window.AudioContext||window.webkitAudioContext)();if(actx.state==="suspended")actx.resume();
     const sr=actx.sampleRate,dur=.38,n=Math.floor(sr*dur),buf=actx.createBuffer(1,n,sr),d=buf.getChannelData(0);
@@ -1982,10 +1901,8 @@ function renderPrefs(){
     <section class="card">
       <div class="row"><span>حجم خط الآيات<small>في وضع «آية بآية»</small></span><div class="stepper"><button type="button" id="pfMinus" aria-label="تصغير">−</button><span id="pfSize">${an(Math.round(qsize/1.75*100))}٪</span><button type="button" id="pfPlus" aria-label="تكبير">+</button></div></div>
       <p class="preview" id="pfPrev">بِسۡمِ ٱللَّهِ ٱلرَّحۡمَٰنِ ٱلرَّحِيمِ</p>
-      <div class="row"><button class="swbtn" type="button" id="pfAwake" role="switch" aria-checked="${store.get("awake",true)}"><span>إبقاء الشاشة مضاءة<small>أثناء القراءة والحفظ فقط</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfStrict" role="switch" aria-checked="${store.get("strict",false)}"><span>تسميع صارم<small>لا يُقبل أي خطأ (افتراضيًا يُتسامح مع أخطاء قليلة)</small></span><i class="sw"></i></button></div>
       ${true?`<div class="row"><span>خط صفحات المصحف<small>مصحف المدينة: الصفحات والأسطر كما في المصحف المطبوع</small></span><div class="seg sm" id="pfFont"><button type="button" data-f="madinah" aria-pressed="${qpcOn()}">مصحف المدينة</button><button type="button" data-f="app" aria-pressed="${!qpcOn()}">كلمات متباعدة</button></div></div>`:""}
-      <div class="row"><button class="swbtn" type="button" id="pfCompat" role="switch" aria-checked="${store.get("compat",false)}"><span>تشغيل متوافق (السيارة والبلوتوث)<small>فعّله إن سمعت تشويشًا في السيارة أو السماعات؛ قد يظهر فاصل قصير بين الآيات</small></span><i class="sw"></i></button></div>
       <div class="row"><button class="swbtn" type="button" id="pfSound" role="switch" aria-checked="${ps}"><span>صوت تقليب الصفحة<small>في وضع صفحات المصحف</small></span><i class="sw"></i></button></div>
       <div class="row"><span>الفاصل بين الآيات<small>عند الاستماع إلى التلاوة</small></span><div class="seg sm" id="pfGap">${GAPS.map(g=>`<button type="button" data-g="${g}" aria-pressed="${gapSec()===g}">${g?anD(String(g)):an(0)}</button>`).join("")}</div></div>
       <div class="row"><span>الأرقام<small>أرقام الآيات والصفحات والإحصائيات</small></span><div class="seg sm" id="pfDig"><button type="button" data-d="east" aria-pressed="${!DIGW}">١٢٣</button><button type="button" data-d="west" aria-pressed="${DIGW}">123</button></div></div>
@@ -2001,8 +1918,6 @@ function renderPrefs(){
   </div>`;
   $("#pfTheme").onclick=e=>{const x=e.target.closest("[data-t]");if(!x)return;const t=x.dataset.t==="auto"?null:x.dataset.t;save("theme",t);applyTheme(t);$("#pfTheme").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
   const pff=$("#pfFont");if(pff)pff.onclick=e=>{const x=e.target.closest("[data-f]");if(!x)return;store.set("pfont",x.dataset.f);pff.querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)));toast(x.dataset.f==="madinah"?"خط مصحف المدينة في وضع الصفحات":"الخط ذو الكلمات المتباعدة في وضع الصفحات")};
-  $("#pfCompat").onclick=()=>{const on=!store.get("compat",false);store.set("compat",on);$("#pfCompat").setAttribute("aria-checked",String(on));if(player.s){const s=player.s,v=player.v;stopAudio();playVerse(s,v)}toast(on?"التشغيل المتوافق مفعّل":"التشغيل المتصل بلا فواصل مفعّل")};
-  $("#pfAwake").onclick=()=>{const on=!store.get("awake",true);store.set("awake",on);$("#pfAwake").setAttribute("aria-checked",String(on));awakeSync();toast(on?"تبقى الشاشة مضاءة أثناء القراءة والحفظ":"تنطفئ الشاشة كالمعتاد")};
   $("#pfStrict").onclick=()=>{const on=!store.get("strict",false);store.set("strict",on);$("#pfStrict").setAttribute("aria-checked",String(on));toast(on?"التسميع الصارم مفعّل":"التسميع المتسامح مفعّل")};
   $("#pfSound").onclick=()=>{const on=!store.get("pagesound",true);save("pagesound",on);$("#pfSound").setAttribute("aria-checked",String(on));if(on)pageSound()};
   $("#pfOrd").onclick=e=>{const x=e.target.closest("[data-o]");if(!x)return;save("order",x.dataset.o);$("#pfOrd").querySelectorAll("button").forEach(z=>z.setAttribute("aria-pressed",String(z===x)))};
@@ -2145,18 +2060,7 @@ function installNudge(){
   setTimeout(()=>{if(b.isConnected)close()},20000)}
 
 
-/* keep the screen on while reading (verse view or mushaf pages) and while memorizing; elsewhere it sleeps normally */
-const WL={lock:null,busy:false};
-/* memorization: always on; reading (verse or page): on only while the reciter is not playing */
-const wantAwake=()=>store.get("awake",true)&&!document.hidden&&(/^#hifz-\d/.test(location.hash)||((!!current||!!curPage)&&!(player.s&&!audioPaused())));
-async function awakeSync(){
-  if(!("wakeLock" in navigator)||WL.busy)return;WL.busy=true;
-  try{if(wantAwake()){if(!WL.lock||WL.lock.released){WL.lock=await navigator.wakeLock.request("screen");WL.lock.addEventListener("release",()=>{WL.lock=null})}}
-    else if(WL.lock){await WL.lock.release();WL.lock=null}}catch(e){}finally{WL.busy=false}}
-addEventListener("hashchange",()=>setTimeout(awakeSync,300));document.addEventListener("visibilitychange",()=>setTimeout(awakeSync,300));
-/* Safari may refuse until the reader touches the screen once */
-["touchend","click"].forEach(ev=>document.addEventListener(ev,()=>{if(wantAwake()&&!WL.lock)awakeSync()},{passive:true}));
-setTimeout(awakeSync,800);
+
 </script>
 </body>
 </html>
