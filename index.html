@@ -911,17 +911,27 @@ const TIMING={};let proxyOff=!STANDALONE||/github\.io$/.test(location.hostname),
 const proxied=url=>"/audio/"+url.split("/data/")[1];
 const BUF=new Map(),READY=new Map(); /* url -> promise / url -> object URL */
 const AHEAD=8;
+/* Each downloaded verse is decoded once (offline: nothing plays), its silence at the start and the end is cut off,
+   and a trimmed copy is kept. Verses then follow each other with only a tiny, constant pause. */
+const TRIM=new Map(); /* url -> object URL of the trimmed copy */
+const KEEP_IN=.03,KEEP_OUT=.06; /* seconds of silence kept before and after the voice, so no sound is clipped */
+function wavFrom(d,sr,from,to){const n=Math.max(1,to-from),buf=new ArrayBuffer(44+n*2),v=new DataView(buf),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
+  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
+  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
+  for(let i=0;i<n;i++){const x=Math.max(-1,Math.min(1,d[from+i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
+  return new Blob([buf],{type:"audio/wav"})}
 function measureFrom(url,ab){
   const done=buf=>{if(TIMING[url])return;const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;
     let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
-    /* lead: where the voice starts (minus 40 ms); tail: silence after the voice ends (keeping 40 ms) */
     TIMING[url]={lead:Math.max(0,a/sr-.04),tail:Math.max(0,(d.length-b)/sr-.04),dur:buf.duration};
-    skipLead(player.a);AEL.forEach(e=>{if(e!==player.a&&e.dataset.url===url&&e.readyState>=1)cueLead(e)})};
+    try{if(b>a&&RAW.has(url)){const from=Math.max(0,a-Math.round(KEEP_IN*sr)),to=Math.min(d.length,b+Math.round(KEEP_OUT*sr));
+      TRIM.set(url,URL.createObjectURL(wavFrom(d,sr,from,to)))}}catch(e){}
+    skipLead(player.a);prepareNext()};
   const C=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!C)return;
   const tryRate=(rates)=>{if(!rates.length)return;let ctx;try{ctx=new C(1,rates[0],rates[0])}catch(e){tryRate(rates.slice(1));return}
     const ko=()=>tryRate(rates.slice(1));
     try{const p=ctx.decodeAudioData(ab.slice(0),done,ko);if(p&&p.then)p.then(done,()=>{})}catch(e){ko()}};
-  tryRate([44100,48000,22050])}
+  tryRate([32000,44100,48000])}
 /* RAW keeps the downloaded files of the next verses */
 const RAW=new Map();
 function fetchVerse(url){
@@ -932,7 +942,7 @@ function fetchVerse(url){
     if(!r&&directCors){try{r=await fetch(url,{mode:"cors"});if(!r.ok)r=null}catch(e){r=null;directCors=false}}
     if(!r){BUF.delete(url);return null}
     const ab=await r.arrayBuffer();RAW.set(url,ab);if(!TIMING[url])measureFrom(url,ab.slice(0));
-    while(RAW.size>16){const k=RAW.keys().next().value;RAW.delete(k);BUF.delete(k)}
+    while(RAW.size>16){const k=RAW.keys().next().value;RAW.delete(k);BUF.delete(k);const t=TRIM.get(k);if(t&&!AEL.some(e=>e.src===t)){URL.revokeObjectURL(t);TRIM.delete(k)}}
     return ab})().catch(()=>{BUF.delete(url);return null});
   BUF.set(url,p);return p}
 /* download the next verses (or the next items of a repetition), two at a time */
@@ -945,10 +955,10 @@ async function prefetchAhead(s,v,bas){
 }
 let handT=null;
 /* jump over the leading silence of the verse that has just started */
-function skipLead(el){if(!el||el!==player.a||!player.s)return;const t=TIMING[el.dataset.url];if(t&&t.lead>.04&&el.currentTime<Math.min(.25,t.lead-.02)){try{el.currentTime=t.lead}catch(e){}}}
+function skipLead(el){if(!el||el!==player.a||!player.s||el.dataset.kind==="trim")return;const t=TIMING[el.dataset.url];if(t&&t.lead>.04&&el.currentTime<Math.min(.25,t.lead-.02)){try{el.currentTime=t.lead}catch(e){}}}
 function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a;if(!a||!player.s||a.paused||!a.duration||!isFinite(a.duration))return;
     if(a.duration-a.currentTime<8)prepareNext();
-    const t=TIMING[a.dataset.url];const tail=t&&t.tail!==undefined?t.tail:.2;
+    const t=TIMING[a.dataset.url],trim=a.dataset.kind==="trim";const tail=trim?KEEP_OUT:(t&&t.tail!==undefined?t.tail:.2);
     if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail-.1){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},20)}
 /* two <audio> players take turns: while one recites, the other already holds the next verse, loaded and
    placed just after its opening silence, so it starts the moment the reciter's voice ends */
@@ -961,14 +971,15 @@ function audioEls(){
     if(el!==player.a){el.dataset.url="";return} /* the verse being prepared failed: it will simply load normally */
     if(!player.s)return;
     /* a downloaded copy failed: try the file from the network once */
-    const url=el.dataset.url;if(url&&el.src.startsWith("blob:")){READY.delete(url);BUF.delete(url);el.src=proxyOff?url:proxied(url);el.play().catch(()=>{});return}
+    const url=el.dataset.url;if(url&&el.src.startsWith("blob:")){READY.delete(url);BUF.delete(url);TRIM.delete(url);el.dataset.kind="raw";el.src=proxyOff?url:proxied(url);el.play().catch(()=>{});return}
     if(url&&el.src.indexOf("/audio/")>-1){proxyOff=true;el.src=url;el.play().catch(()=>{});return}
     toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
   el.addEventListener("loadedmetadata",()=>{if(el===player.a)skipLead(el);else cueLead(el)});
   el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",()=>{if(el===player.a)updatePlayerBar()})}
   player.a=AEL[0];return AEL}
 const spareEl=()=>{audioEls();return AEL[0]===player.a?AEL[1]:AEL[0]};
-function cueLead(el){const t=TIMING[el.dataset.url];if(t&&t.lead>.04){try{el.currentTime=t.lead}catch(e){}}el.dataset.cued=t?"1":""}
+function cueLead(el){if(el.dataset.kind==="trim"){el.dataset.cued="1";return}const t=TIMING[el.dataset.url];if(t&&t.lead>.04){try{el.currentTime=t.lead}catch(e){}}el.dataset.cued=t?"1":""}
+function setSrc(el,url){const t=TRIM.get(url);el.dataset.kind=t?"trim":"raw";el.src=t||srcFor(url)}
 function srcFor(url){let mem=READY.get(url);const raw=RAW.get(url);
   if(!mem&&raw){const keep=new Set(AEL.map(e=>e.src));for(const [k,o] of READY){if(!keep.has(o)){URL.revokeObjectURL(o);READY.delete(k)}}mem=URL.createObjectURL(new Blob([raw],{type:"audio/mpeg"}));READY.set(url,mem)}
   return mem||(proxyOff?url:proxied(url))}
@@ -978,9 +989,9 @@ function upcomingUrl(){if(!player.s)return "";
   if(!(current===player.s||curPage))return "";const n=nextPlay(player.s,player.v,player.bas);if(!n)return "";
   return n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
 function prepareNext(){const url=upcomingUrl();if(!url)return;const sp=spareEl();
-  if(sp.dataset.url===url){if(sp.readyState>=1&&!sp.dataset.cued&&TIMING[url])cueLead(sp);return}
+  if(sp.dataset.url===url&&!(sp.dataset.kind==="raw"&&TRIM.has(url))){if(sp.readyState>=1&&!sp.dataset.cued&&TIMING[url])cueLead(sp);return}
   if(!RAW.has(url))return; /* prepare only once the file is downloaded: no network wait at the switch */
-  sp.pause();sp.dataset.url=url;sp.dataset.cued="";sp.src=srcFor(url);try{sp.load()}catch(e){}}
+  sp.pause();sp.dataset.url=url;sp.dataset.cued="";setSrc(sp,url);try{sp.load()}catch(e){}}
 function unlockAudio(){if(unlockAudio.done)return;unlockAudio.done=true;const sp=spareEl();
   try{sp.muted=true;sp.src=SILENT;const p=sp.play();const back=()=>{sp.pause();sp.muted=false;if(sp.src===SILENT||sp.src.startsWith("data:"))sp.removeAttribute("src")};if(p&&p.then)p.then(back,back);else back()}catch(e){sp.muted=false}}
 function stopAudio(){clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
@@ -1036,7 +1047,7 @@ function togglePause(){if(!player.s)return;
 function elPlay(url){audioEls();
   const sp=spareEl();let el;
   if(sp.dataset.url===url&&sp.getAttribute("src")){el=sp;if(!sp.dataset.cued)cueLead(sp);if(!player.handing)AEL.forEach(e=>{if(e!==sp)e.pause()});player.a=sp}
-  else{el=player.a;el.dataset.url=url;el.src=srcFor(url);const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}}
+  else{el=player.a;el.dataset.url=url;setSrc(el,url);const tm=TIMING[url];if(el.dataset.kind==="raw"&&tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}}
   watchEnd();el.play().catch(()=>{});setTimeout(prepareNext,1500)}
 function playVerse(s,v,opt){
   opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
