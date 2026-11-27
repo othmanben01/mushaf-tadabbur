@@ -910,13 +910,18 @@ const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAAB
 const TIMING={};let proxyOff=!STANDALONE||/github\.io$/.test(location.hostname),directCors=true;
 const proxied=url=>"/audio/"+url.split("/data/")[1];
 const BUF=new Map(),READY=new Map(); /* url -> promise / url -> object URL */
-const AHEAD=6;
+const AHEAD=8;
 function measureFrom(url,ab){
-  try{const Ctx=window.OfflineAudioContext||window.webkitOfflineAudioContext;const ctx=new Ctx(1,2,22050);
-    const done=buf=>{const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;
-      let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
-      TIMING[url]={lead:Math.max(0,a/sr-.06),tail:Math.max(0,(d.length-b)/sr-.1),dur:buf.duration};skipLead(player.a)};
-    const p=ctx.decodeAudioData(ab,done,()=>{});if(p&&p.then)p.then(done,()=>{})}catch(e){}}
+  const done=buf=>{if(TIMING[url])return;const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;
+    let a=0,b=d.length-1;while(a<d.length&&Math.abs(d[a])<thr)a+=step;while(b>a&&Math.abs(d[b])<thr)b-=step;
+    /* lead: where the voice starts (minus 40 ms); tail: silence after the voice ends (keeping 40 ms) */
+    TIMING[url]={lead:Math.max(0,a/sr-.04),tail:Math.max(0,(d.length-b)/sr-.04),dur:buf.duration};
+    skipLead(player.a);AEL.forEach(e=>{if(e!==player.a&&e.dataset.url===url&&e.readyState>=1)cueLead(e)})};
+  const C=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!C)return;
+  const tryRate=(rates)=>{if(!rates.length)return;let ctx;try{ctx=new C(1,rates[0],rates[0])}catch(e){tryRate(rates.slice(1));return}
+    const ko=()=>tryRate(rates.slice(1));
+    try{const p=ctx.decodeAudioData(ab.slice(0),done,ko);if(p&&p.then)p.then(done,()=>{})}catch(e){ko()}};
+  tryRate([44100,48000,22050])}
 /* RAW keeps the downloaded files of the next verses */
 const RAW=new Map();
 function fetchVerse(url){
@@ -944,7 +949,7 @@ function skipLead(el){if(!el||el!==player.a||!player.s)return;const t=TIMING[el.
 function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a;if(!a||!player.s||a.paused||!a.duration||!isFinite(a.duration))return;
     if(a.duration-a.currentTime<8)prepareNext();
     const t=TIMING[a.dataset.url];const tail=t&&t.tail!==undefined?t.tail:.2;
-    if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},40)}
+    if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail-.1){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},20)}
 /* two <audio> players take turns: while one recites, the other already holds the next verse, loaded and
    placed just after its opening silence, so it starts the moment the reciter's voice ends */
 const AEL=[];
@@ -994,16 +999,17 @@ const gapSec=()=>{const g=+store.get("gap",0);return GAPS.includes(g)?g:0};
 const gapLabel=g=>g?`${anD(String(g))} ث`:"بلا فاصل";
 function afterGap(fn){const g=gapSec();if(!g){fn();return}const tok=player.tok;if(player.a)player.a.pause();
   setTimeout(()=>{if(player.tok===tok&&player.s)fn()},g*1000)}
+function handTo(fn){player.handing=!gapSec();try{fn()}finally{player.handing=false}}
 function onVerseEnded(){
   const s=player.s,v=player.v,bas=player.bas;
   if(s&&!bas)recordListen(s,v);
-  if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();afterGap(()=>playVerse(a,b,{keep:true,rep:r}))}else{const done=player.onDone;stopAudio();if(done)done()}return}
+  if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();afterGap(()=>handTo(()=>playVerse(a,b,{keep:true,rep:r})))}else{const done=player.onDone;stopAudio();if(done)done()}return}
   if(!s||!(current===s||curPage)){stopAudio();return}
   const nx=nextPlay(s,v,bas);if(!nx){stopAudio();toast("صدق الله العظيم");return}
   /* keep the page in step with the recitation */
   if(curPage){const np=pageOf(nx.s,nx.v);player.s=nx.s;player.v=nx.v;if(np!==curPage)location.replace("#p"+np)}
   else if(nx.s!==s){player.s=nx.s;player.v=1;location.hash="s"+nx.s+"-1"}
-  afterGap(()=>playVerse(nx.s,nx.v,{keep:true,bas:nx.bas}));
+  afterGap(()=>handTo(()=>playVerse(nx.s,nx.v,{keep:true,bas:nx.bas})));
 }
 /* ---- lock-screen / notification controls (iPhone and Android): surah, verse, reciter, play/pause, previous/next verse, back to the start of the verse ---- */
 function msJump(n){if(!n)return;
@@ -1029,13 +1035,13 @@ function togglePause(){if(!player.s)return;
   if(player.a){if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()}}
 function elPlay(url){audioEls();
   const sp=spareEl();let el;
-  if(sp.dataset.url===url&&sp.getAttribute("src")){el=sp;if(!sp.dataset.cued)cueLead(sp);AEL.forEach(e=>{if(e!==sp)e.pause()});player.a=sp}
+  if(sp.dataset.url===url&&sp.getAttribute("src")){el=sp;if(!sp.dataset.cued)cueLead(sp);if(!player.handing)AEL.forEach(e=>{if(e!==sp)e.pause()});player.a=sp}
   else{el=player.a;el.dataset.url=url;el.src=srcFor(url);const tm=TIMING[url];if(tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}}
   watchEnd();el.play().catch(()=>{});setTimeout(prepareNext,1500)}
 function playVerse(s,v,opt){
   opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
   const bas=!!opt.bas&&s!==1&&s!==9,url=bas?audioUrl(1,1):audioUrl(s,v);
-  audioEls().forEach(e=>{if(e.dataset.url!==url)e.pause()});clearInterval(handT);unlockAudio();
+  if(!player.handing)audioEls().forEach(e=>{if(e.dataset.url!==url)e.pause()});else audioEls();clearInterval(handT);unlockAudio();
   player.s=s;player.v=v;player.bas=bas;player.handed="";
   elPlay(url);
   prefetchAhead(s,v,bas);
