@@ -853,7 +853,17 @@ const RECITERS=[
   {id:"shuraim",name:"سعود الشريم",dir:"Saood_ash-Shuraym_128kbps"},
   {id:"shatri",name:"أبو بكر الشاطري",dir:"Abu_Bakr_Ash-Shaatree_128kbps"},
   {id:"rifai",name:"هاني الرفاعي",dir:"Hani_Rifai_192kbps"},
-  {id:"tablawi",name:"محمد محمود الطبلاوي",dir:"Mohammad_al_Tablaway_128kbps"}];
+  {id:"tablawi",name:"محمد محمود الطبلاوي",dir:"Mohammad_al_Tablaway_128kbps"},
+  {id:"qatami",name:"ناصر القطامي",dir:"Nasser_Alqatami_128kbps"},
+  {id:"fares",name:"فارس عباد",dir:"Fares_Abbad_64kbps"},
+  {id:"ajamy",name:"أحمد العجمي",dir:"ahmed_ibn_ali_al_ajamy_128kbps"},
+  {id:"matroud",name:"عبد الله المطرود",dir:"Abdullah_Matroud_128kbps"},
+  {id:"juhany",name:"عبد الله عواد الجهني",dir:"Abdullaah_3awwaad_Al-Juhaynee_128kbps"},
+  {id:"salamah",name:"ياسر سلامة",dir:"Yaser_Salamah_128kbps"},
+  {id:"alijaber",name:"علي جابر",dir:"Ali_Jaber_64kbps"},
+  {id:"hudhaify",name:"علي الحذيفي",dir:"Hudhaify_128kbps"},
+  {id:"ayyoub",name:"محمد أيوب",dir:"Muhammad_Ayyoub_128kbps"},
+  {id:"bukhatir",name:"صلاح بوخاطر",dir:"Salaah_AbdulRahman_Bukhatir_128kbps"}];
 let reciter=RECITERS.find(r=>r.id===store.get("reciter","ghamdi"))||RECITERS[0];
 const pad3=x=>String(x).padStart(3,"0");
 const audioUrl=(s,v)=>"https://everyayah.com/data/"+reciter.dir+"/"+pad3(s)+pad3(v)+".mp3";
