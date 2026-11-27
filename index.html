@@ -1018,7 +1018,7 @@ const BUFS=new Map();
 const WA={ctx:null,cur:null,next:null,timer:null,paused:false,on:false,wait:""};
 function waCtx(){if(!WA.ctx){const C=window.AudioContext||window.webkitAudioContext;if(!C)return null;try{WA.ctx=new C()}catch(e){return null}
   try{if(navigator.audioSession)navigator.audioSession.type="playback"}catch(e){}
-  const me=WA.ctx;me.onstatechange=()=>{if(WA.ctx===me&&me.state==="running")setTimeout(waProbe,300)}}return WA.ctx}
+  }return WA.ctx}
 /* When the sound moves to the car, Bluetooth or AirPods, the iPhone can change its audio rate; an audio engine created
    for the old rate then crackles. Compare with the rate a fresh engine would get, and rebuild without losing the place. */
 function waProbe(){if(!WA.ctx||WA.rebuilding||!WA.on)return;const C=window.AudioContext||window.webkitAudioContext;let p=null;
@@ -1037,7 +1037,7 @@ async function waRebuild(){
       if(paused)ctx.suspend();else if(ctx.state!=="running")ctx.resume().catch(()=>{})}}}
   finally{WA.rebuilding=false}}
 try{if(navigator.mediaDevices&&navigator.mediaDevices.addEventListener)navigator.mediaDevices.addEventListener("devicechange",()=>setTimeout(waProbe,600))}catch(e){}
-setInterval(()=>{if(WA.on&&!WA.paused)waProbe()},12000);
+
 function decodeTo(url,ab){return new Promise(res=>{const ctx=waCtx();if(!ctx)return res(null);let done=false;
   const ok=buf=>{if(done)return;done=true;BUFS.set(url,buf);
     const d=buf.getChannelData(0),sr=buf.sampleRate,step=Math.max(1,Math.floor(sr/1000)),thr=.02;let a=0,b=d.length-1;
@@ -1078,7 +1078,7 @@ function waEnter(prev,it){
   setMediaSession(it.s,it.v);if(player.onStep)player.onStep(it.s,it.v,it.rep);markPlaying();prefetchAhead(it.s,it.v,it.bas)}
 const audioPaused=()=>WA.on?WA.paused:(!player.a||player.a.paused);
 function waWake(){if(WA.on&&!WA.paused&&WA.ctx&&WA.ctx.state!=="running"){WA.ctx.resume().catch(()=>{})}}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden){waWake();setTimeout(waProbe,500)}});addEventListener("pageshow",waWake);addEventListener("focus",waWake);
+document.addEventListener("visibilitychange",()=>{if(!document.hidden)waWake()});addEventListener("pageshow",waWake);addEventListener("focus",waWake);
 document.addEventListener("touchend",waWake,{passive:true});
 function togglePause(){if(!player.s)return;
   if(WA.on){if(WA.paused){WA.paused=false;WA.ctx.resume()}else{WA.paused=true;WA.ctx.suspend()}updatePlayerBar();return}
