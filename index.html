@@ -915,7 +915,7 @@ const AHEAD=8;
 /* Each downloaded verse is decoded once (offline: nothing plays), its silence at the start and the end is cut off,
    and a trimmed copy is kept. Verses then follow each other with only a tiny, constant pause. */
 const TRIM=new Map(); /* url -> object URL of the trimmed copy */
-const KEEP_IN=.03,KEEP_OUT=.025; /* 30 ms kept before the voice (+25 ms since stable-v1) */ /* seconds of silence kept before and after the voice, so no sound is clipped */
+const KEEP_IN=.04,KEEP_OUT=.025; /* 40 ms kept before the voice (+35 ms since stable-v1) */ /* seconds of silence kept before and after the voice, so no sound is clipped */
 function wavFrom(d,sr,from,to){const n=Math.max(1,to-from),buf=new ArrayBuffer(44+n*2),v=new DataView(buf),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
   w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
   v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
@@ -937,7 +937,7 @@ function voiceBounds(d,sr){const W=Math.max(1,Math.round(sr*.01)),n=Math.floor(d
 function measureFrom(url,ab){
   const done=buf=>{if(TIMING[url])return;const d=buf.getChannelData(0),sr=buf.sampleRate;
     const [a,b]=voiceBounds(d,sr);
-    TIMING[url]={lead:Math.max(0,a/sr-.035),tail:Math.max(0,(d.length-b)/sr-.01),dur:buf.duration};
+    TIMING[url]={lead:Math.max(0,a/sr-.045),tail:Math.max(0,(d.length-b)/sr-.01),dur:buf.duration};
     try{if(b>a&&RAW.has(url)){const from=Math.max(0,a-Math.round(KEEP_IN*sr)),to=Math.min(d.length,b+Math.round(KEEP_OUT*sr));
       TRIM.set(url,URL.createObjectURL(wavFrom(d,sr,from,to)))}}catch(e){}
     skipLead(player.a);prepareNext()};
@@ -977,7 +977,7 @@ function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a
        two players -> a little before the voice ends (the old verse finishes on its own);
        same player -> only once the voice is over (trimmed copy: 20 ms before its end; raw file: at its trailing silence) */
     const tail=two?(trim?KEEP_OUT:(t&&t.tail!==undefined?t.tail:.2)):(trim?.02-.1:(t&&t.tail!==undefined?t.tail-.1:.2-.1));
-    if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail-(two?.1:.1)){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},20)}
+    if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail-(two?.1+(KEEP_IN-.005):.1)){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},20)}
 /* Screen on: two <audio> players take turns (the next verse is already loaded, so it starts the moment the voice ends).
    Screen off: the iPhone only lets the player that is already playing go on, so that same player is given the next verse. */
 const AEL=[];
