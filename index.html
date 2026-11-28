@@ -661,6 +661,7 @@ html,body{max-width:100%;overflow-x:hidden;overflow-x:clip}
 </section>
 </div>
 
+<script src="audio-engine.js"></script>
 <script>
 /* The GitHub address shows the account name in the phone's microphone prompt, so it forwards to the Vercel address,
    carrying this browser's saved progress and settings along (localStorage belongs to one address). */
@@ -841,191 +842,20 @@ function renderHome(){
   window.scrollTo(0,0);
 }
 
-/* ---------- Audio (verse by verse, EveryAyah.com) ---------- */
+/* ---------- Audio (verse by verse, EveryAyah.com — powered by audio-engine.js) ---------- */
 const STANDALONE=(()=>{try{return window.top===window}catch(e){return false}})();
-const RECITERS=[
-  {id:"ghamdi",name:"سعد الغامدي",dir:"Ghamadi_40kbps"},
-  {id:"muaiqly",name:"ماهر المعيقلي",dir:"MaherAlMuaiqly128kbps"},
-  {id:"abdulbasit",name:"عبد الباسط عبد الصمد",dir:"Abdul_Basit_Murattal_192kbps"},
-  {id:"husary",name:"محمود خليل الحصري",dir:"Husary_128kbps"},
-  {id:"dossari",name:"ياسر الدوسري",dir:"Yasser_Ad-Dussary_128kbps"},
-  {id:"minshawi",name:"محمد صديق المنشاوي",dir:"Minshawy_Murattal_128kbps"},
-  {id:"shuraim",name:"سعود الشريم",dir:"Saood_ash-Shuraym_128kbps"},
-  {id:"shatri",name:"أبو بكر الشاطري",dir:"Abu_Bakr_Ash-Shaatree_128kbps"},
-  {id:"rifai",name:"هاني الرفاعي",dir:"Hani_Rifai_192kbps"},
-  {id:"tablawi",name:"محمد محمود الطبلاوي",dir:"Mohammad_al_Tablaway_128kbps"},
-  {id:"qatami",name:"ناصر القطامي",dir:"Nasser_Alqatami_128kbps"},
-  {id:"fares",name:"فارس عباد",dir:"Fares_Abbad_64kbps"},
-  {id:"ajamy",name:"أحمد العجمي",dir:"ahmed_ibn_ali_al_ajamy_128kbps"},
-  {id:"matroud",name:"عبد الله المطرود",dir:"Abdullah_Matroud_128kbps"},
-  {id:"juhany",name:"عبد الله عواد الجهني",dir:"Abdullaah_3awwaad_Al-Juhaynee_128kbps"},
-  {id:"salamah",name:"ياسر سلامة",dir:"Yaser_Salamah_128kbps"},
-  {id:"alijaber",name:"علي جابر",dir:"Ali_Jaber_64kbps"},
-  {id:"hudhaify",name:"علي الحذيفي",dir:"Hudhaify_128kbps"},
-  {id:"ayyoub",name:"محمد أيوب",dir:"Muhammad_Ayyoub_128kbps"},
-  {id:"bukhatir",name:"صلاح بوخاطر",dir:"Salaah_AbdulRahman_Bukhatir_128kbps"}];
+const RECITERS=window.MushafAudio.RECITERS;
+const GAPS=window.MushafAudio.GAPS;
 let reciter=RECITERS.find(r=>r.id===store.get("reciter","ghamdi"))||RECITERS[0];
-const pad3=x=>String(x).padStart(3,"0");
-const audioUrl=(s,v)=>"https://everyayah.com/data/"+reciter.dir+"/"+pad3(s)+pad3(v)+".mp3";
-const player={a:null,s:0,v:0,next:null,queue:null,onStep:null,onDone:null};
 let listenAt=store.get("listen",null);
 const PAUSE_I='<svg viewBox="0 0 24 24"><rect x="6.5" y="5" width="3.5" height="14" rx="1"/><rect x="14" y="5" width="3.5" height="14" rx="1"/></svg>';
 const PLAY_I='<svg viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>';
-(function initPlayerBar(){
-  $("#plToggle").onclick=()=>togglePause();
-$("#plLoop").onclick=()=>{const on=!loopOn();store.set("plloop",on);updateGapBtn();toast(on?"ستُعاد السورة عند انتهائها":"تنتقل التلاوة إلى السورة التالية")};
-  $("#plStop").onclick=()=>stopAudio();
-  $("#plGap").onclick=()=>{const i=GAPS.indexOf(gapSec());const g=GAPS[(i+1)%GAPS.length];save("gap",g);updateGapBtn();toast("الفاصل بين الآيات: "+gapLabel(g))};
-})();
-function reciterOptions(){return RECITERS.map(r=>`<option value="${r.id}"${r.id===reciter.id?" selected":""}>${r.name}</option>`).join("")}
-function setReciter(id){reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];store.set("reciter",reciter.id);const rbs=$("#resumeBtn span");if(rbs&&listenAt)rbs.textContent=`سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}`;
-  document.querySelectorAll("#hreciter").forEach(x=>x.value=reciter.id);
-  toast("القارئ: "+reciter.name);if(player.s)playVerse(player.s,player.v)}
-function showPlayer(on){const bar=$("#player");if(bar.hidden===!on)return;bar.hidden=!on;
-  document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");if(curPage)fitPage()}
-function updateGapBtn(){const b=$("#plGap");if(b)b.querySelector("span").textContent=gapLabel(gapSec());
-  const l=$("#plLoop");if(l){const on=loopOn();l.setAttribute("aria-pressed",String(on));l.querySelector("span").textContent=on?"تكرار السورة":"السورة التالية";l.hidden=!!player.queue}}
+
 const loopOn=()=>!!store.get("plloop",false);
-/* after the last verse: loop the same surah (from its basmala) when the loop is on */
-function nextPlay(s,v,bas){const nx=nextOf(s,v,bas);if(loopOn()&&!bas&&(!nx||nx.s!==s))return {s,v:1,bas:s!==1&&s!==9};return nx}
-function updatePlayerBar(){updateGapBtn();msState();const pp=$("#pplay");if(pp&&curPage){const on=player.s&&pageOf(player.s,player.v)===curPage;pp.innerHTML=on&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!on)}
-  if(!player.s){showPlayer(false);return}
-  showPlayer(true);$("#plWho").textContent=reciter.name;$("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
-  const paused=audioPaused();$("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;$("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
-}
-function clearPlayingUI(){
-  document.querySelectorAll(".vb.playing").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-pressed","false");b.innerHTML=ICON.play+"<span>استماع</span>"});
-  document.querySelectorAll(".verse.reading,.pv.reading,.hzv.reading,.basmala.reading").forEach(x=>x.classList.remove("reading"));
-}
+const gapSec=()=>{const g=+store.get("gap",0);return GAPS.includes(g)?g:0};
+const gapLabel=g=>g?`${anD(String(g))} ث`:"بلا فاصل";
 const basAttr=n=>STANDALONE?` data-bas="${n}" role="button" tabindex="0" aria-label="استمع من البسملة"`:"";
-/* start a surah from its basmala (Al-Fatiha and At-Tawba have none to add) */
-const playFrom=(s,v)=>playVerse(s,v,{bas:v===1});
-function markPlaying(){
-  clearPlayingUI();updatePlayerBar();if(!player.s)return;
-  if(player.bas){const bm=document.querySelector(`.basmala[data-bas="${player.s}"]`);if(bm)bm.classList.add("reading");return}
-  document.querySelectorAll(`.hzv[data-sv="${player.s}:${player.v}"]`).forEach(x=>x.classList.add("reading"));
-  if(curPage){document.querySelectorAll(`.pv[data-sv="${player.s}:${player.v}"]`).forEach(el=>el.classList.add("reading"));
-    const sb=document.querySelector('#sheet [data-act="play"]');if(sb&&sheetAt&&sheetAt[0]===player.s&&sheetAt[1]===player.v){sb.classList.add("playing");sb.setAttribute("aria-pressed","true");sb.innerHTML=ICON.pause+"<span>إيقاف</span>"}
-    return}
-  if(current!==player.s)return;
-  const li=document.getElementById("v"+player.v);if(!li)return;
-  li.classList.add("reading");
-  const b=li.querySelector('[data-act="play"]');if(b){b.classList.add("playing");b.setAttribute("aria-pressed","true");b.innerHTML=ICON.pause+"<span>إيقاف</span>"}
-  const r=li.getBoundingClientRect(),pl=$("#player").offsetHeight||0;if(r.top<70||r.bottom>innerHeight-pl)li.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
-}
-/* Two audio elements: while one plays, the next verse is already loaded in the other, so verses follow without a gap. */
-const SILENT="data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YQAAAAA=";
-/* ---- Audio engine v3: one player, verses downloaded ahead into memory ----
-   On the Vercel site the files come through /audio/ (same site, see vercel.json), so they can be kept in memory
-   and their silences measured. Elsewhere, or if that fails, they are played straight from EveryAyah. */
-const TIMING={};let proxyOff=!STANDALONE||/github\.io$/.test(location.hostname),directCors=true;
-const proxied=url=>"/audio/"+url.split("/data/")[1];
-const BUF=new Map(),READY=new Map(); /* url -> promise / url -> object URL */
-const AHEAD=8;
-/* Each downloaded verse is decoded once (offline: nothing plays), its silence at the start and the end is cut off,
-   and a trimmed copy is kept. Verses then follow each other with only a tiny, constant pause. */
-const TRIM=new Map(); /* url -> object URL of the trimmed copy */
-const KEEP_IN=.04,KEEP_OUT=.025; /* 40 ms kept before the voice (+35 ms since stable-v1) */ /* seconds of silence kept before and after the voice, so no sound is clipped */
-function wavFrom(d,sr,from,to){const n=Math.max(1,to-from),buf=new ArrayBuffer(44+n*2),v=new DataView(buf),w=(o,t)=>{for(let i=0;i<t.length;i++)v.setUint8(o+i,t.charCodeAt(i))};
-  w(0,"RIFF");v.setUint32(4,36+n*2,true);w(8,"WAVEfmt ");v.setUint32(16,16,true);v.setUint16(20,1,true);v.setUint16(22,1,true);
-  v.setUint32(24,sr,true);v.setUint32(28,sr*2,true);v.setUint16(32,2,true);v.setUint16(34,16,true);w(36,"data");v.setUint32(40,n*2,true);
-  for(let i=0;i<n;i++){const x=Math.max(-1,Math.min(1,d[from+i]));v.setInt16(44+i*2,x<0?x*32768:x*32767,true)}
-  return new Blob([buf],{type:"audio/wav"})}
-/* Where the voice really starts and ends. The loudness is measured in 10 ms pieces and compared with this
-   recording's own loudest moment, so a breath or background hiss is not taken for voice; the start is then
-   widened while the sound is still rising, so a soft first letter is never cut. */
-function voiceBounds(d,sr){const W=Math.max(1,Math.round(sr*.01)),n=Math.floor(d.length/W),rms=new Float32Array(n);let peak=0;
-  for(let i=0;i<n;i++){let q=0;for(let j=i*W,e=j+W;j<e;j++)q+=d[j]*d[j];rms[i]=Math.sqrt(q/W);if(rms[i]>peak)peak=rms[i]}
-  if(!n||peak<.003)return [0,d.length-1];
-  const sorted=Array.from(rms).sort((x,y)=>x-y),noise=sorted[Math.floor(n*.1)]; /* background level of this file */
-  const thr=Math.max(.006,peak*.1,noise*3),soft=Math.max(thr*.35,noise*1.6);
-  /* widen the start by at most 80 ms */
-  let i=0;while(i<n-1&&!(rms[i]>thr&&rms[i+1]>thr))i++;for(let g=0;g<8&&i>0&&rms[i-1]>soft;g++)i--;
-  /* the end stays as before: the last sample above a low fixed level, so long soft endings are kept whole */
-  const step=Math.max(1,Math.floor(sr/1000));let b=d.length-1;while(b>i*W&&Math.abs(d[b])<.02)b-=step;
-  return [i*W,b]}
-function measureFrom(url,ab){
-  const done=buf=>{if(TIMING[url])return;const d=buf.getChannelData(0),sr=buf.sampleRate;
-    const [a,b]=voiceBounds(d,sr);
-    TIMING[url]={lead:Math.max(0,a/sr-.045),tail:Math.max(0,(d.length-b)/sr-.01),dur:buf.duration};
-    try{if(b>a&&RAW.has(url)){const from=Math.max(0,a-Math.round(KEEP_IN*sr)),to=Math.min(d.length,b+Math.round(KEEP_OUT*sr));
-      TRIM.set(url,URL.createObjectURL(wavFrom(d,sr,from,to)))}}catch(e){}
-    skipLead(player.a);prepareNext()};
-  const C=window.OfflineAudioContext||window.webkitOfflineAudioContext;if(!C)return;
-  const tryRate=(rates)=>{if(!rates.length)return;let ctx;try{ctx=new C(1,rates[0],rates[0])}catch(e){tryRate(rates.slice(1));return}
-    const ko=()=>tryRate(rates.slice(1));
-    try{const p=ctx.decodeAudioData(ab.slice(0),done,ko);if(p&&p.then)p.then(done,()=>{})}catch(e){ko()}};
-  tryRate([32000,44100,48000])}
-/* RAW keeps the downloaded files of the next verses */
-const RAW=new Map();
-function fetchVerse(url){
-  if(BUF.has(url))return BUF.get(url);
-  const p=(async()=>{
-    let r=null;
-    if(!proxyOff){try{r=await fetch(proxied(url));if(!r.ok||!/audio|octet/.test(r.headers.get("content-type")||"")){r=null;proxyOff=true}}catch(e){r=null;proxyOff=true}}
-    if(!r&&directCors){try{r=await fetch(url,{mode:"cors"});if(!r.ok)r=null}catch(e){r=null;directCors=false}}
-    if(!r){BUF.delete(url);return null}
-    const ab=await r.arrayBuffer();RAW.set(url,ab);if(!TIMING[url])measureFrom(url,ab.slice(0));
-    while(RAW.size>16){const k=RAW.keys().next().value;RAW.delete(k);BUF.delete(k);const t=TRIM.get(k);if(t&&!AEL.some(e=>e.src===t)){URL.revokeObjectURL(t);TRIM.delete(k)}}
-    return ab})().catch(()=>{BUF.delete(url);return null});
-  BUF.set(url,p);return p}
-/* download the next verses (or the next items of a repetition), two at a time */
-async function prefetchAhead(s,v,bas){
-  const urls=[];
-  if(player.queue&&player.queue.length){for(const q of player.queue.slice(0,AHEAD))urls.push(audioUrl(q[0],q[1]))}
-  else{let c={s,v,bas};for(let i=0;i<AHEAD;i++){c=nextPlay(c.s,c.v,c.bas);if(!c)break;urls.push(c.bas&&c.s!==1&&c.s!==9?audioUrl(1,1):audioUrl(c.s,c.v))}}
-  const todo=[...new Set(urls)].filter(u=>!BUF.has(u));
-  for(let i=0;i<todo.length;i+=2)await Promise.all(todo.slice(i,i+2).map(fetchVerse));
-}
-let handT=null;
-/* jump over the leading silence of the verse that has just started */
-function skipLead(el){if(!el||el!==player.a||!player.s||el.dataset.kind==="trim")return;const t=TIMING[el.dataset.url];if(t&&t.lead>.04&&el.currentTime<Math.min(.25,t.lead-.02)){try{el.currentTime=t.lead}catch(e){}}}
-function watchEnd(){clearInterval(handT);handT=setInterval(()=>{const a=player.a;if(!a||!player.s||a.paused||!a.duration||!isFinite(a.duration))return;
-    if(a.duration-a.currentTime<8)prepareNext();
-    const t=TIMING[a.dataset.url],trim=a.dataset.kind==="trim",sp=spareEl(),two=!document.hidden&&sp.dataset.url&&sp.dataset.url===upcomingUrl()&&sp.getAttribute("src");
-    /* seconds before the file's end at which we move on:
-       two players -> a little before the voice ends (the old verse finishes on its own);
-       same player -> only once the voice is over (trimmed copy: 20 ms before its end; raw file: at its trailing silence) */
-    const tail=two?(trim?KEEP_OUT:(t&&t.tail!==undefined?t.tail:.2)):(trim?.02-.1:(t&&t.tail!==undefined?t.tail-.1:.2-.1));
-    if(player.handed!==a.dataset.url+"#"+player.s+":"+player.v&&a.currentTime>=a.duration-tail-(two?.1+(KEEP_IN-.005):.1)){player.handed=a.dataset.url+"#"+player.s+":"+player.v;onVerseEnded()}},20)}
-/* Screen on: two <audio> players take turns (the next verse is already loaded, so it starts the moment the voice ends).
-   Screen off: the iPhone only lets the player that is already playing go on, so that same player is given the next verse. */
-const AEL=[];
-function audioEls(){
-  if(AEL.length)return AEL;
-  for(let i=0;i<2;i++){const el=new Audio();el.preload="auto";AEL.push(el);
-  el.addEventListener("ended",()=>{if(el!==player.a)return;const key=(el.dataset.url||"")+"#"+player.s+":"+player.v;if(player.s&&player.handed!==key){player.handed=key;onVerseEnded()}});
-  el.addEventListener("error",()=>{if(!el.getAttribute("src"))return;
-    if(el!==player.a){el.dataset.url="";return} /* the verse being prepared failed: it will simply load normally */
-    if(!player.s)return;
-    /* a downloaded copy failed: try the file from the network once */
-    const url=el.dataset.url;if(url&&el.src.startsWith("blob:")){READY.delete(url);BUF.delete(url);TRIM.delete(url);el.dataset.kind="raw";el.src=proxyOff?url:proxied(url);el.play().catch(()=>{});return}
-    if(url&&el.src.indexOf("/audio/")>-1){proxyOff=true;el.src=url;el.play().catch(()=>{});return}
-    toast("تعذّر تشغيل تلاوة "+reciter.name+". جرّب قارئًا آخر أو تحقّق من الاتصال.");stopAudio()});
-  el.addEventListener("loadedmetadata",()=>{if(el===player.a)skipLead(el);else cueLead(el)});
-  el.addEventListener("play",updatePlayerBar);el.addEventListener("pause",()=>{if(el===player.a)updatePlayerBar()})}
-  player.a=AEL[0];return AEL}
-const spareEl=()=>{audioEls();return AEL[0]===player.a?AEL[1]:AEL[0]};
-function cueLead(el){if(el.dataset.kind==="trim"){el.dataset.cued="1";return}const t=TIMING[el.dataset.url];if(t&&t.lead>.04){try{el.currentTime=t.lead}catch(e){}}el.dataset.cued=t?"1":""}
-function setSrc(el,url){const t=TRIM.get(url);el.dataset.kind=t?"trim":"raw";el.src=t||srcFor(url)}
-function srcFor(url){let mem=READY.get(url);const raw=RAW.get(url);
-  if(!mem&&raw){const keep=new Set(AEL.map(e=>e.src));for(const [k,o] of READY){if(!keep.has(o)){URL.revokeObjectURL(o);READY.delete(k)}}mem=URL.createObjectURL(new Blob([raw],{type:"audio/mpeg"}));READY.set(url,mem)}
-  return mem||(proxyOff?url:proxied(url))}
-/* the url that will play after the current one, or "" */
-function upcomingUrl(){if(!player.s)return "";
-  if(player.queue){if(!player.queue.length)return "";const [s,v]=player.queue[0];return audioUrl(s,v)}
-  if(!(current===player.s||curPage))return "";const n=nextPlay(player.s,player.v,player.bas);if(!n)return "";
-  return n.bas&&n.s!==1&&n.s!==9?audioUrl(1,1):audioUrl(n.s,n.v)}
-function prepareNext(){if(document.hidden)return;const url=upcomingUrl();if(!url)return;const sp=spareEl();
-  if(sp.dataset.url===url&&!(sp.dataset.kind==="raw"&&TRIM.has(url))){if(sp.readyState>=1&&!sp.dataset.cued&&TIMING[url])cueLead(sp);return}
-  if(!RAW.has(url))return; /* prepare only once the file is downloaded: no network wait at the switch */
-  sp.pause();sp.dataset.url=url;sp.dataset.cued="";setSrc(sp,url);try{sp.load()}catch(e){}}
-document.addEventListener("visibilitychange",()=>{if(!document.hidden&&player.s)setTimeout(prepareNext,300)});
-function unlockAudio(){if(unlockAudio.done)return;unlockAudio.done=true;const sp=spareEl();
-  try{sp.muted=true;sp.src=SILENT;const p=sp.play();const back=()=>{sp.pause();sp.muted=false;if(sp.src===SILENT||sp.src.startsWith("data:"))sp.removeAttribute("src")};if(p&&p.then)p.then(back,back);else back()}catch(e){sp.muted=false}}
-function stopAudio(){clearInterval(handT);player.tok=(player.tok||0)+1;player.s=0;player.v=0;player.bas=false;player.queue=null;player.onStep=null;player.onDone=null;
-  AEL.forEach(e=>{e.pause();e.removeAttribute("src");e.dataset.url="";try{e.load()}catch(err){}});clearPlayingUI();updatePlayerBar()}
-function playQueue(items,onStep,onDone){if(!items.length)return;player.queue=items.slice(1);player.onStep=onStep;player.onDone=onDone;const [s,v,r]=items[0];playVerse(s,v,{keep:true,rep:r})}
+
 /* What follows the verse now playing: the next verse, the next surah (with its basmala), or nothing */
 function nextOf(s,v,bas){
   if(bas)return {s,v:1};
@@ -1033,65 +863,102 @@ function nextOf(s,v,bas){
   if(s>=114)return null;
   return {s:s+1,v:1,bas:s+1!==9};
 }
-/* pause between two verses, chosen by the reader (seconds, counted after the reciter's voice ends) */
-const GAPS=[0,.3,.6,1,2];
-const gapSec=()=>{const g=+store.get("gap",0);return GAPS.includes(g)?g:0};
-const gapLabel=g=>g?`${anD(String(g))} ث`:"بلا فاصل";
-function afterGap(fn){const g=gapSec();if(!g){fn();return}const tok=player.tok;if(player.a)player.a.pause();
-  setTimeout(()=>{if(player.tok===tok&&player.s)fn()},g*1000)}
-function handTo(fn){player.handing=!gapSec()||document.hidden;try{fn()}finally{player.handing=false}}
-function onVerseEnded(){
-  const s=player.s,v=player.v,bas=player.bas;
-  if(s&&!bas)recordListen(s,v);
-  if(player.queue){if(player.queue.length){const [a,b,r]=player.queue.shift();afterGap(()=>handTo(()=>playVerse(a,b,{keep:true,rep:r})))}else{const done=player.onDone;stopAudio();if(done)done()}return}
-  if(!s||!(current===s||curPage)){stopAudio();return}
-  const nx=nextPlay(s,v,bas);if(!nx){stopAudio();toast("صدق الله العظيم");return}
-  /* keep the page in step with the recitation */
-  if(curPage){const np=pageOf(nx.s,nx.v);player.s=nx.s;player.v=nx.v;if(np!==curPage)location.replace("#p"+np)}
-  else if(nx.s!==s){player.s=nx.s;player.v=1;location.hash="s"+nx.s+"-1"}
-  afterGap(()=>handTo(()=>playVerse(nx.s,nx.v,{keep:true,bas:nx.bas})));
-}
-/* ---- lock-screen / notification controls (iPhone and Android): surah, verse, reciter, play/pause, previous/next verse, back to the start of the verse ---- */
-function msJump(n){if(!n)return;
-  if(curPage){const np=pageOf(n.s,n.v);if(np!==curPage)location.replace("#p"+np)}
-  else if(current&&n.s!==current)location.hash="s"+n.s+"-"+n.v;
-  playVerse(n.s,n.v,{keep:!!player.queue,bas:n.bas})}
-function msNext(){if(!player.s)return;
-  if(player.queue){if(!player.queue.length){const d=player.onDone;stopAudio();if(d)d();return}const [a,b,r]=player.queue.shift();playVerse(a,b,{keep:true,rep:r});return}
-  msJump(nextPlay(player.s,player.v,player.bas))}
-function msPrev(){if(!player.s)return;const s=player.s,v=player.v;
-  if(player.queue||player.bas){playVerse(s,v,{keep:!!player.queue});return}
-  if(v>1)msJump({s,v:v-1});else if(s>1)msJump({s:s-1,v:META[s-2][4]});else playVerse(s,v)}
-function msRestart(){if(player.s)playVerse(player.s,player.v,{keep:!!player.queue,bas:player.bas})}
-function setMediaSession(s,v){if(!("mediaSession" in navigator))return;try{
-  navigator.mediaSession.metadata=new MediaMetadata({title:`سورة ${META[s-1][1]}، الآية ${v}`,artist:reciter.name,album:"مصحف التدبر",
-    artwork:[{src:new URL("apple-touch-icon.png",location.href).href,sizes:"180x180",type:"image/png"}]});
-  if(!setMediaSession.done){setMediaSession.done=true;const ms=navigator.mediaSession,on=(k,f)=>{try{ms.setActionHandler(k,f)}catch(e){}};
-    on("play",()=>{if(audioPaused())togglePause()});on("pause",()=>{if(!audioPaused())togglePause()});
-    on("nexttrack",msNext);on("previoustrack",msPrev);on("seekbackward",msRestart);on("stop",()=>stopAudio())}}catch(e){}}
-/* ---- One simple player: the iPhone's own <audio>, one verse after the other ---- */
-const audioPaused=()=>!player.a||player.a.paused;
-function togglePause(){if(!player.s)return;
-  if(player.a){if(player.a.paused)player.a.play().catch(()=>{});else player.a.pause()}}
-function elPlay(url){audioEls();
-  const sp=spareEl();let el;
-  if(!document.hidden&&sp.dataset.url===url&&sp.getAttribute("src")){el=sp;if(!sp.dataset.cued)cueLead(sp);if(!player.handing)AEL.forEach(e=>{if(e!==sp)e.pause()});player.a=sp}
-  else{el=player.a;el.dataset.url=url;setSrc(el,url);const tm=TIMING[url];if(el.dataset.kind==="raw"&&tm&&tm.lead>.04){try{el.currentTime=tm.lead}catch(e){}}}
-  watchEnd();el.play().catch(()=>{});setTimeout(prepareNext,1500)}
-function playVerse(s,v,opt){
-  opt=opt||{};player.tok=(player.tok||0)+1;if(!opt.keep){player.queue=null;player.onStep=null;player.onDone=null}
-  const bas=!!opt.bas&&s!==1&&s!==9,url=bas?audioUrl(1,1):audioUrl(s,v);
-  if(!player.handing)audioEls().forEach(e=>{if(e.dataset.url!==url)e.pause()});else audioEls();clearInterval(handT);unlockAudio();
-  player.s=s;player.v=v;player.bas=bas;player.handed="";
-  elPlay(url);
-  prefetchAhead(s,v,bas);
-  if(!bas){listenAt=[s,v,reciter.id];store.set("listen",listenAt)}
-  setMediaSession(s,v);
-  if(player.onStep)player.onStep(s,v,opt.rep||1);
-  markPlaying();
+/* after the last verse: loop the same surah (from its basmala) when the loop is on */
+function nextPlay(s,v,bas){
+  const nx=nextOf(s,v,bas);
+  if(loopOn()&&!bas&&(!nx||nx.s!==s))return {s,v:1,bas:s!==1&&s!==9};
+  return nx;
 }
 
-function msState(){try{if("mediaSession" in navigator){navigator.mediaSession.playbackState=player.s?(audioPaused()?"paused":"playing"):"none";if(!player.s)navigator.mediaSession.metadata=null}}catch(e){}}
+const audioEngine=window.MushafAudio.createAudioEngine({
+  standalone:STANDALONE,
+  getReciter:()=>reciter,
+  getGapSec:gapSec,
+  getNextPlay:nextPlay,
+  getSurahName:s=>META[s-1][1],
+  getSurahVerseCount:s=>META[s-1][4],
+  onVerseListened:(s,v)=>recordListen(s,v),
+  onSaveListenPos:(s,v,reciterId)=>{listenAt=[s,v,reciterId];store.set("listen",listenAt)},
+  onSyncView:(ns,nv)=>{
+    if(curPage){const np=pageOf(ns,nv);if(np!==curPage)location.replace("#p"+np)}
+    else if(current&&ns!==current){location.hash="s"+ns+"-"+nv}
+  },
+  onMarkPlaying:()=>markPlaying(),
+  onUIUpdate:()=>updatePlayerBar(),
+  onClearUI:()=>{clearPlayingUI();updatePlayerBar()},
+  onComplete:()=>toast("صدق الله العظيم"),
+  onError:msg=>toast(msg)
+});
+
+const player=audioEngine.state;
+const audioPaused=()=>audioEngine.isPaused();
+const playVerse=(s,v,opt)=>audioEngine.playVerse(s,v,opt);
+const playFrom=(s,v)=>audioEngine.playFrom(s,v);
+const playQueue=(items,onStep,onDone)=>audioEngine.playQueue(items,onStep,onDone);
+const togglePause=()=>audioEngine.togglePause();
+const stopAudio=()=>audioEngine.stop();
+const msState=()=>audioEngine.updateMediaSessionState();
+
+(function initPlayerBar(){
+  $("#plToggle").onclick=()=>togglePause();
+  $("#plLoop").onclick=()=>{const on=!loopOn();store.set("plloop",on);updateGapBtn();toast(on?"ستُعاد السورة عند انتهائها":"تنتقل التلاوة إلى السورة التالية")};
+  $("#plStop").onclick=()=>stopAudio();
+  $("#plGap").onclick=()=>{const i=GAPS.indexOf(gapSec());const g=GAPS[(i+1)%GAPS.length];save("gap",g);updateGapBtn();toast("الفاصل بين الآيات: "+gapLabel(g))};
+})();
+
+function reciterOptions(){return RECITERS.map(r=>`<option value="${r.id}"${r.id===reciter.id?" selected":""}>${r.name}</option>`).join("")}
+function setReciter(id){
+  reciter=RECITERS.find(r=>r.id===id)||RECITERS[0];
+  store.set("reciter",reciter.id);
+  const rbs=$("#resumeBtn span");
+  if(rbs&&listenAt)rbs.textContent=`سورة ${META[listenAt[0]-1][1]}، الآية ${an(listenAt[1])}، ${reciter.name}`;
+  document.querySelectorAll("#hreciter").forEach(x=>x.value=reciter.id);
+  toast("القارئ: "+reciter.name);
+  audioEngine.setReciter(reciter);
+}
+function showPlayer(on){
+  const bar=$("#player");if(bar.hidden===!on)return;
+  bar.hidden=!on;
+  document.documentElement.style.setProperty("--pl",on?bar.offsetHeight+"px":"0px");
+  if(curPage)fitPage();
+}
+function updateGapBtn(){
+  const b=$("#plGap");if(b)b.querySelector("span").textContent=gapLabel(gapSec());
+  const l=$("#plLoop");if(l){const on=loopOn();l.setAttribute("aria-pressed",String(on));l.querySelector("span").textContent=on?"تكرار السورة":"السورة التالية";l.hidden=!!player.queue}
+}
+function updatePlayerBar(){
+  updateGapBtn();msState();
+  const pp=$("#pplay");
+  if(pp&&curPage){const on=player.s&&pageOf(player.s,player.v)===curPage;pp.innerHTML=on&&!audioPaused()?ICON.pause:ICON.play;pp.classList.toggle("here",!!on)}
+  if(!player.s){showPlayer(false);return}
+  showPlayer(true);
+  $("#plWho").textContent=reciter.name;
+  $("#plWhat").textContent=`${META[player.s-1][1]}، الآية ${an(player.v)}`;
+  const paused=audioPaused();
+  $("#plToggle").innerHTML=paused?PLAY_I:PAUSE_I;
+  $("#plToggle").setAttribute("aria-label",paused?"متابعة":"إيقاف مؤقت");
+}
+function clearPlayingUI(){
+  document.querySelectorAll(".vb.playing").forEach(b=>{b.classList.remove("playing");b.setAttribute("aria-pressed","false");b.innerHTML=ICON.play+"<span>استماع</span>"});
+  document.querySelectorAll(".verse.reading,.pv.reading,.hzv.reading,.basmala.reading").forEach(x=>x.classList.remove("reading"));
+}
+function markPlaying(){
+  clearPlayingUI();updatePlayerBar();if(!player.s)return;
+  if(player.bas){const bm=document.querySelector(`.basmala[data-bas="${player.s}"]`);if(bm)bm.classList.add("reading");return}
+  document.querySelectorAll(`.hzv[data-sv="${player.s}:${player.v}"]`).forEach(x=>x.classList.add("reading"));
+  if(curPage){
+    document.querySelectorAll(`.pv[data-sv="${player.s}:${player.v}"]`).forEach(el=>el.classList.add("reading"));
+    const sb=document.querySelector('#sheet [data-act="play"]');
+    if(sb&&sheetAt&&sheetAt[0]===player.s&&sheetAt[1]===player.v){sb.classList.add("playing");sb.setAttribute("aria-pressed","true");sb.innerHTML=ICON.pause+"<span>إيقاف</span>"}
+    return;
+  }
+  if(current!==player.s)return;
+  const li=document.getElementById("v"+player.v);if(!li)return;
+  li.classList.add("reading");
+  const b=li.querySelector('[data-act="play"]');if(b){b.classList.add("playing");b.setAttribute("aria-pressed","true");b.innerHTML=ICON.pause+"<span>إيقاف</span>"}
+  const r=li.getBoundingClientRect(),pl=$("#player").offsetHeight||0;
+  if(r.top<70||r.bottom>innerHeight-pl)li.scrollIntoView({block:"center",behavior:matchMedia("(prefers-reduced-motion: reduce)").matches?"auto":"smooth"});
+}
 /* ---------- Reader ---------- */
 let current=0, observer=null;
 function mountTafsir(box,n,i){

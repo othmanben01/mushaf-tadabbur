@@ -25,6 +25,15 @@
       ]
     },
     {
+      "source": "/audio-engine.js",
+      "headers": [
+        {
+          "key": "Cache-Control",
+          "value": "no-cache"
+        }
+      ]
+    },
+    {
       "source": "/(s|tm|ts|tk|fonts|m1|qf)/(.*)",
       "headers": [
         {
